@@ -1,10 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-let client: ReturnType<typeof createBrowserClient> | null = null;
+let client: SupabaseClient | null = null;
 
-export function createClient() {
+export function createClient(): SupabaseClient {
   if (typeof window === 'undefined') {
-    // Return a dummy during SSR/prerender - won't be used
     return createBrowserClient(
       'https://placeholder.supabase.co',
       'placeholder-key'

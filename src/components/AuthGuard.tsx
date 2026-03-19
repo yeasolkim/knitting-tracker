@@ -13,22 +13,19 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    const supabase = createClient();
+    // getSession() uses local cache - much faster than getUser()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
         router.push('/login');
         return;
       }
-      setUser(user);
+      setUser(session.user);
       setLoading(false);
-    };
-
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    });
+  }, [router]);
 
   if (loading || !user) {
     return (

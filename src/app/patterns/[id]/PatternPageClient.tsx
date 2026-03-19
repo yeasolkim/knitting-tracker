@@ -9,42 +9,38 @@ import PatternViewerClient from './PatternViewerClient';
 export default function PatternPageClient() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const supabase = createClient();
   const [pattern, setPattern] = useState<PatternWithProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    const supabase = createClient();
+
+    // Auth check + data fetch in parallel
+    Promise.all([
+      supabase.auth.getSession(),
+      supabase
+        .from('patterns')
+        .select(`*, progress:pattern_progress(*)`)
+        .eq('id', id)
+        .single(),
+    ]).then(([authResult, queryResult]) => {
+      if (!authResult.data.session?.user) {
         router.push('/login');
         return;
       }
 
-      const { data, error } = await supabase
-        .from('patterns')
-        .select(`
-          *,
-          progress:pattern_progress(*)
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error || !data) {
+      if (queryResult.error || !queryResult.data) {
         router.push('/dashboard');
         return;
       }
 
       setPattern({
-        ...data,
-        progress: data.progress?.[0] || null,
+        ...queryResult.data,
+        progress: queryResult.data.progress?.[0] || null,
       } as PatternWithProgress);
       setLoading(false);
-    };
-
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    });
+  }, [id, router]);
 
   if (loading || !pattern) {
     return (

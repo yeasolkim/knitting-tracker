@@ -10,7 +10,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
         router.push('/dashboard');
       } else if (event === 'SIGNED_OUT') {
@@ -18,9 +18,8 @@ export default function AuthCallbackPage() {
       }
     });
 
-    // Also check if user is already signed in (hash was auto-handled)
-    supabase.auth.getUser().then(({ data: { user } }: { data: { user: unknown } }) => {
-      if (user) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         router.push('/dashboard');
       }
     });
@@ -28,8 +27,7 @@ export default function AuthCallbackPage() {
     return () => {
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
