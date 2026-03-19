@@ -37,25 +37,27 @@ export default function DashboardClient() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    const pattern = patterns.find((p) => p.id === id);
-    if (!pattern) return;
-
-    // Delete files from storage
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: files } = await supabase.storage
-        .from('pattern-files')
-        .list(`${user.id}/${id}`);
-      if (files && files.length > 0) {
-        await supabase.storage
-          .from('pattern-files')
-          .remove(files.map((f: { name: string }) => `${user.id}/${id}/${f.name}`));
-      }
-    }
-
-    await supabase.from('pattern_progress').delete().eq('pattern_id', id);
-    await supabase.from('patterns').delete().eq('id', id);
+    // UI first - instant feedback
     setPatterns((prev) => prev.filter((p) => p.id !== id));
+
+    // Server cleanup in background
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      const uid = session.user.id;
+
+      // Delete storage files, progress, and pattern in parallel
+      Promise.all([
+        supabase.storage.from('pattern-files').list(`${uid}/${id}`).then(({ data: files }) => {
+          if (files && files.length > 0) {
+            return supabase.storage.from('pattern-files').remove(
+              files.map((f: { name: string }) => `${uid}/${id}/${f.name}`)
+            );
+          }
+        }),
+        supabase.from('pattern_progress').delete().eq('pattern_id', id),
+        supabase.from('patterns').delete().eq('id', id),
+      ]);
+    });
   };
 
   if (loading) {
