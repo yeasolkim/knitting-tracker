@@ -9,7 +9,7 @@ export default function Login() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${siteUrl}/knitting-tracker/#/auth/callback`,
+        redirectTo: `${siteUrl}/knitting-tracker/auth/callback`,
       },
     });
   };
