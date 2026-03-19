@@ -49,7 +49,7 @@ export default function DashboardClient() {
       if (files && files.length > 0) {
         await supabase.storage
           .from('pattern-files')
-          .remove(files.map((f) => `${user.id}/${id}/${f.name}`));
+          .remove(files.map((f: { name: string }) => `${user.id}/${id}/${f.name}`));
       }
     }
 

@@ -10,7 +10,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
       if (event === 'SIGNED_IN') {
         router.push('/dashboard');
       } else if (event === 'SIGNED_OUT') {
@@ -19,7 +19,7 @@ export default function AuthCallbackPage() {
     });
 
     // Also check if user is already signed in (hash was auto-handled)
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: unknown } }) => {
       if (user) {
         router.push('/dashboard');
       }
