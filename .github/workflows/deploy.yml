@@ -32,6 +32,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: npx next build
 
+      - name: SPA fallback for GitHub Pages
+        run: cp out/index.html out/404.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
