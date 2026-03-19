@@ -1,0 +1,191 @@
+'use client';
+
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useGestures } from '@/hooks/useGestures';
+
+let pdfVersion = '';
+
+const PdfDocument = dynamic(
+  () => import('react-pdf').then((mod) => {
+    pdfVersion = mod.pdfjs.version;
+    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
+    return mod.Document;
+  }),
+  { ssr: false }
+);
+
+const PdfPage = dynamic(
+  () => import('react-pdf').then((mod) => mod.Page),
+  { ssr: false }
+);
+
+export interface PatternViewerHandle {
+  screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
+}
+
+interface PatternViewerProps {
+  fileUrl: string;
+  fileType: 'image' | 'pdf';
+  rulerHeightPercent?: number;
+  onScrollStep?: (direction: 'up' | 'down') => void;
+  contentOverlay?: React.ReactNode;
+  children?: React.ReactNode;
+}
+
+const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
+  function PatternViewer({ fileUrl, fileType, rulerHeightPercent = 5, onScrollStep, contentOverlay, children }, ref) {
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, resetTransform } = useGestures();
+    const [pdfPages, setPdfPages] = useState(1);
+    const pdfOptions = useMemo(() => ({
+      cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
+      cMapPacked: true,
+    }), []);
+    const sizeRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(600);
+
+    useEffect(() => {
+      if (!sizeRef.current) return;
+      const observer = new ResizeObserver((entries) => {
+        setContainerWidth(entries[0].contentRect.width);
+      });
+      observer.observe(sizeRef.current);
+      return () => observer.disconnect();
+    }, []);
+
+    // Convert screen-relative % to content-relative %
+    // transformOrigin is center, so:
+    //   screen_y = (content_y - H/2) * scale + H/2 + translate_y
+    //   content_y = (screen_y - H/2 - translate_y) / scale + H/2
+    useImperativeHandle(ref, () => ({
+      screenToContent(screenYPercent: number, screenHeightPercent: number) {
+        const H = sizeRef.current?.clientHeight || 1;
+        const { scale, y: ty } = transform;
+
+        const screenY = (screenYPercent / 100) * H;
+        const contentY = (screenY - H / 2 - ty) / scale + H / 2;
+        const contentYPercent = (contentY / H) * 100;
+
+        const contentHeightPercent = screenHeightPercent / scale;
+
+        return { y: contentYPercent, height: contentHeightPercent };
+      },
+    }), [transform]);
+
+    return (
+      <div className="relative w-full h-full overflow-hidden bg-gray-50 rounded-xl" ref={sizeRef}>
+        <div
+          ref={containerRef}
+          className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
+          {...handlers}
+        >
+          <div
+            style={{
+              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+              transformOrigin: 'center center',
+              transition: 'none',
+            }}
+            className="relative w-full h-full flex items-center justify-center"
+          >
+            {fileType === 'image' ? (
+              <img
+                src={fileUrl}
+                alt="패턴"
+                className="max-w-full max-h-full object-contain select-none pointer-events-none"
+                draggable={false}
+              />
+            ) : (
+              <PdfDocument
+                file={fileUrl}
+                onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
+                options={pdfOptions}
+                className="flex flex-col items-center gap-2"
+              >
+                {Array.from({ length: pdfPages }, (_, i) => (
+                  <PdfPage
+                    key={i + 1}
+                    pageNumber={i + 1}
+                    width={containerWidth * 0.9}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                  />
+                ))}
+              </PdfDocument>
+            )}
+
+            {/* Completed marks - moves with content */}
+            {contentOverlay}
+          </div>
+        </div>
+
+        {/* Fixed overlays (ruler) */}
+        {children}
+
+        {/* Controls */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-20">
+          {/* Scroll up: content moves down, see earlier rows */}
+          <button
+            onClick={() => {
+              const H = sizeRef.current?.clientHeight || 1;
+              const px = (rulerHeightPercent / 100) * H * transform.scale;
+              panBy(0, px);
+              onScrollStep?.('up');
+            }}
+            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            aria-label="한 단 위로"
+            title="한 단 위로"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          {/* Scroll down: content moves up, see later rows */}
+          <button
+            onClick={() => {
+              const H = sizeRef.current?.clientHeight || 1;
+              const px = (rulerHeightPercent / 100) * H * transform.scale;
+              panBy(0, -px);
+              onScrollStep?.('down');
+            }}
+            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            aria-label="한 단 아래로"
+            title="한 단 아래로"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div className="h-1" />
+
+          {/* Zoom */}
+          <button
+            onClick={zoomIn}
+            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            aria-label="확대"
+          >
+            +
+          </button>
+          <button
+            onClick={zoomOut}
+            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            aria-label="축소"
+          >
+            −
+          </button>
+          <button
+            onClick={resetTransform}
+            className="bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 text-[10px] px-1.5 py-1.5 leading-tight text-center"
+            aria-label="화면 맞춤"
+          >
+            화면
+            <br />
+            맞춤
+          </button>
+        </div>
+      </div>
+    );
+  }
+);
+
+export default PatternViewer;
