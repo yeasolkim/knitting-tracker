@@ -15,7 +15,7 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
         <Link to={userEmail ? '/dashboard' : '/'} className="flex items-center gap-2 min-h-[44px]">
           <span className="text-xl">🧶</span>
-          <span className="font-semibold text-gray-800 text-sm sm:text-base">뜨개 트래커</span>
+          <span className="font-semibold text-gray-800 text-sm sm:text-base">시로라기</span>
         </Link>
 
         {userEmail ? (

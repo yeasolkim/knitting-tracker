@@ -22,7 +22,7 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 w-full max-w-sm mx-4">
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">🧶</div>
-            <h1 className="text-xl font-bold text-gray-800">뜨개 트래커</h1>
+            <h1 className="text-xl font-bold text-gray-800">시로라기</h1>
             <p className="text-sm text-gray-500 mt-1">로그인하고 도안을 관리하세요</p>
           </div>
 
