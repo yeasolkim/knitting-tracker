@@ -60,10 +60,15 @@ export default function UploadClient() {
     setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('로그인이 필요합니다.');
+      // Use getSession() instead of getUser() - reads from local cache, no network call
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('로그인이 필요합니다.');
+      const user = session.user;
 
       const isPdf = file.type === 'application/pdf';
+
+      // Start PDF thumbnail generation early (in parallel with DB insert)
+      const thumbPromise = isPdf ? generatePdfThumbnail(file).catch(() => null) : null;
 
       // Create pattern record first to get ID
       const { data: pattern, error: insertError } = await supabase
@@ -96,46 +101,48 @@ export default function UploadClient() {
         .from('pattern-files')
         .getPublicUrl(path);
 
-      // Generate and upload thumbnail
+      // Generate and upload thumbnail (await the early-started promise)
       let thumbnailUrl: string | null = null;
 
       if (isPdf) {
-        try {
-          const thumbBlob = await generatePdfThumbnail(file);
-          const thumbPath = `${user.id}/${pattern.id}/thumb.jpg`;
-          await supabase.storage.from('pattern-files').upload(thumbPath, thumbBlob, {
-            contentType: 'image/jpeg',
-          });
-          const { data: thumbUrlData } = supabase.storage
-            .from('pattern-files')
-            .getPublicUrl(thumbPath);
-          thumbnailUrl = thumbUrlData.publicUrl;
-        } catch {
-          // Thumbnail generation failed, proceed without
+        const thumbBlob = await thumbPromise;
+        if (thumbBlob) {
+          try {
+            const thumbPath = `${user.id}/${pattern.id}/thumb.jpg`;
+            await supabase.storage.from('pattern-files').upload(thumbPath, thumbBlob, {
+              contentType: 'image/jpeg',
+            });
+            const { data: thumbUrlData } = supabase.storage
+              .from('pattern-files')
+              .getPublicUrl(thumbPath);
+            thumbnailUrl = thumbUrlData.publicUrl;
+          } catch {
+            // Thumbnail upload failed, proceed without
+          }
         }
       } else {
         // For images, use the file URL itself as thumbnail
         thumbnailUrl = urlData.publicUrl;
       }
 
-      // Update pattern with file URL and thumbnail
-      await supabase
-        .from('patterns')
-        .update({
-          file_url: urlData.publicUrl,
-          thumbnail_url: thumbnailUrl,
-        })
-        .eq('id', pattern.id);
-
-      // Create initial progress
-      await supabase.from('pattern_progress').insert({
-        pattern_id: pattern.id,
-        user_id: user.id,
-        current_row: 0,
-        stitch_count: 0,
-        ruler_position_y: 50,
-        notes: {},
-      });
+      // Update pattern and create initial progress in parallel
+      await Promise.all([
+        supabase
+          .from('patterns')
+          .update({
+            file_url: urlData.publicUrl,
+            thumbnail_url: thumbnailUrl,
+          })
+          .eq('id', pattern.id),
+        supabase.from('pattern_progress').insert({
+          pattern_id: pattern.id,
+          user_id: user.id,
+          current_row: 0,
+          stitch_count: 0,
+          ruler_position_y: 50,
+          notes: {},
+        }),
+      ]);
 
       router.push(`/patterns/${pattern.id}`);
     } catch (err) {

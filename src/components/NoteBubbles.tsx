@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import type { NotePosition } from '@/lib/types';
 
 interface NoteBubblesProps {
@@ -14,7 +14,7 @@ function parseLabel(key: string): string {
   return i === -1 ? key : key.slice(i + 1);
 }
 
-export default function NoteBubbles({ notes, positions, onPositionChange }: NoteBubblesProps) {
+const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange }: NoteBubblesProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -133,4 +133,6 @@ export default function NoteBubbles({ notes, positions, onPositionChange }: Note
       })}
     </div>
   );
-}
+});
+
+export default NoteBubbles;

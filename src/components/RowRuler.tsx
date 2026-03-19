@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 
 import type { RulerDirection } from '@/lib/types';
 
@@ -16,7 +16,7 @@ interface RowRulerProps {
 
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
-export default function RowRuler({
+const RowRuler = memo(function RowRuler({
   positionY,
   height,
   direction,
@@ -175,4 +175,6 @@ export default function RowRuler({
       </div>
     </div>
   );
-}
+});
+
+export default RowRuler;

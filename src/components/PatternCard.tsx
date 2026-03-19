@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import ProgressBar from './ProgressBar';
@@ -7,7 +8,7 @@ interface PatternCardProps {
   onDelete: (id: string) => void;
 }
 
-export default function PatternCard({ pattern, onDelete }: PatternCardProps) {
+const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCardProps) {
   const typeLabel = pattern.type === 'crochet' ? '코바늘' : '대바늘';
 
   // Get progress from sub_patterns if available
@@ -97,4 +98,6 @@ export default function PatternCard({ pattern, onDelete }: PatternCardProps) {
       </div>
     </div>
   );
-}
+});
+
+export default PatternCard;

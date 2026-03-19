@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark } from '@/lib/types';
@@ -100,17 +100,31 @@ export default function PatternViewerClient({ pattern }: Props) {
     );
   }, [activeSubId]);
 
+  // Cache user ID to avoid fetching on every save
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) userIdRef.current = session.user.id;
+    });
+  }, [supabase]);
+
   const saveFn = useCallback(
     async (data: Record<string, unknown>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Use cached user ID; fall back to session check if not yet cached
+      let uid = userIdRef.current;
+      if (!uid) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        uid = session.user.id;
+        userIdRef.current = uid;
+      }
 
       await supabase
         .from('pattern_progress')
         .upsert(
           {
             pattern_id: pattern.id,
-            user_id: user.id,
+            user_id: uid,
             ...data,
           },
           { onConflict: 'pattern_id,user_id' }
@@ -213,6 +227,42 @@ export default function PatternViewerClient({ pattern }: Props) {
   }, [activeSub, updateActiveSub]);
 
   // Sub-pattern management
+  // Stable callbacks for overlay components to avoid re-render cascades
+  const handleCompletedMarkUpdate = useCallback((index: number, mark: CompletedMark) => {
+    setCompletedMarks((prev) => prev.map((m, i) => (i === index ? mark : m)));
+  }, []);
+
+  const handleCompletedMarkDelete = useCallback((index: number) => {
+    setCompletedMarks((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleCompletedMarkDeleteAll = useCallback(() => setCompletedMarks([]), []);
+
+  const handleCrochetMarkMove = useCallback((id: string, x: number, y: number) => {
+    setCrochetMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x, y } : m)));
+  }, []);
+
+  const handleCrochetMarkDelete = useCallback((id: string) => {
+    setCrochetMarks((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  const handleCrochetMarkDeleteAll = useCallback(() => setCrochetMarks([]), []);
+
+  const handleCancelPlace = useCallback(() => setIsPlacingMarker(false), []);
+
+  const handleScrollStep = useCallback((direction: 'up' | 'down') => {
+    if (isCrochet) return;
+    if (direction === 'up') {
+      setRulerY((prev) => Math.min(100 - rulerHeight, prev + rulerHeight));
+    } else {
+      setRulerY((prev) => Math.max(0, prev - rulerHeight));
+    }
+  }, [isCrochet, rulerHeight]);
+
+  const handleNotePositionChange = useCallback((key: string, pos: NotePosition) => {
+    setNotePositions((prev) => ({ ...prev, [key]: pos }));
+  }, []);
+
   const handleAddSubPattern = () => {
     const newSub = createDefaultSubPattern(subPatterns.length + 1);
     setSubPatterns((prev) => [...prev, newSub]);
@@ -283,26 +333,16 @@ export default function PatternViewerClient({ pattern }: Props) {
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
           rulerHeightPercent={rulerHeight}
-          onScrollStep={isCrochet ? undefined : (direction) => {
-            if (direction === 'up') {
-              setRulerY((prev) => Math.min(100 - rulerHeight, prev + rulerHeight));
-            } else {
-              setRulerY((prev) => Math.max(0, prev - rulerHeight));
-            }
-          }}
+          onScrollStep={handleScrollStep}
           contentOverlay={
             <>
               {/* Knitting: completed marks */}
               {!isCrochet && (
                 <CompletedOverlay
                   marks={completedMarks}
-                  onUpdate={(index, mark) => {
-                    setCompletedMarks((prev) => prev.map((m, i) => (i === index ? mark : m)));
-                  }}
-                  onDelete={(index) => {
-                    setCompletedMarks((prev) => prev.filter((_, i) => i !== index));
-                  }}
-                  onDeleteAll={() => setCompletedMarks([])}
+                  onUpdate={handleCompletedMarkUpdate}
+                  onDelete={handleCompletedMarkDelete}
+                  onDeleteAll={handleCompletedMarkDeleteAll}
                   onSelectionChange={setHasMarkSelection}
                 />
               )}
@@ -313,14 +353,10 @@ export default function PatternViewerClient({ pattern }: Props) {
                   marks={crochetMarks}
                   isPlacing={isPlacingMarker}
                   onPlace={handlePlaceMarker}
-                  onMove={(id, x, y) => {
-                    setCrochetMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x, y } : m)));
-                  }}
-                  onDelete={(id) => {
-                    setCrochetMarks((prev) => prev.filter((m) => m.id !== id));
-                  }}
-                  onDeleteAll={() => setCrochetMarks([])}
-                  onCancelPlace={() => setIsPlacingMarker(false)}
+                  onMove={handleCrochetMarkMove}
+                  onDelete={handleCrochetMarkDelete}
+                  onDeleteAll={handleCrochetMarkDeleteAll}
+                  onCancelPlace={handleCancelPlace}
                 />
               )}
 
@@ -328,9 +364,7 @@ export default function PatternViewerClient({ pattern }: Props) {
               <NoteBubbles
                 notes={notes}
                 positions={notePositions}
-                onPositionChange={(key, pos) => {
-                  setNotePositions((prev) => ({ ...prev, [key]: pos }));
-                }}
+                onPositionChange={handleNotePositionChange}
               />
             </>
           }

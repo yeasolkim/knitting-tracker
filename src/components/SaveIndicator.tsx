@@ -1,8 +1,10 @@
+import { memo } from 'react';
+
 interface SaveIndicatorProps {
   status: 'idle' | 'saving' | 'saved' | 'error';
 }
 
-export default function SaveIndicator({ status }: SaveIndicatorProps) {
+const SaveIndicator = memo(function SaveIndicator({ status }: SaveIndicatorProps) {
   if (status === 'idle') return null;
 
   const config = {
@@ -24,4 +26,6 @@ export default function SaveIndicator({ status }: SaveIndicatorProps) {
       {text}
     </span>
   );
-}
+});
+
+export default SaveIndicator;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress } from '@/lib/types';
@@ -36,7 +36,7 @@ export default function DashboardClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     // UI first - instant feedback
     setPatterns((prev) => prev.filter((p) => p.id !== id));
 
@@ -58,7 +58,7 @@ export default function DashboardClient() {
         supabase.from('patterns').delete().eq('id', id),
       ]);
     });
-  };
+  }, [supabase]);
 
   if (loading) {
     return (

@@ -10,38 +10,48 @@ export function useAutoSave<T>(
 ) {
   const [status, setStatus] = useState<SaveStatus>('idle');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const latestDataRef = useRef<T | null>(null);
+  const saveFnRef = useRef(saveFn);
+  const isMountedRef = useRef(true);
 
-  const save = useCallback(
-    (data: T) => {
-      latestDataRef.current = data;
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      setStatus('saving');
-
-      timeoutRef.current = setTimeout(async () => {
-        try {
-          await saveFn(data);
-          setStatus('saved');
-          setTimeout(() => setStatus('idle'), 2000);
-        } catch {
-          setStatus('error');
-        }
-      }, delay);
-    },
-    [saveFn, delay]
-  );
+  // Keep saveFn ref up to date without causing save() to be recreated
+  useEffect(() => {
+    saveFnRef.current = saveFn;
+  }, [saveFn]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
   }, []);
+
+  // save is now stable - it never changes reference
+  const save = useCallback(
+    (data: T) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(async () => {
+        if (!isMountedRef.current) return;
+        setStatus('saving');
+        try {
+          await saveFnRef.current(data);
+          if (!isMountedRef.current) return;
+          setStatus('saved');
+          setTimeout(() => {
+            if (isMountedRef.current) setStatus('idle');
+          }, 2000);
+        } catch {
+          if (isMountedRef.current) setStatus('error');
+        }
+      }, delay);
+    },
+    [delay]
+  );
 
   return { save, status };
 }

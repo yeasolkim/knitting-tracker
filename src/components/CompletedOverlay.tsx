@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { CompletedMark } from '@/lib/types';
 
 interface CompletedOverlayProps {
@@ -13,7 +13,7 @@ interface CompletedOverlayProps {
 
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
-export default function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange }: CompletedOverlayProps) {
+const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange }: CompletedOverlayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -165,4 +165,6 @@ export default function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAl
 
     </div>
   );
-}
+});
+
+export default CompletedOverlay;

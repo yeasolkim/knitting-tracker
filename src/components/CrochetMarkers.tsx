@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import type { CrochetMark } from '@/lib/types';
 
 interface CrochetMarkersProps {
@@ -13,7 +13,7 @@ interface CrochetMarkersProps {
   onCancelPlace: () => void;
 }
 
-export default function CrochetMarkers({
+const CrochetMarkers = memo(function CrochetMarkers({
   marks,
   isPlacing,
   onPlace,
@@ -184,4 +184,6 @@ export default function CrochetMarkers({
       )}
     </div>
   );
-}
+});
+
+export default CrochetMarkers;
