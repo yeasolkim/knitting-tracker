@@ -1,5 +1,3 @@
-'use client';
-
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { CompletedMark } from '@/lib/types';
 

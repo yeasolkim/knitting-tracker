@@ -1,20 +1,13 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 let client: SupabaseClient | null = null;
 
 export function createClient(): SupabaseClient {
-  if (typeof window === 'undefined') {
-    return createBrowserClient(
-      'https://placeholder.supabase.co',
-      'placeholder-key'
-    );
-  }
-
   if (!client) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    client = createBrowserClient(url, key);
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    client = createSupabaseClient(url, key);
   }
 
   return client;

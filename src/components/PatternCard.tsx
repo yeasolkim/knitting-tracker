@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import ProgressBar from './ProgressBar';
 
@@ -11,7 +11,6 @@ interface PatternCardProps {
 const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCardProps) {
   const typeLabel = pattern.type === 'crochet' ? '코바늘' : '대바늘';
 
-  // Get progress from sub_patterns if available
   const subPatterns = (pattern.progress?.sub_patterns as SubPattern[]) || [];
   const totalRows = subPatterns.length > 0
     ? subPatterns.reduce((sum, s) => sum + (s.total_rows || 0), 0)
@@ -22,7 +21,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow group">
-      <Link href={`/patterns/${pattern.id}`}>
+      <Link to={`/patterns/${pattern.id}`}>
         <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
           {pattern.thumbnail_url || pattern.file_type === 'image' ? (
             <img
@@ -45,7 +44,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
 
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
-          <Link href={`/patterns/${pattern.id}`}>
+          <Link to={`/patterns/${pattern.id}`}>
             <h3 className="font-medium text-gray-800 hover:text-rose-500 transition-colors line-clamp-1">
               {pattern.title}
             </h3>
@@ -66,7 +65,6 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
           </button>
         </div>
 
-        {/* Sub-pattern summary */}
         {subPatterns.length > 1 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {subPatterns.map((sub) => {

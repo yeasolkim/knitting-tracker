@@ -1,23 +1,18 @@
-'use client';
-
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense } from 'react';
 import { useGestures } from '@/hooks/useGestures';
 
 let pdfVersion = '';
 
-const PdfDocument = dynamic(
-  () => import('react-pdf').then((mod) => {
+const PdfDocument = lazy(() =>
+  import('react-pdf').then((mod) => {
     pdfVersion = mod.pdfjs.version;
     mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
-    return mod.Document;
-  }),
-  { ssr: false }
+    return { default: mod.Document };
+  })
 );
 
-const PdfPage = dynamic(
-  () => import('react-pdf').then((mod) => mod.Page),
-  { ssr: false }
+const PdfPage = lazy(() =>
+  import('react-pdf').then((mod) => ({ default: mod.Page }))
 );
 
 export interface PatternViewerHandle {
@@ -53,10 +48,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       return () => observer.disconnect();
     }, []);
 
-    // Convert screen-relative % to content-relative %
-    // transformOrigin is center, so:
-    //   screen_y = (content_y - H/2) * scale + H/2 + translate_y
-    //   content_y = (screen_y - H/2 - translate_y) / scale + H/2
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
         const H = sizeRef.current?.clientHeight || 1;
@@ -95,22 +86,24 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 draggable={false}
               />
             ) : (
-              <PdfDocument
-                file={fileUrl}
-                onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
-                options={pdfOptions}
-                className="flex flex-col items-center gap-2"
-              >
-                {Array.from({ length: pdfPages }, (_, i) => (
-                  <PdfPage
-                    key={i + 1}
-                    pageNumber={i + 1}
-                    width={containerWidth * 0.9}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                  />
-                ))}
-              </PdfDocument>
+              <Suspense fallback={<div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />}>
+                <PdfDocument
+                  file={fileUrl}
+                  onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
+                  options={pdfOptions}
+                  className="flex flex-col items-center gap-2"
+                >
+                  {Array.from({ length: pdfPages }, (_, i) => (
+                    <PdfPage
+                      key={i + 1}
+                      pageNumber={i + 1}
+                      width={containerWidth * 0.9}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  ))}
+                </PdfDocument>
+              </Suspense>
             )}
 
             {/* Completed marks - moves with content */}
@@ -123,7 +116,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
         {/* Controls */}
         <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-20">
-          {/* Scroll up: content moves down, see earlier rows */}
           <button
             onClick={() => {
               const H = sizeRef.current?.clientHeight || 1;
@@ -139,7 +131,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </button>
-          {/* Scroll down: content moves up, see later rows */}
           <button
             onClick={() => {
               const H = sizeRef.current?.clientHeight || 1;
@@ -158,7 +149,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
           <div className="h-1" />
 
-          {/* Zoom */}
           <button
             onClick={zoomIn}
             className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"

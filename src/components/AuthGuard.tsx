@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -12,20 +10,19 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const supabase = createClient();
-    // getSession() uses local cache - much faster than getUser()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
-        router.push('/login');
+        navigate('/login');
         return;
       }
       setUser(session.user);
       setLoading(false);
     });
-  }, [router]);
+  }, [navigate]);
 
   if (loading || !user) {
     return (

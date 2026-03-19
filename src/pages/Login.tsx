@@ -1,17 +1,15 @@
-'use client';
-
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 
-export default function LoginPage() {
+export default function Login() {
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const siteUrl = window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${siteUrl}/knitting-tracker/auth/callback`,
+        redirectTo: `${siteUrl}/knitting-tracker/#/auth/callback`,
       },
     });
   };

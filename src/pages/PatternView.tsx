@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
-import Link from 'next/link';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
@@ -32,18 +30,63 @@ function createDefaultSubPattern(index: number): SubPattern {
   };
 }
 
+export default function PatternView() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [pattern, setPattern] = useState<PatternWithProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    Promise.all([
+      supabase.auth.getSession(),
+      supabase
+        .from('patterns')
+        .select(`*, progress:pattern_progress(*)`)
+        .eq('id', id!)
+        .single(),
+    ]).then(([authResult, queryResult]) => {
+      if (!authResult.data.session?.user) {
+        navigate('/login');
+        return;
+      }
+
+      if (queryResult.error || !queryResult.data) {
+        navigate('/dashboard');
+        return;
+      }
+
+      setPattern({
+        ...queryResult.data,
+        progress: queryResult.data.progress?.[0] || null,
+      } as PatternWithProgress);
+      setLoading(false);
+    });
+  }, [id, navigate]);
+
+  if (loading || !pattern) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return <PatternViewerPage pattern={pattern} />;
+}
+
 interface Props {
   pattern: PatternWithProgress;
 }
 
-export default function PatternViewerClient({ pattern }: Props) {
+function PatternViewerPage({ pattern }: Props) {
   const supabase = createClient();
   const viewerRef = useRef<PatternViewerHandle>(null);
   const { isActive: wakeLockActive, request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
   const isCrochet = pattern.type === 'crochet';
 
-  // Initialize sub-patterns
   const initSubPatterns = (): SubPattern[] => {
     const saved = pattern.progress?.sub_patterns as SubPattern[] | undefined;
     if (saved && saved.length > 0) {
@@ -68,7 +111,6 @@ export default function PatternViewerClient({ pattern }: Props) {
 
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
-  // Knitting states
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
   const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height || 5);
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
@@ -79,13 +121,11 @@ export default function PatternViewerClient({ pattern }: Props) {
   );
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
 
-  // Crochet states
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
     (pattern.progress?.crochet_marks as CrochetMark[]) || []
   );
   const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
-  // Shared states
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
   );
@@ -100,7 +140,6 @@ export default function PatternViewerClient({ pattern }: Props) {
     );
   }, [activeSubId]);
 
-  // Cache user ID to avoid fetching on every save
   const userIdRef = useRef<string | null>(null);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -110,7 +149,6 @@ export default function PatternViewerClient({ pattern }: Props) {
 
   const saveFn = useCallback(
     async (data: Record<string, unknown>) => {
-      // Use cached user ID; fall back to session check if not yet cached
       let uid = userIdRef.current;
       if (!uid) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -191,7 +229,6 @@ export default function PatternViewerClient({ pattern }: Props) {
     [rulerY, rulerHeight]
   );
 
-  // Knitting: complete via ruler
   const handleComplete = useCallback(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -212,7 +249,6 @@ export default function PatternViewerClient({ pattern }: Props) {
     }
   }, [rulerY, rulerHeight, rulerDirection, updateActiveSub]);
 
-  // Crochet: place marker
   const handlePlaceMarker = useCallback((x: number, y: number) => {
     const nextRow = (activeSub?.current_row || 0) + 1;
     const newMark: CrochetMark = {
@@ -226,8 +262,6 @@ export default function PatternViewerClient({ pattern }: Props) {
     setIsPlacingMarker(false);
   }, [activeSub, updateActiveSub]);
 
-  // Sub-pattern management
-  // Stable callbacks for overlay components to avoid re-render cascades
   const handleCompletedMarkUpdate = useCallback((index: number, mark: CompletedMark) => {
     setCompletedMarks((prev) => prev.map((m, i) => (i === index ? mark : m)));
   }, []);
@@ -294,7 +328,7 @@ export default function PatternViewerClient({ pattern }: Props) {
       {/* Top bar */}
       <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 shrink-0">
+          <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -336,7 +370,6 @@ export default function PatternViewerClient({ pattern }: Props) {
           onScrollStep={handleScrollStep}
           contentOverlay={
             <>
-              {/* Knitting: completed marks */}
               {!isCrochet && (
                 <CompletedOverlay
                   marks={completedMarks}
@@ -347,7 +380,6 @@ export default function PatternViewerClient({ pattern }: Props) {
                 />
               )}
 
-              {/* Crochet: markers */}
               {isCrochet && (
                 <CrochetMarkers
                   marks={crochetMarks}
@@ -360,7 +392,6 @@ export default function PatternViewerClient({ pattern }: Props) {
                 />
               )}
 
-              {/* Shared: note bubbles */}
               <NoteBubbles
                 notes={notes}
                 positions={notePositions}
@@ -369,7 +400,6 @@ export default function PatternViewerClient({ pattern }: Props) {
             </>
           }
         >
-          {/* Knitting: ruler (fixed overlay) */}
           {!isCrochet && (
             <RowRuler
               positionY={rulerY}
@@ -383,7 +413,6 @@ export default function PatternViewerClient({ pattern }: Props) {
           )}
         </PatternViewer>
 
-        {/* Knitting: fixed delete-all button */}
         {!isCrochet && hasMarkSelection && completedMarks.length > 1 && (
           <div className="absolute top-4 right-4 z-30">
             <button
@@ -402,7 +431,6 @@ export default function PatternViewerClient({ pattern }: Props) {
 
       {/* Bottom controls */}
       <div className="bg-white border-t border-gray-100 px-4 py-3 space-y-3 shrink-0 safe-bottom">
-        {/* Sub-pattern selector + progress */}
         <div className="flex items-center gap-3">
           <SubPatternSelector
             subPatterns={subPatterns}
@@ -419,9 +447,7 @@ export default function PatternViewerClient({ pattern }: Props) {
         </div>
 
         {isCrochet ? (
-          /* Crochet controls */
           <div className="flex items-center justify-between gap-3">
-            {/* Completed count */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleRowChange(Math.max(0, (activeSub?.current_row || 0) - 1))}
@@ -442,7 +468,6 @@ export default function PatternViewerClient({ pattern }: Props) {
               </button>
             </div>
 
-            {/* Marker button */}
             <button
               onClick={() => setIsPlacingMarker(true)}
               disabled={isPlacingMarker}
@@ -456,7 +481,6 @@ export default function PatternViewerClient({ pattern }: Props) {
             </button>
           </div>
         ) : (
-          /* Knitting controls */
           <div className="flex items-center justify-between gap-4">
             <RowCounter
               current={activeSub?.current_row || 0}

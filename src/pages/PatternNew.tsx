@@ -1,9 +1,9 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternType } from '@/lib/types';
+import Navbar from '@/components/Navbar';
+import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
@@ -28,8 +28,31 @@ async function generatePdfThumbnail(file: File): Promise<Blob> {
   });
 }
 
-export default function UploadClient() {
-  const router = useRouter();
+export default function PatternNew() {
+  return (
+    <AuthGuard>
+      {(user) => (
+        <div className="min-h-screen bg-gray-50/50">
+          <Navbar userEmail={user.email} />
+
+          <main className="max-w-6xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <Link to="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-2 inline-block">
+                ← 대시보드로
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-800">새 도안 추가</h1>
+            </div>
+
+            <UploadForm />
+          </main>
+        </div>
+      )}
+    </AuthGuard>
+  );
+}
+
+function UploadForm() {
+  const navigate = useNavigate();
   const supabase = createClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -60,17 +83,14 @@ export default function UploadClient() {
     setError(null);
 
     try {
-      // Use getSession() instead of getUser() - reads from local cache, no network call
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('로그인이 필요합니다.');
       const user = session.user;
 
       const isPdf = file.type === 'application/pdf';
 
-      // Start PDF thumbnail generation early (in parallel with DB insert)
       const thumbPromise = isPdf ? generatePdfThumbnail(file).catch(() => null) : null;
 
-      // Create pattern record first to get ID
       const { data: pattern, error: insertError } = await supabase
         .from('patterns')
         .insert({
@@ -88,7 +108,6 @@ export default function UploadClient() {
 
       if (insertError) throw insertError;
 
-      // Upload file
       const ext = file.name.split('.').pop();
       const path = `${user.id}/${pattern.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
@@ -101,7 +120,6 @@ export default function UploadClient() {
         .from('pattern-files')
         .getPublicUrl(path);
 
-      // Generate and upload thumbnail (await the early-started promise)
       let thumbnailUrl: string | null = null;
 
       if (isPdf) {
@@ -121,11 +139,9 @@ export default function UploadClient() {
           }
         }
       } else {
-        // For images, use the file URL itself as thumbnail
         thumbnailUrl = urlData.publicUrl;
       }
 
-      // Update pattern and create initial progress in parallel
       await Promise.all([
         supabase
           .from('patterns')
@@ -144,7 +160,7 @@ export default function UploadClient() {
         }),
       ]);
 
-      router.push(`/patterns/${pattern.id}`);
+      navigate(`/patterns/${pattern.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '업로드에 실패했습니다.');
       setUploading(false);
@@ -157,7 +173,6 @@ export default function UploadClient() {
         <FileDropZone onFileSelect={handleFileSelect} />
       ) : (
         <div className="space-y-4">
-          {/* Preview */}
           <div className="bg-gray-50 rounded-xl p-4">
             {preview ? (
               <img

@@ -1,7 +1,7 @@
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
-export default function Home() {
+export default function Landing() {
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -19,7 +19,7 @@ export default function Home() {
             어디까지 떴는지 놓치지 않아요.
           </p>
           <Link
-            href="/login"
+            to="/login"
             className="inline-flex items-center gap-2 bg-rose-400 text-white px-8 py-3 rounded-full text-lg font-medium hover:bg-rose-500 transition-colors shadow-lg shadow-rose-200"
           >
             시작하기
