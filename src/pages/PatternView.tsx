@@ -11,7 +11,6 @@ import SubPatternSelector from '@/components/SubPatternSelector';
 import RowCounter from '@/components/RowCounter';
 import StitchCounter from '@/components/StitchCounter';
 import PatternNotes from '@/components/PatternNotes';
-import SaveIndicator from '@/components/SaveIndicator';
 import ProgressBar from '@/components/ProgressBar';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWakeLock } from '@/hooks/useWakeLock';
@@ -319,22 +318,26 @@ function PatternViewerPage({ pattern }: Props) {
 
   useEffect(() => {
     requestWakeLock();
-    return () => { releaseWakeLock(); };
+    document.body.classList.add('viewer-open');
+    return () => {
+      releaseWakeLock();
+      document.body.classList.remove('viewer-open');
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50/50">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 shrink-0">
+      <div className="bg-white border-b border-gray-100 px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <h1 className="font-medium text-gray-800 truncate">{pattern.title}</h1>
-          <span className="text-xs text-gray-400 shrink-0">
+          <h1 className="font-medium text-gray-800 truncate text-sm sm:text-base">{pattern.title}</h1>
+          <span className="text-[10px] sm:text-xs text-gray-400 shrink-0">
             {isCrochet ? '코바늘' : '대바늘'}
           </span>
           {pattern.yarn && (
@@ -344,11 +347,10 @@ function PatternViewerPage({ pattern }: Props) {
             <span className="text-[11px] text-gray-400 shrink-0 hidden sm:block">🪡 {pattern.needle}</span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <SaveIndicator status={status} />
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => (wakeLockActive ? releaseWakeLock() : requestWakeLock())}
-            className={`text-xs px-2 py-1 rounded-full transition-colors ${
+            className={`text-xs px-2 py-1 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${
               wakeLockActive
                 ? 'bg-emerald-50 text-emerald-600'
                 : 'bg-gray-100 text-gray-400'
@@ -361,7 +363,7 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Viewer area */}
-      <div className="flex-1 relative min-h-0 p-2">
+      <div className="flex-1 relative min-h-0 p-1 sm:p-2">
         <PatternViewer
           ref={viewerRef}
           fileUrl={pattern.file_url}
@@ -430,8 +432,8 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-white border-t border-gray-100 px-4 py-3 space-y-3 shrink-0 safe-bottom">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-t border-gray-100 px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom">
+        <div className="flex items-center gap-2 sm:gap-3">
           <SubPatternSelector
             subPatterns={subPatterns}
             activeId={activeSubId}
@@ -447,22 +449,22 @@ function PatternViewerPage({ pattern }: Props) {
         </div>
 
         {isCrochet ? (
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleRowChange(Math.max(0, (activeSub?.current_row || 0) - 1))}
                 disabled={(activeSub?.current_row || 0) <= 0}
-                className="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 disabled:opacity-30 transition-colors"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 disabled:opacity-30 transition-colors"
               >
                 −
               </button>
-              <div className="text-center min-w-[50px]">
-                <div className="text-xl font-bold text-gray-800">{activeSub?.current_row || 0}</div>
+              <div className="text-center min-w-[45px] sm:min-w-[50px]">
+                <div className="text-lg sm:text-xl font-bold text-gray-800">{activeSub?.current_row || 0}</div>
                 <div className="text-[10px] text-gray-400">/ {activeSub?.total_rows || 1}단</div>
               </div>
               <button
                 onClick={() => handleRowChange((activeSub?.current_row || 0) + 1)}
-                className="w-9 h-9 rounded-lg bg-rose-400 text-white text-sm font-bold flex items-center justify-center hover:bg-rose-500 active:bg-rose-600 transition-colors"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-rose-400 text-white text-sm font-bold flex items-center justify-center hover:bg-rose-500 active:bg-rose-600 transition-colors"
               >
                 +
               </button>
@@ -471,17 +473,17 @@ function PatternViewerPage({ pattern }: Props) {
             <button
               onClick={() => setIsPlacingMarker(true)}
               disabled={isPlacingMarker}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-rose-500 text-white rounded-xl hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white rounded-xl hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              마커 ({crochetMarks.length})
+              <span className="hidden sm:inline">마커</span> ({crochetMarks.length})
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <RowCounter
               current={activeSub?.current_row || 0}
               total={activeSub?.total_rows || 1}

@@ -115,7 +115,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {children}
 
         {/* Controls */}
-        <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-20">
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
           <button
             onClick={() => {
               const H = sizeRef.current?.clientHeight || 1;
@@ -123,11 +123,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               panBy(0, px);
               onScrollStep?.('up');
             }}
-            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
             aria-label="한 단 위로"
             title="한 단 위로"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </button>
@@ -138,39 +138,38 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               panBy(0, -px);
               onScrollStep?.('down');
             }}
-            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
             aria-label="한 단 아래로"
             title="한 단 아래로"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          <div className="h-1" />
+          <div className="h-0.5 sm:h-1" />
 
           <button
             onClick={zoomIn}
-            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
             aria-label="확대"
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="w-10 h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
             aria-label="축소"
           >
             −
           </button>
           <button
             onClick={resetTransform}
-            className="bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 text-[10px] px-1.5 py-1.5 leading-tight text-center"
+            className="w-9 h-9 sm:w-auto bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-1 sm:py-1.5 leading-tight text-center"
             aria-label="화면 맞춤"
           >
-            화면
-            <br />
-            맞춤
+            <span className="sm:hidden">맞춤</span>
+            <span className="hidden sm:inline">화면<br />맞춤</span>
           </button>
         </div>
       </div>

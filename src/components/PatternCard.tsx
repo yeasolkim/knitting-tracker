@@ -42,10 +42,10 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
         </div>
       </Link>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <Link to={`/patterns/${pattern.id}`}>
-            <h3 className="font-medium text-gray-800 hover:text-rose-500 transition-colors line-clamp-1">
+      <div className="p-3 sm:p-4">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <Link to={`/patterns/${pattern.id}`} className="min-w-0 flex-1">
+            <h3 className="font-medium text-sm sm:text-base text-gray-800 hover:text-rose-500 transition-colors line-clamp-1">
               {pattern.title}
             </h3>
           </Link>
@@ -56,7 +56,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
                 onDelete(pattern.id);
               }
             }}
-            className="text-gray-300 hover:text-red-400 transition-colors ml-2 shrink-0"
+            className="text-gray-300 hover:text-red-400 transition-colors ml-2 shrink-0 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1"
             aria-label="삭제"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

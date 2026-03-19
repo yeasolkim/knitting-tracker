@@ -19,7 +19,7 @@ export default function Login() {
       <Navbar />
 
       <main className="flex items-center justify-center min-h-[calc(100vh-56px)]">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm mx-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 w-full max-w-sm mx-4">
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">🧶</div>
             <h1 className="text-xl font-bold text-gray-800">뜨개 트래커</h1>
@@ -28,7 +28,7 @@ export default function Login() {
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all"
+            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 min-h-[44px] text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path

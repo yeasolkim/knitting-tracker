@@ -85,7 +85,7 @@ export default function PatternNotes({
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors min-h-[44px]"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -153,13 +153,13 @@ export default function PatternNotes({
               value={currentNote}
               onChange={(e) => handleChange(currentKey, e.target.value)}
               placeholder="현재 단 메모 입력..."
-              className="w-full h-14 text-sm border border-rose-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 bg-white"
+              className="w-full h-16 sm:h-14 text-sm border border-rose-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 bg-white"
             />
           </div>
 
           {/* Grouped notes list */}
           {groupedNotes.length > 0 && (
-            <div ref={scrollRef} className="max-h-48 overflow-y-auto border-t border-gray-100 pt-2 space-y-3">
+            <div ref={scrollRef} className="max-h-36 sm:max-h-48 overflow-y-auto border-t border-gray-100 pt-2 space-y-3 -webkit-overflow-scrolling-touch">
               {groupedNotes.map(({ sub, entries }) => (
                 <div key={sub.id}>
                   {/* Sub-pattern header */}
@@ -217,10 +217,10 @@ export default function PatternNotes({
 
                           <button
                             onClick={() => handleDelete(key)}
-                            className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-0.5"
+                            className="text-gray-300 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1.5"
                             aria-label="메모 삭제"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>

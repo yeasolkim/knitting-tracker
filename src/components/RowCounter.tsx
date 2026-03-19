@@ -24,7 +24,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       <button
         onClick={() => onChange(current - 1)}
         disabled={current <= 0}
@@ -33,7 +33,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
       >
         −
       </button>
-      <div className="text-center min-w-[80px]" onClick={startEdit}>
+      <div className="text-center min-w-[60px] sm:min-w-[80px]" onClick={startEdit}>
         {isEditing ? (
           <input
             autoFocus
@@ -45,15 +45,15 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
               if (e.key === 'Enter') commitEdit();
               if (e.key === 'Escape') setIsEditing(false);
             }}
-            className="w-16 text-2xl font-bold text-gray-800 text-center border-b-2 border-rose-400 outline-none bg-transparent"
+            className="w-14 sm:w-16 text-xl sm:text-2xl font-bold text-gray-800 text-center border-b-2 border-rose-400 outline-none bg-transparent"
             min={0}
           />
         ) : (
-          <div className="text-2xl font-bold text-gray-800 cursor-pointer hover:text-rose-500 transition-colors">
+          <div className="text-xl sm:text-2xl font-bold text-gray-800 cursor-pointer hover:text-rose-500 transition-colors">
             {current}
           </div>
         )}
-        <div className="text-xs text-gray-400">/ {total}단</div>
+        <div className="text-[10px] sm:text-xs text-gray-400">/ {total}단</div>
       </div>
       <button
         onClick={() => onChange(current + 1)}

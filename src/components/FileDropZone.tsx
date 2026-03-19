@@ -58,7 +58,7 @@ export default function FileDropZone({
     <div>
       <div
         className={`
-          border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all
+          border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all min-h-[120px] flex flex-col items-center justify-center
           ${isDragOver ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300 hover:bg-rose-50/50'}
         `}
         onDragOver={(e) => {
@@ -70,7 +70,7 @@ export default function FileDropZone({
         onClick={() => inputRef.current?.click()}
       >
         <div className="text-4xl mb-3">📁</div>
-        <p className="text-gray-600 font-medium mb-1">
+        <p className="text-sm sm:text-base text-gray-600 font-medium mb-1">
           파일을 드래그하거나 클릭하여 선택
         </p>
         <p className="text-sm text-gray-400">

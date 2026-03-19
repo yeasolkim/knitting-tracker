@@ -104,10 +104,10 @@ const RowRuler = memo(function RowRuler({
       >
         {/* Top resize handle */}
         <div
-          className="absolute left-0 right-0 top-0 h-3 cursor-ns-resize z-20 flex items-center justify-center -translate-y-1/2"
+          className="absolute left-0 right-0 top-0 h-6 sm:h-3 cursor-ns-resize z-20 flex items-center justify-center -translate-y-1/2"
           onPointerDown={handlePointerDown('resize-top')}
         >
-          <div className={`w-10 h-1 rounded-full transition-colors ${dragMode === 'resize-top' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
+          <div className={`w-12 sm:w-10 h-1.5 sm:h-1 rounded-full transition-colors ${dragMode === 'resize-top' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
         </div>
 
         {/* Main draggable body */}
@@ -116,7 +116,7 @@ const RowRuler = memo(function RowRuler({
           onPointerDown={handlePointerDown('move')}
         >
           {/* Left: Complete + Direction as unified pill */}
-          <div className="absolute left-2 top-1/2 -translate-y-1/2">
+          <div className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2">
             <div className="flex items-stretch rounded-lg overflow-hidden shadow-md">
               {/* Complete button */}
               <button
@@ -125,7 +125,7 @@ const RowRuler = memo(function RowRuler({
                   onComplete();
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700 transition-colors"
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700 transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -140,11 +140,11 @@ const RowRuler = memo(function RowRuler({
                   onToggleDirection();
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center gap-0.5 px-2 py-1.5 bg-rose-600 text-white/80 hover:text-white hover:bg-rose-700 active:bg-rose-800 transition-colors border-l border-rose-400/40"
+                className="flex items-center gap-0.5 px-2 py-2 sm:py-1.5 min-h-[44px] bg-rose-600 text-white/80 hover:text-white hover:bg-rose-700 active:bg-rose-800 transition-colors border-l border-rose-400/40"
                 title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
               >
-                <span className="text-[9px] text-white/60">진행</span>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <span className="text-[9px] text-white/60 hidden sm:inline">진행</span>
+                <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   {direction === 'up' ? (
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                   ) : (
@@ -165,10 +165,10 @@ const RowRuler = memo(function RowRuler({
 
         {/* Bottom resize handle */}
         <div
-          className="absolute left-0 right-0 bottom-0 h-3 cursor-ns-resize z-20 flex items-center justify-center translate-y-1/2"
+          className="absolute left-0 right-0 bottom-0 h-6 sm:h-3 cursor-ns-resize z-20 flex items-center justify-center translate-y-1/2"
           onPointerDown={handlePointerDown('resize-bottom')}
         >
-          <div className={`w-10 h-1 rounded-full transition-colors ${dragMode === 'resize-bottom' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
+          <div className={`w-12 sm:w-10 h-1.5 sm:h-1 rounded-full transition-colors ${dragMode === 'resize-bottom' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
         </div>
       </div>
     </div>

@@ -35,12 +35,12 @@ export default function PatternNew() {
         <div className="min-h-screen bg-gray-50/50">
           <Navbar userEmail={user.email} />
 
-          <main className="max-w-6xl mx-auto px-4 py-8">
-            <div className="mb-8">
-              <Link to="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-2 inline-block">
+          <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+            <div className="mb-6 sm:mb-8">
+              <Link to="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-2 inline-flex items-center min-h-[44px]">
                 ← 대시보드로
               </Link>
-              <h1 className="text-2xl font-bold text-gray-800">새 도안 추가</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">새 도안 추가</h1>
             </div>
 
             <UploadForm />
@@ -168,7 +168,7 @@ function UploadForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5 sm:space-y-6">
       {!file ? (
         <FileDropZone onFileSelect={handleFileSelect} />
       ) : (
@@ -273,7 +273,7 @@ function UploadForm() {
       <button
         type="submit"
         disabled={!file || !title || uploading}
-        className="w-full bg-rose-400 text-white py-3 rounded-xl font-medium hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full bg-rose-400 text-white py-3 min-h-[44px] rounded-xl font-medium hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {uploading ? '업로드 중...' : '도안 추가'}
       </button>
