@@ -436,7 +436,14 @@ function PatternViewerPage({ pattern }: Props) {
           rulerHeightPercent={rulerHeight}
           onScrollStep={handleScrollStep}
           onTransformChange={handleTransformChange}
-          onResetRuler={!isCrochet ? () => setRulerY(5) : undefined}
+          onResetRuler={!isCrochet ? () => {
+            const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
+            // Convert screen center (50%) to content coordinates
+            const screenY = H / 2;
+            const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+            const contentYPct = (contentY / H) * 100;
+            setRulerY(Math.max(0, Math.min(100 - rh, contentYPct - rh / 2)));
+          } : undefined}
           contentOverlay={
             <>
               {!isCrochet && (
