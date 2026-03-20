@@ -120,6 +120,7 @@ function PatternViewerPage({ pattern }: Props) {
     (pattern.progress?.completed_marks as CompletedMark[]) || []
   );
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
+  const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
     (pattern.progress?.crochet_marks as CrochetMark[]) || []
@@ -449,6 +450,7 @@ function PatternViewerPage({ pattern }: Props) {
               positionY={rulerY}
               height={rulerHeight}
               direction={rulerDirection}
+              isAdjusting={isAdjustingRuler}
               onChangePosition={setRulerY}
               onChangeHeight={setRulerHeight}
               onComplete={handleComplete}
@@ -525,28 +527,53 @@ function PatternViewerPage({ pattern }: Props) {
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <RowCounter
-              current={activeSub?.current_row || 0}
-              total={activeSub?.total_rows || 1}
-              onChange={handleRowChange}
-            />
-            <div className="flex items-center gap-2">
-              <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
+          <div className="space-y-2">
+            {/* Row 1: 단수 + 마커 버튼 */}
+            <div className="flex items-center justify-between gap-2">
+              <RowCounter
+                current={activeSub?.current_row || 0}
+                total={activeSub?.total_rows || 1}
+                onChange={handleRowChange}
+              />
               <button
                 onClick={() => setIsPlacingKnittingMarker(true)}
                 disabled={isPlacingKnittingMarker}
-                className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shrink-0"
                 title="마커 배치"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
-                <span className="hidden sm:inline">마커</span>
-                {knittingMarks.length > 0 && (
-                  <span className="text-white/80">({knittingMarks.length})</span>
-                )}
+                마커{knittingMarks.length > 0 && ` (${knittingMarks.length})`}
               </button>
+            </div>
+
+            {/* Row 2: 코수 + 진행선 슬라이더 */}
+            <div className="flex items-center gap-3">
+              <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <svg className="w-3.5 h-3.5 text-rose-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={25}
+                  step={0.1}
+                  value={rulerHeight}
+                  onChange={(e) => {
+                    setIsAdjustingRuler(true);
+                    setRulerHeight(Number(e.target.value));
+                  }}
+                  onPointerUp={() => setIsAdjustingRuler(false)}
+                  onMouseUp={() => setIsAdjustingRuler(false)}
+                  onTouchEnd={() => setIsAdjustingRuler(false)}
+                  className="flex-1 h-1.5 accent-rose-400 cursor-pointer min-w-0"
+                />
+                <span className="text-[11px] text-rose-400 font-mono w-8 text-right shrink-0">
+                  {rulerHeight.toFixed(1)}%
+                </span>
+              </div>
             </div>
           </div>
         )}
