@@ -106,11 +106,11 @@ const RowRuler = memo(function RowRuler({
         style={{ top: `${positionY + height}%` }}
       />
 
-      {/* Ghost preview lines — thin dashed borders only, no fill */}
+      {/* Ghost preview lines — filled bands, clearly visible against dark overlay */}
       {previewLines.map((y, i) => {
         const opacity = isAdjusting
-          ? Math.max(0.25, 0.7 - i * 0.13)
-          : Math.max(0.1, 0.35 - i * 0.07);
+          ? Math.max(0.35, 0.85 - i * 0.15)
+          : Math.max(0.2, 0.65 - i * 0.13);
         return (
           <div
             key={i}
@@ -122,10 +122,15 @@ const RowRuler = memo(function RowRuler({
               transition: isAdjusting ? 'none' : 'opacity 0.3s',
             }}
           >
-            {/* Top border of future ruler */}
-            <div className="absolute top-0 inset-x-0 h-px bg-rose-400/80" />
-            {/* Bottom border of future ruler */}
-            <div className="absolute bottom-0 inset-x-0 h-px bg-rose-400/80" />
+            {/* Filled band — punches through the dark overlay visually */}
+            <div className="absolute inset-0 bg-rose-300/40" />
+            {/* Top & bottom edge lines */}
+            <div className="absolute top-0 inset-x-0 h-0.5 bg-rose-400/90" />
+            <div className="absolute bottom-0 inset-x-0 h-0.5 bg-rose-400/90" />
+            {/* Row number label */}
+            <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-rose-500/80 select-none">
+              +{i + 1}
+            </div>
           </div>
         );
       })}
