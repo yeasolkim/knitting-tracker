@@ -113,7 +113,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
-  const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height || 5);
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 5, 10));
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -511,23 +511,23 @@ function PatternViewerPage({ pattern }: Props) {
           )}
         </PatternViewer>
 
-        {/* Ruler settings floating panel */}
+        {/* Ruler settings floating panel — opposite side of direction */}
         {showRulerSettings && !isCrochet && (
           <div
-            className="absolute left-2 z-30 bg-white/96 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100 px-3 py-2.5"
-            style={{
-              top: `calc(${screenRulerY + screenRulerHeight / 2}% + 4px)`,
-              transform: 'translateY(-50%)',
-              marginLeft: '168px',
-            }}
+            className="absolute z-30 bg-white/96 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100 px-3 py-2.5"
+            style={
+              rulerDirection === 'up'
+                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: '148px' }
+                : { top: `calc(${screenRulerY}% - 8px)`, left: '148px', transform: 'translateY(-100%)' }
+            }
           >
             <div className="flex items-center gap-2.5">
               <span className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">진행선 높이</span>
               <input
                 type="range"
-                min={0.5}
-                max={25}
-                step={0.1}
+                min={0.3}
+                max={10}
+                step={0.05}
                 value={rulerHeight}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
@@ -536,10 +536,10 @@ function PatternViewerPage({ pattern }: Props) {
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
-                className="w-28 h-1.5 accent-rose-400 cursor-pointer"
+                className="w-32 h-1.5 accent-rose-400 cursor-pointer"
               />
               <span className="text-[11px] text-rose-500 font-mono w-9 text-right shrink-0">
-                {rulerHeight.toFixed(1)}%
+                {rulerHeight.toFixed(2)}
               </span>
             </div>
           </div>
