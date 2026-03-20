@@ -39,6 +39,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     }), []);
     const sizeRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(600);
+    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
 
     useEffect(() => {
       if (!sizeRef.current) return;
@@ -99,6 +100,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                       key={i + 1}
                       pageNumber={i + 1}
                       width={containerWidth * 0.9}
+                      scale={devicePixelRatio}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                     />
