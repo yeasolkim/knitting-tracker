@@ -8,10 +8,12 @@ interface RowRulerProps {
   direction: RulerDirection;
   isAdjusting?: boolean;
   isPlacingMarker?: boolean;
+  showSettings?: boolean;
   onChangePosition: (y: number) => void;
   onChangeHeight: (h: number) => void;
   onComplete: () => void;
   onToggleDirection: () => void;
+  onToggleSettings: () => void;
 }
 
 const RowRuler = memo(function RowRuler({
@@ -20,10 +22,12 @@ const RowRuler = memo(function RowRuler({
   direction,
   isAdjusting = false,
   isPlacingMarker = false,
+  showSettings = false,
   onChangePosition,
   onChangeHeight,
   onComplete,
   onToggleDirection,
+  onToggleSettings,
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -183,6 +187,21 @@ const RowRuler = memo(function RowRuler({
             ) : (
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             )}
+          </svg>
+        </button>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`flex items-center justify-center w-9 h-9 rounded-full border shadow-md transition-all ${
+            showSettings
+              ? 'bg-rose-500 border-rose-500 text-white'
+              : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
+          }`}
+          title="진행선 높이 설정"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
         </button>
       </div>
