@@ -122,17 +122,21 @@ function PatternViewerPage({ pattern }: Props) {
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
 
+  // Keep a ref with latest ruler values so handleScaleChange can read them synchronously
+  const rulerStateRef = useRef({ y: rulerY, h: rulerHeight });
+  useEffect(() => {
+    rulerStateRef.current = { y: rulerY, h: rulerHeight };
+  }, [rulerY, rulerHeight]);
+
   const handleScaleChange = useCallback((newScale: number, oldScale: number) => {
     if (oldScale === 0) return;
     const ratio = newScale / oldScale;
-    setRulerHeight((prevH) => {
-      const newH = Math.min(40, Math.max(0.5, prevH * ratio));
-      setRulerY((prevY) => {
-        const center = prevY + prevH / 2;
-        return Math.max(0, Math.min(100 - newH, center - newH / 2));
-      });
-      return newH;
-    });
+    const { y: prevY, h: prevH } = rulerStateRef.current;
+    const newH = Math.min(40, Math.max(0.5, prevH * ratio));
+    const center = prevY + prevH / 2;
+    const newY = Math.max(0, Math.min(100 - newH, center - newH / 2));
+    setRulerHeight(newH);
+    setRulerY(newY);
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
