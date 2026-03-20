@@ -290,9 +290,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCancelPlace = useCallback(() => setIsPlacingMarker(false), []);
 
-  const handlePlaceKnittingMarker = useCallback((y: number) => {
+  const handlePlaceKnittingMarker = useCallback((x: number, y: number) => {
     const newMark: KnittingMark = {
       id: generateId(),
+      x,
       y,
       label: String(knittingMarks.length + 1),
     };
@@ -300,8 +301,8 @@ function PatternViewerPage({ pattern }: Props) {
     setIsPlacingKnittingMarker(false);
   }, [knittingMarks.length]);
 
-  const handleKnittingMarkMove = useCallback((id: string, y: number) => {
-    setKnittingMarks((prev) => prev.map((m) => (m.id === id ? { ...m, y } : m)));
+  const handleKnittingMarkMove = useCallback((id: string, x: number, y: number) => {
+    setKnittingMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x, y } : m)));
   }, []);
 
   const handleKnittingMarkDelete = useCallback((id: string) => {

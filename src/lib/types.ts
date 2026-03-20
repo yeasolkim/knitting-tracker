@@ -37,9 +37,9 @@ export interface CrochetMark {
 
 export interface KnittingMark {
   id: string;
-  y: number;     // content % (vertical position)
+  x: number;     // content %
+  y: number;     // content %
   label: string;
-  color?: string;
 }
 
 export interface SubPattern {
