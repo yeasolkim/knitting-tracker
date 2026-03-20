@@ -106,12 +106,12 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
               onPointerUp={handlePointerUp(key)}
               onPointerCancel={handlePointerCancel}
             >
-              <div className={`relative flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : 'bg-amber-500'}`}>
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <div className={`relative flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : 'bg-amber-500'}`}>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
                   <path d="M4 4v12h14.83L20 17.17V4H4z" opacity=".3"/>
                 </svg>
-                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-white text-amber-600 rounded-full w-4 h-4 flex items-center justify-center shadow-sm">
+                <span className="absolute -top-1 -right-1 text-[8px] sm:text-[9px] font-bold bg-white text-amber-600 rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center shadow-sm">
                   {label}
                 </span>
               </div>

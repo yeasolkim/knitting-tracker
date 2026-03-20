@@ -504,8 +504,8 @@ function PatternViewerPage({ pattern }: Props) {
             className="absolute z-30 bg-white/96 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100 px-3 py-2.5"
             style={
               rulerDirection === 'up'
-                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: '148px', right: '60px' }
-                : { top: `calc(${screenRulerY}% - 8px)`, left: '148px', right: '60px', transform: 'translateY(-100%)' }
+                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px' }
+                : { top: `calc(${screenRulerY}% - 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px', transform: 'translateY(-100%)' }
             }
           >
             <div className="flex items-center gap-2.5">

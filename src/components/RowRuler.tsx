@@ -157,16 +157,16 @@ const RowRuler = memo(function RowRuler({
 
       {/* Floating complete + direction buttons */}
       <div
-        className="absolute left-2 pointer-events-auto z-20 flex items-center gap-1.5"
+        className="absolute left-1.5 pointer-events-auto z-20 flex items-center gap-1 sm:gap-1.5"
         style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
       >
         <button
           onClick={(e) => { e.stopPropagation(); onComplete(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
+          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
           title="완료 (다음 단으로)"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </button>
@@ -174,10 +174,10 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleDirection(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
+          className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
           title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             {direction === 'up' ? (
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
             ) : (
@@ -189,14 +189,14 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`flex items-center justify-center w-9 h-9 rounded-full border shadow-md transition-all ${
+          className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
             showSettings
               ? 'bg-rose-500 border-rose-500 text-white'
               : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
           }`}
           title="진행선 높이 설정"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
         </button>
