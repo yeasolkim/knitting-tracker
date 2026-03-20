@@ -162,11 +162,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   // When RowRuler reports drag (screen coords) → convert to content coords
   const handleRulerPositionChange = useCallback((screenYPct: number) => {
-    const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
+    const { viewTransform: t, containerH: H } = latestRef.current;
     const screenY = (screenYPct / 100) * H;
     const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-    const contentYPct = (contentY / H) * 100;
-    setRulerY(Math.max(0, Math.min(100 - rh, contentYPct)));
+    setRulerY((contentY / H) * 100);
   }, []);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
@@ -296,9 +295,9 @@ function PatternViewerPage({ pattern }: Props) {
     updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
 
     if (rulerDirection === 'up') {
-      setRulerY(Math.max(0, ry - rh));
+      setRulerY(ry - rh);
     } else {
-      setRulerY(Math.min(100 - rh, ry + rh));
+      setRulerY(ry + rh);
     }
   }, [rulerDirection, updateActiveSub]);
 
@@ -363,9 +362,9 @@ function PatternViewerPage({ pattern }: Props) {
     if (isCrochet) return;
     const { rulerHeight: rh } = latestRef.current;
     if (direction === 'up') {
-      setRulerY((prev) => Math.min(100 - rh, prev + rh));
+      setRulerY((prev) => prev + rh);
     } else {
-      setRulerY((prev) => Math.max(0, prev - rh));
+      setRulerY((prev) => prev - rh);
     }
   }, [isCrochet]);
 

@@ -33,7 +33,7 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
       cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
