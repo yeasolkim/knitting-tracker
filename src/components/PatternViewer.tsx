@@ -25,12 +25,13 @@ interface PatternViewerProps {
   rulerYPercent?: number;
   rulerHeightPercent?: number;
   onScrollStep?: (direction: 'up' | 'down') => void;
+  onScaleChange?: (newScale: number, oldScale: number) => void;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onScaleChange, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
@@ -40,6 +41,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const sizeRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(600);
     const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+
+    // Notify parent when scale changes so ruler can scale with zoom
+    const prevScaleRef = useRef(1);
+    useEffect(() => {
+      const prev = prevScaleRef.current;
+      if (transform.scale !== prev) {
+        onScaleChange?.(transform.scale, prev);
+        prevScaleRef.current = transform.scale;
+      }
+    }, [transform.scale, onScaleChange]);
 
     useEffect(() => {
       if (!sizeRef.current) return;

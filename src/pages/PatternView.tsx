@@ -122,6 +122,19 @@ function PatternViewerPage({ pattern }: Props) {
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
 
+  const handleScaleChange = useCallback((newScale: number, oldScale: number) => {
+    if (oldScale === 0) return;
+    const ratio = newScale / oldScale;
+    setRulerHeight((prevH) => {
+      const newH = Math.min(40, Math.max(0.5, prevH * ratio));
+      setRulerY((prevY) => {
+        const center = prevY + prevH / 2;
+        return Math.max(0, Math.min(100 - newH, center - newH / 2));
+      });
+      return newH;
+    });
+  }, []);
+
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
     (pattern.progress?.crochet_marks as CrochetMark[]) || []
   );
@@ -401,6 +414,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerYPercent={rulerY}
           rulerHeightPercent={rulerHeight}
           onScrollStep={handleScrollStep}
+          onScaleChange={handleScaleChange}
           contentOverlay={
             <>
               {!isCrochet && (
