@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress } from '@/lib/types';
@@ -35,9 +35,9 @@ export default function Dashboard() {
 function DashboardContent() {
   const [patterns, setPatterns] = useState<PatternWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const fetchPatterns = async () => {
+  const fetchPatterns = useCallback(async () => {
     const { data, error } = await supabase
       .from('patterns')
       .select(`
@@ -55,12 +55,11 @@ function DashboardContent() {
       );
     }
     setLoading(false);
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchPatterns();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchPatterns]);
 
   const handleDelete = useCallback(async (id: string) => {
     setPatterns((prev) => prev.filter((p) => p.id !== id));

@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 
 import type { RulerDirection } from '@/lib/types';
 
@@ -69,8 +69,7 @@ const RowRuler = memo(function RowRuler({
     dragStartRef.current = null;
   }, []);
 
-  // Ghost preview lines (border only, no fill)
-  const generatePreviewLines = () => {
+  const previewLines = useMemo(() => {
     const lines: number[] = [];
     const count = 4;
     if (direction === 'up') {
@@ -87,9 +86,8 @@ const RowRuler = memo(function RowRuler({
       }
     }
     return lines;
-  };
+  }, [direction, positionY, height]);
 
-  const previewLines = generatePreviewLines();
   const rulerCenterY = positionY + height / 2;
 
   return (

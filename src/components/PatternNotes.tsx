@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SubPattern } from '@/lib/types';
 
 interface PatternNotesProps {
@@ -33,29 +33,25 @@ export default function PatternNotes({
   const currentKey = noteKey(activeSubPattern.id, currentRow);
   const currentNote = notes[currentKey] || '';
 
-  const subMap = new Map(subPatterns.map((s) => [s.id, s]));
-
-  // Group notes by sub-pattern
-  const groupedNotes: { sub: SubPattern; entries: { key: string; row: number; text: string }[] }[] = [];
-  const entriesBySub = new Map<string, { key: string; row: number; text: string }[]>();
-
-  for (const [key, text] of Object.entries(notes)) {
-    const parsed = parseNoteKey(key);
-    if (!parsed) continue;
-    const arr = entriesBySub.get(parsed.subId) || [];
-    arr.push({ key, row: parsed.row, text });
-    entriesBySub.set(parsed.subId, arr);
-  }
-
-  for (const sub of subPatterns) {
-    const entries = entriesBySub.get(sub.id);
-    if (entries && entries.length > 0) {
-      entries.sort((a, b) => a.row - b.row);
-      groupedNotes.push({ sub, entries });
+  const { groupedNotes, entriesBySub, totalCount } = useMemo(() => {
+    const entriesBySub = new Map<string, { key: string; row: number; text: string }[]>();
+    for (const [key, text] of Object.entries(notes)) {
+      const parsed = parseNoteKey(key);
+      if (!parsed) continue;
+      const arr = entriesBySub.get(parsed.subId) || [];
+      arr.push({ key, row: parsed.row, text });
+      entriesBySub.set(parsed.subId, arr);
     }
-  }
-
-  const totalCount = Object.keys(notes).length;
+    const groupedNotes: { sub: SubPattern; entries: { key: string; row: number; text: string }[] }[] = [];
+    for (const sub of subPatterns) {
+      const entries = entriesBySub.get(sub.id);
+      if (entries && entries.length > 0) {
+        entries.sort((a, b) => a.row - b.row);
+        groupedNotes.push({ sub, entries });
+      }
+    }
+    return { groupedNotes, entriesBySub, totalCount: Object.keys(notes).length };
+  }, [notes, subPatterns]);
 
   const handleChange = (key: string, value: string) => {
     const updated = { ...notes };

@@ -81,7 +81,7 @@ interface Props {
 }
 
 function PatternViewerPage({ pattern }: Props) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const viewerRef = useRef<PatternViewerHandle>(null);
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
