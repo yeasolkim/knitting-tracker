@@ -112,11 +112,9 @@ const RowRuler = memo(function RowRuler({
         style={{ top: `${positionY + height}%` }}
       />
 
-      {/* Ghost preview lines — filled bands, clearly visible against dark overlay */}
-      {previewLines.map((y, i) => {
-        const opacity = isAdjusting
-          ? Math.max(0.35, 0.85 - i * 0.15)
-          : Math.max(0.2, 0.65 - i * 0.13);
+      {/* Ghost preview lines — only visible while adjusting height */}
+      {isAdjusting && previewLines.map((y, i) => {
+        const opacity = Math.max(0.35, 0.85 - i * 0.15);
         return (
           <div
             key={i}
@@ -125,7 +123,7 @@ const RowRuler = memo(function RowRuler({
               top: `${y}%`,
               height: `${height}%`,
               opacity,
-              transition: isAdjusting ? 'none' : 'opacity 0.3s',
+              transition: 'none',
             }}
           >
             {/* Filled band — punches through the dark overlay visually */}
