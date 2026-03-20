@@ -314,8 +314,15 @@ function PatternViewerPage({ pattern }: Props) {
     setIsPlacingMarker(false);
   }, [activeSub, updateActiveSub]);
 
-  const handleCompletedMarkUpdate = useCallback((index: number, mark: CompletedMark) => {
-    setCompletedMarks((prev) => prev.map((m, i) => (i === index ? mark : m)));
+  // CompletedOverlay is rendered outside the CSS transform (screen space),
+  // so its y/height values are in screen % — convert back to content % on update.
+  const handleCompletedMarkUpdate = useCallback((index: number, screenMark: CompletedMark) => {
+    const { viewTransform: t, containerH: H } = latestRef.current;
+    const screenY = (screenMark.y / 100) * H;
+    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    setCompletedMarks((prev) => prev.map((m, i) =>
+      i === index ? { y: (contentY / H) * 100, height: screenMark.height / t.scale } : m
+    ));
   }, []);
 
   const handleCompletedMarkDelete = useCallback((index: number) => {
@@ -402,6 +409,13 @@ function PatternViewerPage({ pattern }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // CompletedOverlay is outside the CSS transform — convert content % → screen %
+  const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
+    const contentY = (m.y / 100) * containerH;
+    const screenY = (contentY - containerH / 2) * viewTransform.scale + containerH / 2 + viewTransform.y;
+    return { y: (screenY / containerH) * 100, height: m.height * viewTransform.scale };
+  });
+
   return (
     <div className="flex flex-col h-screen bg-gray-50/50">
       {/* Top bar */}
@@ -437,24 +451,11 @@ function PatternViewerPage({ pattern }: Props) {
           onTransformChange={handleTransformChange}
           onResetRuler={!isCrochet ? () => {
             const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
-            // Convert screen center (50%) to content coordinates
-            const screenY = H / 2;
-            const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-            const contentYPct = (contentY / H) * 100;
-            setRulerY(Math.max(0, Math.min(100 - rh, contentYPct - rh / 2)));
+            const contentY = (H / 2 - H / 2 - t.y) / t.scale + H / 2;
+            setRulerY((contentY / H) * 100 - rh / 2);
           } : undefined}
           contentOverlay={
             <>
-              {!isCrochet && (
-                <CompletedOverlay
-                  marks={completedMarks}
-                  onUpdate={handleCompletedMarkUpdate}
-                  onDelete={handleCompletedMarkDelete}
-                  onDeleteAll={handleCompletedMarkDeleteAll}
-                  onSelectionChange={setHasMarkSelection}
-                />
-              )}
-
               {!isCrochet && (
                 <KnittingMarkers
                   marks={knittingMarks}
@@ -487,6 +488,15 @@ function PatternViewerPage({ pattern }: Props) {
             </>
           }
         >
+          {!isCrochet && (
+            <CompletedOverlay
+              marks={screenCompletedMarks}
+              onUpdate={handleCompletedMarkUpdate}
+              onDelete={handleCompletedMarkDelete}
+              onDeleteAll={handleCompletedMarkDeleteAll}
+              onSelectionChange={setHasMarkSelection}
+            />
+          )}
           {!isCrochet && (
             <RowRuler
               positionY={screenRulerY}
