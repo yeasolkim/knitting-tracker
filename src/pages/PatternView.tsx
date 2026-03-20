@@ -504,12 +504,12 @@ function PatternViewerPage({ pattern }: Props) {
             className="absolute z-30 bg-white/96 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100 px-3 py-2.5"
             style={
               rulerDirection === 'up'
-                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: '148px' }
-                : { top: `calc(${screenRulerY}% - 8px)`, left: '148px', transform: 'translateY(-100%)' }
+                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: '148px', right: '60px' }
+                : { top: `calc(${screenRulerY}% - 8px)`, left: '148px', right: '60px', transform: 'translateY(-100%)' }
             }
           >
             <div className="flex items-center gap-2.5">
-              <span className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">진행선 높이</span>
+              <span className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">높이</span>
               <input
                 type="range"
                 min={0.3}
@@ -523,9 +523,9 @@ function PatternViewerPage({ pattern }: Props) {
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
-                className="w-32 h-1.5 accent-rose-400 cursor-pointer"
+                className="flex-1 min-w-0 h-1.5 accent-rose-400 cursor-pointer"
               />
-              <span className="text-[11px] text-rose-500 font-mono w-9 text-right shrink-0">
+              <span className="text-[11px] text-rose-500 font-mono w-8 text-right shrink-0">
                 {rulerHeight.toFixed(2)}
               </span>
             </div>
