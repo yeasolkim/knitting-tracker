@@ -83,7 +83,7 @@ interface Props {
 function PatternViewerPage({ pattern }: Props) {
   const supabase = createClient();
   const viewerRef = useRef<PatternViewerHandle>(null);
-  const { isActive: wakeLockActive, request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
+  const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
   const isCrochet = pattern.type === 'crochet';
 
@@ -423,19 +423,6 @@ function PatternViewerPage({ pattern }: Props) {
           {pattern.needle && (
             <span className="text-[11px] text-gray-400 shrink-0 hidden sm:block">🪡 {pattern.needle}</span>
           )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => (wakeLockActive ? releaseWakeLock() : requestWakeLock())}
-            className={`text-xs px-2 py-1 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${
-              wakeLockActive
-                ? 'bg-emerald-50 text-emerald-600'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-            title={wakeLockActive ? '화면 켜짐 유지 중' : '화면 꺼짐 방지'}
-          >
-            {wakeLockActive ? '☀️' : '🌙'}
-          </button>
         </div>
       </div>
 
