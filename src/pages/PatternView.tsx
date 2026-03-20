@@ -600,17 +600,30 @@ function PatternViewerPage({ pattern }: Props) {
               </button>
             </div>
 
-            <button
-              onClick={() => setIsPlacingMarker(true)}
-              disabled={isPlacingMarker}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white rounded-xl hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="hidden sm:inline">마커</span> ({crochetMarks.length})
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsPlacingMarker(true)}
+                disabled={isPlacingMarker}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white rounded-xl hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="hidden sm:inline">마커</span> ({crochetMarks.length})
+              </button>
+              {crochetMarks.length > 0 && (
+                <button
+                  onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleCrochetMarkDeleteAll(); }}
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400 active:bg-red-100 transition-colors"
+                  title="마커 전체 삭제"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2">
@@ -620,17 +633,30 @@ function PatternViewerPage({ pattern }: Props) {
               onChange={handleRowChange}
             />
             <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
-            <button
-              onClick={() => setIsPlacingKnittingMarker(true)}
-              disabled={isPlacingKnittingMarker}
-              className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm shrink-0"
-              title="마커 배치"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              마커{knittingMarks.length > 0 && ` (${knittingMarks.length})`}
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => setIsPlacingKnittingMarker(true)}
+                disabled={isPlacingKnittingMarker}
+                className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm"
+                title="마커 배치"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                마커{knittingMarks.length > 0 && ` (${knittingMarks.length})`}
+              </button>
+              {knittingMarks.length > 0 && (
+                <button
+                  onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleKnittingMarkDeleteAll(); }}
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400 active:bg-red-100 transition-colors"
+                  title="마커 전체 삭제"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
