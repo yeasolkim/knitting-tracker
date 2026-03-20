@@ -22,6 +22,7 @@ export interface PatternViewerHandle {
 interface PatternViewerProps {
   fileUrl: string;
   fileType: 'image' | 'pdf';
+  rulerYPercent?: number;
   rulerHeightPercent?: number;
   onScrollStep?: (direction: 'up' | 'down') => void;
   contentOverlay?: React.ReactNode;
@@ -29,8 +30,8 @@ interface PatternViewerProps {
 }
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerHeightPercent = 5, onScrollStep, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, resetTransform } = useGestures();
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, contentOverlay, children }, ref) {
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
       cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,

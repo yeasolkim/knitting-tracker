@@ -35,6 +35,13 @@ export interface CrochetMark {
   label: string;
 }
 
+export interface KnittingMark {
+  id: string;
+  y: number;     // content % (vertical position)
+  label: string;
+  color?: string;
+}
+
 export interface SubPattern {
   id: string;
   name: string;
@@ -58,6 +65,7 @@ export interface PatternProgress {
   sub_patterns: SubPattern[];
   active_sub_pattern_id: string;
   crochet_marks: CrochetMark[];
+  knitting_marks: KnittingMark[];
   updated_at: string;
 }
 

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark } from '@/lib/types';
+import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
 import CompletedOverlay from '@/components/CompletedOverlay';
 import CrochetMarkers from '@/components/CrochetMarkers';
+import KnittingMarkers from '@/components/KnittingMarkers';
 import NoteBubbles from '@/components/NoteBubbles';
 import SubPatternSelector from '@/components/SubPatternSelector';
 import RowCounter from '@/components/RowCounter';
@@ -125,6 +126,11 @@ function PatternViewerPage({ pattern }: Props) {
   );
   const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
+  const [knittingMarks, setKnittingMarks] = useState<KnittingMark[]>(
+    (pattern.progress?.knitting_marks as KnittingMark[]) || []
+  );
+  const [isPlacingKnittingMarker, setIsPlacingKnittingMarker] = useState(false);
+
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
   );
@@ -181,12 +187,13 @@ function PatternViewerPage({ pattern }: Props) {
       ruler_direction: rulerDirection,
       completed_marks: completedMarks,
       crochet_marks: crochetMarks,
+      knitting_marks: knittingMarks,
       notes,
       note_positions: notePositions,
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, notes, notePositions, subPatterns, activeSubId, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
 
   const handleRowChange = (row: number) => {
     if (row !== prevRow) {
@@ -283,6 +290,27 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCancelPlace = useCallback(() => setIsPlacingMarker(false), []);
 
+  const handlePlaceKnittingMarker = useCallback((y: number) => {
+    const newMark: KnittingMark = {
+      id: generateId(),
+      y,
+      label: String(knittingMarks.length + 1),
+    };
+    setKnittingMarks((prev) => [...prev, newMark]);
+    setIsPlacingKnittingMarker(false);
+  }, [knittingMarks.length]);
+
+  const handleKnittingMarkMove = useCallback((id: string, y: number) => {
+    setKnittingMarks((prev) => prev.map((m) => (m.id === id ? { ...m, y } : m)));
+  }, []);
+
+  const handleKnittingMarkDelete = useCallback((id: string) => {
+    setKnittingMarks((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  const handleKnittingMarkDeleteAll = useCallback(() => setKnittingMarks([]), []);
+  const handleCancelKnittingPlace = useCallback(() => setIsPlacingKnittingMarker(false), []);
+
   const handleScrollStep = useCallback((direction: 'up' | 'down') => {
     if (isCrochet) return;
     if (direction === 'up') {
@@ -368,6 +396,7 @@ function PatternViewerPage({ pattern }: Props) {
           ref={viewerRef}
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
+          rulerYPercent={rulerY}
           rulerHeightPercent={rulerHeight}
           onScrollStep={handleScrollStep}
           contentOverlay={
@@ -379,6 +408,18 @@ function PatternViewerPage({ pattern }: Props) {
                   onDelete={handleCompletedMarkDelete}
                   onDeleteAll={handleCompletedMarkDeleteAll}
                   onSelectionChange={setHasMarkSelection}
+                />
+              )}
+
+              {!isCrochet && (
+                <KnittingMarkers
+                  marks={knittingMarks}
+                  isPlacing={isPlacingKnittingMarker}
+                  onPlace={handlePlaceKnittingMarker}
+                  onMove={handleKnittingMarkMove}
+                  onDelete={handleKnittingMarkDelete}
+                  onDeleteAll={handleKnittingMarkDeleteAll}
+                  onCancelPlace={handleCancelKnittingPlace}
                 />
               )}
 
@@ -489,7 +530,23 @@ function PatternViewerPage({ pattern }: Props) {
               total={activeSub?.total_rows || 1}
               onChange={handleRowChange}
             />
-            <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
+            <div className="flex items-center gap-2">
+              <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
+              <button
+                onClick={() => setIsPlacingKnittingMarker(true)}
+                disabled={isPlacingKnittingMarker}
+                className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm"
+                title="마커 배치"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span className="hidden sm:inline">마커</span>
+                {knittingMarks.length > 0 && (
+                  <span className="text-white/80">({knittingMarks.length})</span>
+                )}
+              </button>
+            </div>
           </div>
         )}
 

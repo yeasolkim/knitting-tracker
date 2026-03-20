@@ -12,8 +12,6 @@ interface RowRulerProps {
   onToggleDirection: () => void;
 }
 
-type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
-
 const RowRuler = memo(function RowRuler({
   positionY,
   height,
@@ -24,8 +22,10 @@ const RowRuler = memo(function RowRuler({
   onToggleDirection,
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dragMode, setDragMode] = useState<DragMode>(null);
-  const dragStartRef = useRef<{ clientY: number; startY: number; startH: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const dragStartRef = useRef<{ clientY: number; startY: number } | null>(null);
+  const resizeStartRef = useRef<{ clientY: number; startH: number } | null>(null);
 
   const toPercent = useCallback(
     (clientY: number) => {
@@ -36,58 +36,94 @@ const RowRuler = memo(function RowRuler({
     []
   );
 
-  const handlePointerDown = useCallback(
-    (mode: DragMode) => (e: React.PointerEvent) => {
+  const toPercentDelta = useCallback(
+    (pixelDelta: number) => {
+      if (!containerRef.current) return 0;
+      const rect = containerRef.current.getBoundingClientRect();
+      return (pixelDelta / rect.height) * 100;
+    },
+    []
+  );
+
+  // Main body drag (move ruler)
+  const handleBodyPointerDown = useCallback(
+    (e: React.PointerEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      setDragMode(mode);
+      setIsDragging(true);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      dragStartRef.current = {
-        clientY: e.clientY,
-        startY: positionY,
-        startH: height,
-      };
+      dragStartRef.current = { clientY: e.clientY, startY: positionY };
     },
-    [positionY, height]
+    [positionY]
+  );
+
+  // Bottom edge drag (resize height)
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setIsResizing(true);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      resizeStartRef.current = { clientY: e.clientY, startH: height };
+    },
+    [height]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragMode || !dragStartRef.current || !containerRef.current) return;
-      e.stopPropagation();
-
-      const currentPercent = toPercent(e.clientY);
-      const startPercent = toPercent(dragStartRef.current.clientY);
-      const delta = currentPercent - startPercent;
-
-      if (dragMode === 'move') {
+      if (isDragging && dragStartRef.current) {
+        e.stopPropagation();
+        const currentPercent = toPercent(e.clientY);
+        const startPercent = toPercent(dragStartRef.current.clientY);
+        const delta = currentPercent - startPercent;
         const newY = Math.max(0, Math.min(100 - height, dragStartRef.current.startY + delta));
         onChangePosition(newY);
-      } else if (dragMode === 'resize-top') {
-        const newY = dragStartRef.current.startY + delta;
-        const newH = dragStartRef.current.startH - delta;
-        if (newH >= 1 && newY >= 0) {
-          onChangePosition(newY);
-          onChangeHeight(newH);
-        }
-      } else if (dragMode === 'resize-bottom') {
-        const newH = dragStartRef.current.startH + delta;
-        if (newH >= 1 && positionY + newH <= 100) {
+      } else if (isResizing && resizeStartRef.current) {
+        e.stopPropagation();
+        const delta = toPercentDelta(e.clientY - resizeStartRef.current.clientY);
+        const newH = Math.max(0.5, Math.min(40, resizeStartRef.current.startH + delta));
+        if (positionY + newH <= 100) {
           onChangeHeight(newH);
         }
       }
     },
-    [dragMode, height, positionY, toPercent, onChangePosition, onChangeHeight]
+    [isDragging, isResizing, height, positionY, toPercent, toPercentDelta, onChangePosition, onChangeHeight]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
       e.stopPropagation();
-      setDragMode(null);
+      setIsDragging(false);
+      setIsResizing(false);
       dragStartRef.current = null;
+      resizeStartRef.current = null;
     },
     []
   );
+
+  // Ghost preview lines showing how marks will stack
+  const generatePreviewLines = () => {
+    const lines: number[] = [];
+    const count = 8;
+
+    if (direction === 'up') {
+      for (let i = 1; i <= count; i++) {
+        const y = positionY - height * i;
+        if (y < -height) break;
+        lines.push(y);
+      }
+    } else {
+      for (let i = 1; i <= count; i++) {
+        const y = positionY + height * i;
+        if (y > 100) break;
+        lines.push(y);
+      }
+    }
+    return lines;
+  };
+
+  const previewLines = generatePreviewLines();
+  const rulerCenterY = positionY + height / 2;
 
   return (
     <div
@@ -97,78 +133,94 @@ const RowRuler = memo(function RowRuler({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Active ruler */}
+      {/* Ghost preview lines (always visible) */}
+      {previewLines.map((y, i) => (
+        <div
+          key={i}
+          className="absolute left-0 right-0 pointer-events-none"
+          style={{
+            top: `${y}%`,
+            height: `${height}%`,
+            opacity: Math.max(0.04, 0.22 - i * 0.025),
+          }}
+        >
+          <div className="w-full h-full bg-rose-300/30 border-y border-rose-300/40" />
+        </div>
+      ))}
+
+      {/* Active ruler band */}
       <div
         className="absolute left-0 right-0 pointer-events-auto"
         style={{ top: `${positionY}%`, height: `${height}%` }}
       >
-        {/* Top resize handle */}
-        <div
-          className="absolute left-0 right-0 top-0 h-6 sm:h-3 cursor-ns-resize z-20 flex items-center justify-center -translate-y-1/2"
-          onPointerDown={handlePointerDown('resize-top')}
-        >
-          <div className={`w-12 sm:w-10 h-1.5 sm:h-1 rounded-full transition-colors ${dragMode === 'resize-top' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
-        </div>
-
         {/* Main draggable body */}
         <div
-          className={`w-full h-full cursor-grab active:cursor-grabbing bg-rose-400/15 border-y-2 border-rose-400/50 backdrop-blur-[1px] transition-colors ${dragMode === 'move' ? 'bg-rose-400/25 border-rose-500/70' : ''}`}
-          onPointerDown={handlePointerDown('move')}
+          className={`w-full h-full cursor-grab active:cursor-grabbing select-none
+            bg-rose-400/10 border-y-2
+            ${isDragging ? 'border-rose-500/80 bg-rose-400/20' : 'border-rose-400/60'}
+            transition-colors`}
+          onPointerDown={handleBodyPointerDown}
         >
-          {/* Left: Complete + Direction as unified pill */}
-          <div className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2">
-            <div className="flex items-stretch rounded-lg overflow-hidden shadow-md">
-              {/* Complete button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onComplete();
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 px-2.5 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                완료
-              </button>
-
-              {/* Direction toggle */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleDirection();
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center gap-0.5 px-2 py-2 sm:py-1.5 min-h-[44px] bg-rose-600 text-white/80 hover:text-white hover:bg-rose-700 active:bg-rose-800 transition-colors border-l border-rose-400/40"
-                title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
-              >
-                <span className="text-[9px] text-white/60 hidden sm:inline">진행</span>
-                <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  {direction === 'up' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  )}
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Right: Drag handle */}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-[3px] opacity-40">
-            <div className="w-5 h-[2px] bg-rose-500 rounded" />
-            <div className="w-5 h-[2px] bg-rose-500 rounded" />
-            <div className="w-5 h-[2px] bg-rose-500 rounded" />
-          </div>
+          {/* Center dashed reference line */}
+          <div className="absolute inset-x-0 top-1/2 -translate-y-px h-px border-t border-dashed border-rose-400/40 pointer-events-none" />
         </div>
 
         {/* Bottom resize handle */}
         <div
-          className="absolute left-0 right-0 bottom-0 h-6 sm:h-3 cursor-ns-resize z-20 flex items-center justify-center translate-y-1/2"
-          onPointerDown={handlePointerDown('resize-bottom')}
+          className="absolute bottom-0 inset-x-0 h-4 -mb-2 cursor-ns-resize pointer-events-auto z-20 flex items-center justify-center group"
+          onPointerDown={handleResizePointerDown}
         >
-          <div className={`w-12 sm:w-10 h-1.5 sm:h-1 rounded-full transition-colors ${dragMode === 'resize-bottom' ? 'bg-rose-500' : 'bg-rose-400/80'}`} />
+          <div className={`w-10 h-1 rounded-full transition-colors ${isResizing ? 'bg-rose-500' : 'bg-rose-400/50 group-hover:bg-rose-400/80'}`} />
+        </div>
+      </div>
+
+      {/* Floating complete button — anchored to ruler center, left side */}
+      <div
+        className="absolute left-2 pointer-events-auto z-20 flex items-center gap-1.5"
+        style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
+      >
+        {/* Complete button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onComplete();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
+          title="완료 (다음 단으로)"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+
+        {/* Direction toggle */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleDirection();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
+          title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            {direction === 'up' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/* Height label — right side of ruler center */}
+      <div
+        className="absolute right-2 pointer-events-none z-20"
+        style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
+      >
+        <div className="text-[10px] text-rose-400/70 font-mono bg-white/70 rounded px-1 py-0.5 select-none">
+          {height.toFixed(1)}%
         </div>
       </div>
     </div>
