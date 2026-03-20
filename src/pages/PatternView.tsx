@@ -111,6 +111,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
+  // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
   const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height || 5);
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
@@ -122,21 +123,55 @@ function PatternViewerPage({ pattern }: Props) {
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
 
-  // Keep a ref with latest ruler values so handleScaleChange can read them synchronously
-  const rulerStateRef = useRef({ y: rulerY, h: rulerHeight });
-  useEffect(() => {
-    rulerStateRef.current = { y: rulerY, h: rulerHeight };
-  }, [rulerY, rulerHeight]);
+  // Current viewer transform — updated every frame during pan/zoom
+  const [viewTransform, setViewTransform] = useState({ scale: 1, x: 0, y: 0 });
+  const [containerH, setContainerH] = useState(600);
 
-  const handleScaleChange = useCallback((newScale: number, oldScale: number) => {
-    if (oldScale === 0) return;
-    const ratio = newScale / oldScale;
-    const { y: prevY, h: prevH } = rulerStateRef.current;
-    const newH = Math.min(40, Math.max(0.5, prevH * ratio));
-    const center = prevY + prevH / 2;
-    const newY = Math.max(0, Math.min(100 - newH, center - newH / 2));
-    setRulerHeight(newH);
-    setRulerY(newY);
+  // Ref for stable callbacks that need latest transform/ruler values
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH });
+  useEffect(() => {
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH };
+  }, [rulerY, rulerHeight, viewTransform, containerH]);
+
+  const handleTransformChange = useCallback(
+    (t: { scale: number; x: number; y: number }, H: number) => {
+      setViewTransform(t);
+      setContainerH(H);
+    },
+    []
+  );
+
+  // Convert content % → screen % using current transform
+  const contentToScreenY = (contentPct: number, t = viewTransform, H = containerH) => {
+    const contentY = (contentPct / 100) * H;
+    const screenY = (contentY - H / 2) * t.scale + H / 2 + t.y;
+    return (screenY / H) * 100;
+  };
+
+  // Convert screen % → content %
+  const screenToContentY = (screenPct: number, t = viewTransform, H = containerH) => {
+    const screenY = (screenPct / 100) * H;
+    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    return (contentY / H) * 100;
+  };
+
+  // Screen positions for RowRuler display (derived, not stored)
+  const screenRulerY = contentToScreenY(rulerY);
+  const screenRulerHeight = rulerHeight * viewTransform.scale;
+
+  // When RowRuler reports drag (screen coords) → convert to content coords
+  const handleRulerPositionChange = useCallback((screenYPct: number) => {
+    const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
+    const screenY = (screenYPct / 100) * H;
+    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    const contentYPct = (contentY / H) * 100;
+    setRulerY(Math.max(0, Math.min(100 - rh, contentYPct)));
+  }, []);
+
+  const handleRulerHeightChange = useCallback((screenHPct: number) => {
+    const { viewTransform: t } = latestRef.current;
+    const contentH = screenHPct / t.scale;
+    setRulerHeight(Math.max(0.3, contentH));
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
@@ -228,16 +263,14 @@ function PatternViewerPage({ pattern }: Props) {
   const handleNotesUpdate = useCallback(
     (updatedNotes: Record<string, string>) => {
       setNotes(updatedNotes);
-      const viewer = viewerRef.current;
-      if (!viewer) return;
-
       setNotePositions((prev) => {
         const next = { ...prev };
         let changed = false;
+        const { rulerY: ry, rulerHeight: rh } = latestRef.current;
         for (const key of Object.keys(updatedNotes)) {
           if (!next[key]) {
-            const contentCoords = viewer.screenToContent(rulerY, rulerHeight);
-            next[key] = { x: 90, y: contentCoords.y + contentCoords.height / 2 };
+            // rulerY/rulerHeight are already content coords
+            next[key] = { x: 90, y: ry + rh / 2 };
             changed = true;
           }
         }
@@ -250,28 +283,23 @@ function PatternViewerPage({ pattern }: Props) {
         return changed ? next : prev;
       });
     },
-    [rulerY, rulerHeight]
+    []
   );
 
   const handleComplete = useCallback(() => {
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-
-    const contentCoords = viewer.screenToContent(rulerY, rulerHeight);
-    const newMark: CompletedMark = {
-      y: contentCoords.y,
-      height: contentCoords.height,
-    };
+    const { rulerY: ry, rulerHeight: rh } = latestRef.current;
+    // rulerY and rulerHeight are already in content coords
+    const newMark: CompletedMark = { y: ry, height: rh };
 
     setCompletedMarks((prev) => [...prev, newMark]);
     updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
 
     if (rulerDirection === 'up') {
-      setRulerY((prev) => Math.max(0, prev - rulerHeight));
+      setRulerY(Math.max(0, ry - rh));
     } else {
-      setRulerY((prev) => Math.min(100 - rulerHeight, prev + rulerHeight));
+      setRulerY(Math.min(100 - rh, ry + rh));
     }
-  }, [rulerY, rulerHeight, rulerDirection, updateActiveSub]);
+  }, [rulerDirection, updateActiveSub]);
 
   const handlePlaceMarker = useCallback((x: number, y: number) => {
     const nextRow = (activeSub?.current_row || 0) + 1;
@@ -332,12 +360,13 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleScrollStep = useCallback((direction: 'up' | 'down') => {
     if (isCrochet) return;
+    const { rulerHeight: rh } = latestRef.current;
     if (direction === 'up') {
-      setRulerY((prev) => Math.min(100 - rulerHeight, prev + rulerHeight));
+      setRulerY((prev) => Math.min(100 - rh, prev + rh));
     } else {
-      setRulerY((prev) => Math.max(0, prev - rulerHeight));
+      setRulerY((prev) => Math.max(0, prev - rh));
     }
-  }, [isCrochet, rulerHeight]);
+  }, [isCrochet]);
 
   const handleNotePositionChange = useCallback((key: string, pos: NotePosition) => {
     setNotePositions((prev) => ({ ...prev, [key]: pos }));
@@ -418,7 +447,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerYPercent={rulerY}
           rulerHeightPercent={rulerHeight}
           onScrollStep={handleScrollStep}
-          onScaleChange={handleScaleChange}
+          onTransformChange={handleTransformChange}
           contentOverlay={
             <>
               {!isCrochet && (
@@ -465,12 +494,12 @@ function PatternViewerPage({ pattern }: Props) {
         >
           {!isCrochet && (
             <RowRuler
-              positionY={rulerY}
-              height={rulerHeight}
+              positionY={screenRulerY}
+              height={screenRulerHeight}
               direction={rulerDirection}
               isAdjusting={isAdjustingRuler}
-              onChangePosition={setRulerY}
-              onChangeHeight={setRulerHeight}
+              onChangePosition={handleRulerPositionChange}
+              onChangeHeight={handleRulerHeightChange}
               onComplete={handleComplete}
               onToggleDirection={() => setRulerDirection((d) => (d === 'up' ? 'down' : 'up'))}
             />

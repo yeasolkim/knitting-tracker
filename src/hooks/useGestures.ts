@@ -9,8 +9,8 @@ interface Transform {
 export function useGestures(
   minScale = 0.5,
   maxScale = 5,
-  rulerYPercent = 50,
-  rulerHeightPercent = 0
+  rulerYPercent = 50,      // content %
+  rulerHeightPercent = 0   // content %
 ) {
   const [transform, setTransform] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const lastTouchDistance = useRef<number | null>(null);
@@ -19,7 +19,7 @@ export function useGestures(
   const lastMouse = useRef<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Use ref so wheel handler always has latest ruler position without re-registering
+  // Ruler values in CONTENT coords — updated via ref to avoid stale closures
   const rulerRef = useRef({ y: rulerYPercent, h: rulerHeightPercent });
   useEffect(() => {
     rulerRef.current = { y: rulerYPercent, h: rulerHeightPercent };
@@ -30,18 +30,21 @@ export function useGestures(
     [minScale, maxScale]
   );
 
-  // Returns the Y offset adjustment needed to keep the ruler center fixed during zoom
-  const calcYAdjustment = useCallback(
-    (containerH: number, oldScale: number, newScale: number) => {
-      const rulerCenterY = containerH * (rulerRef.current.y + rulerRef.current.h / 2) / 100;
-      const pivotOffset = rulerCenterY - containerH / 2;
-      const ratio = newScale / oldScale;
-      return pivotOffset * (1 - ratio);
-    },
-    []
-  );
+  /**
+   * Compute the new ty that keeps the ruler's content center at the same
+   * screen position after a scale change.
+   * Ruler is stored in content %, so we convert to screen px first.
+   */
+  const computeNewY = (prev: Transform, newScale: number, H: number): number => {
+    const contentCenterFrac = (rulerRef.current.y + rulerRef.current.h / 2) / 100;
+    const contentY = contentCenterFrac * H;
+    // Current screen position of that content point
+    const rulerScreenY = (contentY - H / 2) * prev.scale + H / 2 + prev.y;
+    const pivotOffset = rulerScreenY - H / 2;
+    return prev.y + pivotOffset * (1 - newScale / prev.scale);
+  };
 
-  // Register wheel event as non-passive to allow preventDefault
+  // Register wheel event as non-passive
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -51,37 +54,31 @@ export function useGestures(
       const ratio = e.deltaY > 0 ? 0.9 : 1.1;
       const H = el.clientHeight;
       setTransform((prev) => {
-        const newScale = Math.min(maxScale, Math.max(minScale, prev.scale * ratio));
-        const rulerCenterY = H * (rulerRef.current.y + rulerRef.current.h / 2) / 100;
-        const pivotOffset = rulerCenterY - H / 2;
-        const newY = prev.y + pivotOffset * (1 - newScale / prev.scale);
+        const newScale = clampScale(prev.scale * ratio);
+        const newY = computeNewY(prev, newScale, H);
         return { ...prev, scale: newScale, y: newY };
       });
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [minScale, maxScale]);
+  }, [clampScale]);
 
   const zoomIn = useCallback(() => {
-    const el = containerRef.current;
-    const H = el?.clientHeight || 1;
+    const H = containerRef.current?.clientHeight || 1;
     setTransform((prev) => {
       const newScale = clampScale(prev.scale * 1.1);
-      const yAdj = calcYAdjustment(H, prev.scale, newScale);
-      return { ...prev, scale: newScale, y: prev.y + yAdj };
+      return { ...prev, scale: newScale, y: computeNewY(prev, newScale, H) };
     });
-  }, [clampScale, calcYAdjustment]);
+  }, [clampScale]);
 
   const zoomOut = useCallback(() => {
-    const el = containerRef.current;
-    const H = el?.clientHeight || 1;
+    const H = containerRef.current?.clientHeight || 1;
     setTransform((prev) => {
       const newScale = clampScale(prev.scale * 0.9);
-      const yAdj = calcYAdjustment(H, prev.scale, newScale);
-      return { ...prev, scale: newScale, y: prev.y + yAdj };
+      return { ...prev, scale: newScale, y: computeNewY(prev, newScale, H) };
     });
-  }, [clampScale, calcYAdjustment]);
+  }, [clampScale]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
@@ -93,10 +90,7 @@ export function useGestures(
         y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
       };
     } else if (e.touches.length === 1) {
-      lastTouchCenter.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      };
+      lastTouchCenter.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
   }, []);
 
@@ -108,18 +102,13 @@ export function useGestures(
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const distance = Math.hypot(dx, dy);
         const scaleRatio = distance / lastTouchDistance.current;
-
         const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-        const el = containerRef.current;
-        const H = el?.clientHeight || 1;
+        const H = containerRef.current?.clientHeight || 1;
 
         setTransform((prev) => {
           const newScale = clampScale(prev.scale * scaleRatio);
-          const rulerCenterY = H * (rulerRef.current.y + rulerRef.current.h / 2) / 100;
-          const pivotOffset = rulerCenterY - H / 2;
-          const newY = prev.y + pivotOffset * (1 - newScale / prev.scale) + cy - (lastTouchCenter.current?.y || cy);
+          const newY = computeNewY(prev, newScale, H) + cy - (lastTouchCenter.current?.y || cy);
           return {
             scale: newScale,
             x: prev.x + cx - (lastTouchCenter.current?.x || cx),
@@ -132,15 +121,8 @@ export function useGestures(
       } else if (e.touches.length === 1 && lastTouchCenter.current) {
         const dx = e.touches[0].clientX - lastTouchCenter.current.x;
         const dy = e.touches[0].clientY - lastTouchCenter.current.y;
-        setTransform((prev) => ({
-          ...prev,
-          x: prev.x + dx,
-          y: prev.y + dy,
-        }));
-        lastTouchCenter.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        };
+        setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+        lastTouchCenter.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     },
     [clampScale]
@@ -160,11 +142,7 @@ export function useGestures(
     if (!isDragging.current || !lastMouse.current) return;
     const dx = e.clientX - lastMouse.current.x;
     const dy = e.clientY - lastMouse.current.y;
-    setTransform((prev) => ({
-      ...prev,
-      x: prev.x + dx,
-      y: prev.y + dy,
-    }));
+    setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
     lastMouse.current = { x: e.clientX, y: e.clientY };
   }, []);
 
@@ -174,24 +152,16 @@ export function useGestures(
   }, []);
 
   const handleDoubleClick = useCallback(() => {
-    const el = containerRef.current;
-    const H = el?.clientHeight || 1;
+    const H = containerRef.current?.clientHeight || 1;
     setTransform((prev) => {
-      if (prev.scale > 1.1) {
-        return { scale: 1, x: 0, y: 0 };
-      }
+      if (prev.scale > 1.1) return { scale: 1, x: 0, y: 0 };
       const newScale = clampScale(prev.scale * 2);
-      const yAdj = calcYAdjustment(H, prev.scale, newScale);
-      return { ...prev, scale: newScale, y: prev.y + yAdj };
+      return { ...prev, scale: newScale, y: computeNewY(prev, newScale, H) };
     });
-  }, [clampScale, calcYAdjustment]);
+  }, [clampScale]);
 
   const panBy = useCallback((dx: number, dy: number) => {
-    setTransform((prev) => ({
-      ...prev,
-      x: prev.x + dx,
-      y: prev.y + dy,
-    }));
+    setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
   }, []);
 
   const setXY = useCallback((x: number, y: number) => {
