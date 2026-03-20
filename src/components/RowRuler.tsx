@@ -27,14 +27,11 @@ const RowRuler = memo(function RowRuler({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ clientY: number; startY: number } | null>(null);
 
-  const toPercent = useCallback(
-    (clientY: number) => {
-      if (!containerRef.current) return 0;
-      const rect = containerRef.current.getBoundingClientRect();
-      return ((clientY - rect.top) / rect.height) * 100;
-    },
-    []
-  );
+  const toPercent = useCallback((clientY: number) => {
+    if (!containerRef.current) return 0;
+    const rect = containerRef.current.getBoundingClientRect();
+    return ((clientY - rect.top) / rect.height) * 100;
+  }, []);
 
   const handleBodyPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -66,7 +63,7 @@ const RowRuler = memo(function RowRuler({
     dragStartRef.current = null;
   }, []);
 
-  // Ghost preview lines
+  // Ghost preview lines (border only, no fill)
   const generatePreviewLines = () => {
     const lines: number[] = [];
     const count = 4;
@@ -97,11 +94,23 @@ const RowRuler = memo(function RowRuler({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Ghost preview lines */}
+      {/* Shadow overlay — ABOVE ruler */}
+      <div
+        className="absolute left-0 right-0 top-0 pointer-events-none bg-black/25"
+        style={{ height: `${positionY}%` }}
+      />
+
+      {/* Shadow overlay — BELOW ruler */}
+      <div
+        className="absolute left-0 right-0 bottom-0 pointer-events-none bg-black/25"
+        style={{ top: `${positionY + height}%` }}
+      />
+
+      {/* Ghost preview lines — thin dashed borders only, no fill */}
       {previewLines.map((y, i) => {
-        const baseOpacity = isAdjusting
-          ? Math.max(0.2, 0.65 - i * 0.12)
-          : Math.max(0.08, 0.32 - i * 0.06);
+        const opacity = isAdjusting
+          ? Math.max(0.25, 0.7 - i * 0.13)
+          : Math.max(0.1, 0.35 - i * 0.07);
         return (
           <div
             key={i}
@@ -109,38 +118,33 @@ const RowRuler = memo(function RowRuler({
             style={{
               top: `${y}%`,
               height: `${height}%`,
-              opacity: baseOpacity,
+              opacity,
               transition: isAdjusting ? 'none' : 'opacity 0.3s',
             }}
           >
-            <div
-              className={`w-full h-full border-y ${
-                isAdjusting
-                  ? 'bg-rose-400/50 border-rose-500/70'
-                  : 'bg-rose-400/30 border-rose-400/50'
-              }`}
-            />
+            {/* Top border of future ruler */}
+            <div className="absolute top-0 inset-x-0 h-px bg-rose-400/80" />
+            {/* Bottom border of future ruler */}
+            <div className="absolute bottom-0 inset-x-0 h-px bg-rose-400/80" />
           </div>
         );
       })}
 
-      {/* Active ruler band */}
+      {/* Active ruler band — transparent window, just edge lines */}
       <div
         className="absolute left-0 right-0 pointer-events-auto"
         style={{ top: `${positionY}%`, height: `${height}%` }}
       >
         <div
-          className={`w-full h-full cursor-grab active:cursor-grabbing select-none border-y transition-colors ${
-            isDragging
-              ? 'bg-rose-400/20 border-rose-500/70'
-              : isAdjusting
-              ? 'bg-rose-400/15 border-rose-400/60'
-              : 'bg-rose-400/8 border-rose-400/40'
-          }`}
+          className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
           onPointerDown={handleBodyPointerDown}
         >
-          {/* Center dashed reference line */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-px h-px border-t border-dashed border-rose-400/40 pointer-events-none" />
+          {/* Top edge */}
+          <div className={`absolute top-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
+          {/* Bottom edge */}
+          <div className={`absolute bottom-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
+          {/* Center dashed reference */}
+          <div className="absolute inset-x-0 top-1/2 -translate-y-px h-px border-t border-dashed border-rose-400/25 pointer-events-none" />
         </div>
       </div>
 
