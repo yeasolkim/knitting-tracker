@@ -11,6 +11,39 @@ interface KnittingMarkersProps {
   onCancelPlace: () => void;
 }
 
+function PinIcon({ label, selected, dragging }: { label: string; selected: boolean; dragging: boolean }) {
+  const fill = selected ? 'rgba(139,92,246,0.92)' : 'rgba(167,139,250,0.72)';
+  const stroke = selected ? 'rgba(124,58,237,1)' : 'rgba(139,92,246,0.85)';
+  return (
+    <svg
+      width="24"
+      height="30"
+      viewBox="0 0 24 30"
+      style={{ overflow: 'visible', filter: dragging ? 'drop-shadow(0 3px 6px rgba(139,92,246,0.5))' : selected ? 'drop-shadow(0 2px 4px rgba(139,92,246,0.4))' : 'drop-shadow(0 1px 3px rgba(0,0,0,0.25))' }}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 1C6.477 1 2 5.477 2 11c0 7.5 10 18 10 18s10-10.5 10-18C22 5.477 17.523 1 12 1z"
+        fill={fill}
+        stroke={stroke}
+        strokeWidth="1.5"
+      />
+      <text
+        x="12"
+        y="14.5"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="700"
+        fill="white"
+        fillOpacity="0.95"
+        style={{ userSelect: 'none' }}
+      >
+        {label.length > 3 ? label.slice(0, 3) : label}
+      </text>
+    </svg>
+  );
+}
+
 const KnittingMarkers = memo(function KnittingMarkers({
   marks,
   isPlacing,
@@ -53,12 +86,7 @@ const KnittingMarkers = memo(function KnittingMarkers({
       setSelectedId(mark.id);
       setDraggingId(mark.id);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        markX: mark.x,
-        markY: mark.y,
-      };
+      dragStartRef.current = { x: e.clientX, y: e.clientY, markX: mark.x, markY: mark.y };
     },
     [isPlacing]
   );
@@ -92,7 +120,6 @@ const KnittingMarkers = memo(function KnittingMarkers({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Placing mode indicator */}
       {isPlacing && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <div className="flex items-center gap-2 bg-violet-600 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
@@ -108,10 +135,9 @@ const KnittingMarkers = memo(function KnittingMarkers({
         </div>
       )}
 
-      {/* Markers */}
       {marks.map((mark) => {
         const isSelected = selectedId === mark.id;
-        const isDraggingThis = draggingId === mark.id;
+        const isDragging = draggingId === mark.id;
 
         return (
           <div
@@ -120,26 +146,22 @@ const KnittingMarkers = memo(function KnittingMarkers({
             style={{
               left: `${mark.x}%`,
               top: `${mark.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: isSelected || isDraggingThis ? 25 : 20,
+              transform: `translate(-50%, -100%) scale(${isDragging ? 1.2 : 1})`,
+              transformOrigin: '50% 100%',
+              zIndex: isSelected || isDragging ? 25 : 20,
+              transition: isDragging ? 'none' : 'transform 0.1s',
             }}
           >
             <div
-              className={`touch-none select-none transition-transform ${isDraggingThis ? 'scale-125' : ''}`}
+              className="touch-none select-none cursor-grab active:cursor-grabbing"
               onPointerDown={handleMarkerPointerDown(mark)}
               onClick={(e) => e.stopPropagation()}
             >
-              <div
-                className={`relative flex items-center justify-center w-8 h-8 rounded-full shadow-md transition-all cursor-grab active:cursor-grabbing bg-violet-500/90 hover:bg-violet-500 ${
-                  isSelected ? 'ring-2 ring-violet-300 ring-offset-1 bg-violet-500' : ''
-                }`}
-              >
-                <span className="text-[11px] font-bold text-white">{mark.label}</span>
-              </div>
+              <PinIcon label={mark.label} selected={isSelected} dragging={isDragging} />
             </div>
 
-            {isSelected && !isDraggingThis && (
-              <div className="absolute -top-2 -right-2 z-30">
+            {isSelected && !isDragging && (
+              <div className="absolute -top-1 -right-1 z-30">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -156,7 +178,6 @@ const KnittingMarkers = memo(function KnittingMarkers({
         );
       })}
 
-      {/* Delete all */}
       {selectedId && marks.length > 1 && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <button

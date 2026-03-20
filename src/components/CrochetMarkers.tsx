@@ -11,6 +11,39 @@ interface CrochetMarkersProps {
   onCancelPlace: () => void;
 }
 
+function PinIcon({ label, selected, dragging }: { label: string; selected: boolean; dragging: boolean }) {
+  const fill = selected ? 'rgba(244,63,94,0.92)' : 'rgba(251,113,133,0.72)';
+  const stroke = selected ? 'rgba(244,63,94,1)' : 'rgba(244,63,94,0.85)';
+  return (
+    <svg
+      width="24"
+      height="30"
+      viewBox="0 0 24 30"
+      style={{ overflow: 'visible', filter: dragging ? 'drop-shadow(0 3px 6px rgba(244,63,94,0.5))' : selected ? 'drop-shadow(0 2px 4px rgba(244,63,94,0.4))' : 'drop-shadow(0 1px 3px rgba(0,0,0,0.25))' }}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 1C6.477 1 2 5.477 2 11c0 7.5 10 18 10 18s10-10.5 10-18C22 5.477 17.523 1 12 1z"
+        fill={fill}
+        stroke={stroke}
+        strokeWidth="1.5"
+      />
+      <text
+        x="12"
+        y="14.5"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="700"
+        fill="white"
+        fillOpacity="0.95"
+        style={{ userSelect: 'none' }}
+      >
+        {label.length > 3 ? label.slice(0, 3) : label}
+      </text>
+    </svg>
+  );
+}
+
 const CrochetMarkers = memo(function CrochetMarkers({
   marks,
   isPlacing,
@@ -53,12 +86,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
       setSelectedId(mark.id);
       setDraggingId(mark.id);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        markX: mark.x,
-        markY: mark.y,
-      };
+      dragStartRef.current = { x: e.clientX, y: e.clientY, markX: mark.x, markY: mark.y };
     },
     [isPlacing]
   );
@@ -92,17 +120,13 @@ const CrochetMarkers = memo(function CrochetMarkers({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Placing mode indicator */}
       {isPlacing && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <div className="flex items-center gap-2 bg-rose-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
             <span className="animate-pulse w-2 h-2 bg-white rounded-full" />
             도안을 탭하여 마커 배치
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancelPlace();
-              }}
+              onClick={(e) => { e.stopPropagation(); onCancelPlace(); }}
               className="ml-1 text-white/70 hover:text-white"
             >
               취소
@@ -111,7 +135,6 @@ const CrochetMarkers = memo(function CrochetMarkers({
         </div>
       )}
 
-      {/* Markers */}
       {marks.map((mark) => {
         const isSelected = selectedId === mark.id;
         const isDragging = draggingId === mark.id;
@@ -123,30 +146,22 @@ const CrochetMarkers = memo(function CrochetMarkers({
             style={{
               left: `${mark.x}%`,
               top: `${mark.y}%`,
-              transform: 'translate(-50%, -50%)',
+              transform: `translate(-50%, -100%) scale(${isDragging ? 1.2 : 1})`,
+              transformOrigin: '50% 100%',
               zIndex: isSelected || isDragging ? 25 : 20,
+              transition: isDragging ? 'none' : 'transform 0.1s',
             }}
           >
-            {/* Marker dot */}
             <div
-              className={`touch-none select-none transition-transform ${isDragging ? 'scale-125' : ''}`}
+              className="touch-none select-none cursor-grab active:cursor-grabbing"
               onPointerDown={handleMarkerPointerDown(mark)}
               onClick={(e) => e.stopPropagation()}
             >
-              <div
-                className={`relative flex items-center justify-center w-8 h-8 rounded-full shadow-md transition-all cursor-grab active:cursor-grabbing ${
-                  isSelected
-                    ? 'bg-rose-500 ring-2 ring-rose-300 ring-offset-1'
-                    : 'bg-rose-500/80 hover:bg-rose-500'
-                }`}
-              >
-                <span className="text-[11px] font-bold text-white">{mark.label}</span>
-              </div>
+              <PinIcon label={mark.label} selected={isSelected} dragging={isDragging} />
             </div>
 
-            {/* Delete button on selection */}
             {isSelected && !isDragging && (
-              <div className="absolute -top-2 -right-2 z-30">
+              <div className="absolute -top-1 -right-1 z-30">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -163,7 +178,6 @@ const CrochetMarkers = memo(function CrochetMarkers({
         );
       })}
 
-      {/* Delete all - fixed position, shown when selected */}
       {selectedId && marks.length > 1 && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <button

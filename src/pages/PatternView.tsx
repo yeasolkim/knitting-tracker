@@ -498,6 +498,7 @@ function PatternViewerPage({ pattern }: Props) {
               height={screenRulerHeight}
               direction={rulerDirection}
               isAdjusting={isAdjustingRuler}
+              isPlacingMarker={isPlacingKnittingMarker}
               onChangePosition={handleRulerPositionChange}
               onChangeHeight={handleRulerHeightChange}
               onComplete={handleComplete}

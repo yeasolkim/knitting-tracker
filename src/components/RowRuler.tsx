@@ -7,6 +7,7 @@ interface RowRulerProps {
   height: number;
   direction: RulerDirection;
   isAdjusting?: boolean;
+  isPlacingMarker?: boolean;
   onChangePosition: (y: number) => void;
   onChangeHeight: (h: number) => void;
   onComplete: () => void;
@@ -18,6 +19,7 @@ const RowRuler = memo(function RowRuler({
   height,
   direction,
   isAdjusting = false,
+  isPlacingMarker = false,
   onChangePosition,
   onChangeHeight,
   onComplete,
@@ -137,8 +139,8 @@ const RowRuler = memo(function RowRuler({
 
       {/* Active ruler band — transparent window, just edge lines */}
       <div
-        className="absolute left-0 right-0 pointer-events-auto"
-        style={{ top: `${positionY}%`, height: `${height}%` }}
+        className="absolute left-0 right-0"
+        style={{ top: `${positionY}%`, height: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto' }}
       >
         <div
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
