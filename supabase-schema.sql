@@ -14,6 +14,8 @@ create table if not exists patterns (
   file_type text not null check (file_type in ('image', 'pdf')),
   thumbnail_url text,
   total_rows integer not null default 1,
+  yarn text not null default '',
+  needle text not null default '',
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -26,7 +28,15 @@ create table if not exists pattern_progress (
   current_row integer not null default 0,
   stitch_count integer not null default 0,
   ruler_position_y float not null default 50,
+  ruler_height float not null default 5,
+  ruler_direction text not null default 'up',
+  completed_marks jsonb not null default '[]',
   notes jsonb not null default '{}',
+  note_positions jsonb not null default '{}',
+  sub_patterns jsonb not null default '[]',
+  active_sub_pattern_id text not null default '',
+  crochet_marks jsonb not null default '[]',
+  knitting_marks jsonb not null default '[]',
   updated_at timestamptz default now() not null,
   unique(pattern_id, user_id)
 );
