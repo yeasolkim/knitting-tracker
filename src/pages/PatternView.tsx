@@ -449,6 +449,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerHeightPercent={rulerHeight}
           onScrollStep={handleScrollStep}
           onTransformChange={handleTransformChange}
+          onResetRuler={!isCrochet ? () => setRulerY(5) : undefined}
           contentOverlay={
             <>
               {!isCrochet && (

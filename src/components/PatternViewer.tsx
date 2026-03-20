@@ -26,12 +26,13 @@ interface PatternViewerProps {
   rulerHeightPercent?: number;
   onScrollStep?: (direction: 'up' | 'down') => void;
   onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number) => void;
+  onResetRuler?: () => void;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
@@ -303,6 +304,21 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             <span className="sm:hidden">맞춤</span>
             <span className="hidden sm:inline">화면<br />맞춤</span>
           </button>
+
+          {onResetRuler && (
+            <>
+              <div className="h-0.5 sm:h-1" />
+              <button
+                onClick={onResetRuler}
+                className="w-9 h-9 sm:w-auto bg-rose-50 rounded-lg shadow-sm border border-rose-200 flex items-center justify-center text-rose-500 hover:bg-rose-100 active:bg-rose-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-1 sm:py-1.5 leading-tight text-center"
+                aria-label="진행선 위치 초기화"
+                title="진행선을 위쪽으로 초기화"
+              >
+                <span className="sm:hidden">선<br/>초기화</span>
+                <span className="hidden sm:inline">진행선<br />초기화</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
