@@ -100,8 +100,8 @@ const RowRuler = memo(function RowRuler({
       {/* Ghost preview lines */}
       {previewLines.map((y, i) => {
         const baseOpacity = isAdjusting
-          ? Math.max(0.12, 0.45 - i * 0.08)
-          : Math.max(0.04, 0.15 - i * 0.03);
+          ? Math.max(0.2, 0.65 - i * 0.12)
+          : Math.max(0.08, 0.32 - i * 0.06);
         return (
           <div
             key={i}
@@ -116,8 +116,8 @@ const RowRuler = memo(function RowRuler({
             <div
               className={`w-full h-full border-y ${
                 isAdjusting
-                  ? 'bg-rose-400/40 border-rose-400/60'
-                  : 'bg-rose-300/20 border-rose-300/30'
+                  ? 'bg-rose-400/50 border-rose-500/70'
+                  : 'bg-rose-400/30 border-rose-400/50'
               }`}
             />
           </div>
@@ -130,12 +130,12 @@ const RowRuler = memo(function RowRuler({
         style={{ top: `${positionY}%`, height: `${height}%` }}
       >
         <div
-          className={`w-full h-full cursor-grab active:cursor-grabbing select-none border-y-2 transition-colors ${
+          className={`w-full h-full cursor-grab active:cursor-grabbing select-none border-y transition-colors ${
             isDragging
-              ? 'bg-rose-400/20 border-rose-500/80'
-              : isAdjusting
               ? 'bg-rose-400/20 border-rose-500/70'
-              : 'bg-rose-400/10 border-rose-400/60'
+              : isAdjusting
+              ? 'bg-rose-400/15 border-rose-400/60'
+              : 'bg-rose-400/8 border-rose-400/40'
           }`}
           onPointerDown={handleBodyPointerDown}
         >

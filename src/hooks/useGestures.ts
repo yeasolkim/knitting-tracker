@@ -194,6 +194,10 @@ export function useGestures(
     }));
   }, []);
 
+  const setXY = useCallback((x: number, y: number) => {
+    setTransform((prev) => ({ ...prev, x, y }));
+  }, []);
+
   const resetTransform = useCallback(() => {
     setTransform({ scale: 1, x: 0, y: 0 });
   }, []);
@@ -214,6 +218,7 @@ export function useGestures(
     zoomIn,
     zoomOut,
     panBy,
+    setXY,
     resetTransform,
   };
 }

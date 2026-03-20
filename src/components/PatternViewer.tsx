@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useGestures } from '@/hooks/useGestures';
 
 let pdfVersion = '';
@@ -31,7 +31,7 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5, rulerYPercent, rulerHeightPercent);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
       cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
@@ -64,6 +64,85 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         return { y: contentYPercent, height: contentHeightPercent };
       },
     }), [transform]);
+
+    // Scrollbar drag state
+    const scrollDragRef = useRef<{
+      axis: 'v' | 'h';
+      startClient: number;
+      startOffset: number;
+      otherAxis: number;
+      maxOffset: number;
+      trackSize: number;
+      thumbFrac: number;
+    } | null>(null);
+
+    const vTrackRef = useRef<HTMLDivElement>(null);
+    const hTrackRef = useRef<HTMLDivElement>(null);
+
+    const handleScrollThumbDown = useCallback(
+      (axis: 'v' | 'h') => (e: React.PointerEvent) => {
+        e.stopPropagation();
+        (e.target as Element).setPointerCapture(e.pointerId);
+        const H = sizeRef.current?.clientHeight || 1;
+        const W = sizeRef.current?.clientWidth || 1;
+        const s = transform.scale;
+        const trackEl = axis === 'v' ? vTrackRef.current : hTrackRef.current;
+        if (!trackEl) return;
+        const trackSize = axis === 'v' ? trackEl.clientHeight : trackEl.clientWidth;
+        const maxOffset = ((axis === 'v' ? H : W) * (s - 1)) / 2;
+        scrollDragRef.current = {
+          axis,
+          startClient: axis === 'v' ? e.clientY : e.clientX,
+          startOffset: axis === 'v' ? transform.y : transform.x,
+          otherAxis: axis === 'v' ? transform.x : transform.y,
+          maxOffset,
+          trackSize,
+          thumbFrac: 1 / s,
+        };
+      },
+      [transform]
+    );
+
+    const handleScrollPointerMove = useCallback(
+      (e: React.PointerEvent) => {
+        const d = scrollDragRef.current;
+        if (!d) return;
+        e.stopPropagation();
+        const client = d.axis === 'v' ? e.clientY : e.clientX;
+        const delta = client - d.startClient;
+        const thumbPx = d.trackSize * d.thumbFrac;
+        const scrollable = d.trackSize - thumbPx;
+        if (scrollable <= 0) return;
+        const newOffset = d.startOffset - delta * (2 * d.maxOffset) / scrollable;
+        const clamped = Math.max(-d.maxOffset, Math.min(d.maxOffset, newOffset));
+        if (d.axis === 'v') {
+          setXY(d.otherAxis, clamped);
+        } else {
+          setXY(clamped, d.otherAxis);
+        }
+      },
+      [setXY]
+    );
+
+    const handleScrollPointerUp = useCallback(() => {
+      scrollDragRef.current = null;
+    }, []);
+
+    // Compute scrollbar thumb positions
+    const H = sizeRef.current?.clientHeight || 1;
+    const W = sizeRef.current?.clientWidth || 1;
+    const s = transform.scale;
+    const showScrollbars = s > 1.05;
+
+    const vThumbFrac = 1 / s;
+    const vMaxTy = (H * (s - 1)) / 2;
+    const vScrollPos = vMaxTy > 0 ? (vMaxTy - transform.y) / (2 * vMaxTy) : 0.5;
+    const vThumbTop = Math.max(0, Math.min(1 - vThumbFrac, vScrollPos * (1 - vThumbFrac)));
+
+    const hThumbFrac = 1 / s;
+    const hMaxTx = (W * (s - 1)) / 2;
+    const hScrollPos = hMaxTx > 0 ? (hMaxTx - transform.x) / (2 * hMaxTx) : 0.5;
+    const hThumbLeft = Math.max(0, Math.min(1 - hThumbFrac, hScrollPos * (1 - hThumbFrac)));
 
     return (
       <div className="relative w-full h-full overflow-hidden bg-gray-50 rounded-xl" ref={sizeRef}>
@@ -109,13 +188,56 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               </Suspense>
             )}
 
-            {/* Completed marks - moves with content */}
             {contentOverlay}
           </div>
         </div>
 
         {/* Fixed overlays (ruler) */}
         {children}
+
+        {/* Vertical scrollbar */}
+        {showScrollbars && (
+          <div
+            ref={vTrackRef}
+            className="absolute right-1 top-2 bottom-14 w-1.5 z-25 pointer-events-none"
+            onPointerMove={handleScrollPointerMove}
+            onPointerUp={handleScrollPointerUp}
+            onPointerCancel={handleScrollPointerUp}
+          >
+            <div className="relative w-full h-full rounded-full bg-black/8">
+              <div
+                className="absolute w-full rounded-full bg-gray-500/40 hover:bg-gray-600/50 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                style={{
+                  top: `${vThumbTop * 100}%`,
+                  height: `${vThumbFrac * 100}%`,
+                }}
+                onPointerDown={handleScrollThumbDown('v')}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Horizontal scrollbar */}
+        {showScrollbars && (
+          <div
+            ref={hTrackRef}
+            className="absolute bottom-1 left-2 right-14 h-1.5 z-25 pointer-events-none"
+            onPointerMove={handleScrollPointerMove}
+            onPointerUp={handleScrollPointerUp}
+            onPointerCancel={handleScrollPointerUp}
+          >
+            <div className="relative w-full h-full rounded-full bg-black/8">
+              <div
+                className="absolute h-full rounded-full bg-gray-500/40 hover:bg-gray-600/50 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                style={{
+                  left: `${hThumbLeft * 100}%`,
+                  width: `${hThumbFrac * 100}%`,
+                }}
+                onPointerDown={handleScrollThumbDown('h')}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Controls */}
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">

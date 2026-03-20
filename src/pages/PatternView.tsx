@@ -551,10 +551,8 @@ function PatternViewerPage({ pattern }: Props) {
             {/* Row 2: 코수 + 진행선 슬라이더 */}
             <div className="flex items-center gap-3">
               <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <svg className="w-3.5 h-3.5 text-rose-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+              <div className="flex items-center gap-2 flex-1 min-w-0 bg-rose-50 border border-rose-100 rounded-xl px-2.5 py-1.5">
+                <span className="text-[10px] font-semibold text-rose-400 shrink-0 whitespace-nowrap">진행선 높이</span>
                 <input
                   type="range"
                   min={0.5}
@@ -570,7 +568,7 @@ function PatternViewerPage({ pattern }: Props) {
                   onTouchEnd={() => setIsAdjustingRuler(false)}
                   className="flex-1 h-1.5 accent-rose-400 cursor-pointer min-w-0"
                 />
-                <span className="text-[11px] text-rose-400 font-mono w-8 text-right shrink-0">
+                <span className="text-[11px] text-rose-500 font-mono w-8 text-right shrink-0">
                   {rulerHeight.toFixed(1)}%
                 </span>
               </div>
