@@ -71,7 +71,7 @@ const RowRuler = memo(function RowRuler({
 
   const previewLines = useMemo(() => {
     const lines: number[] = [];
-    const count = 4;
+    const count = 10;
     if (direction === 'up') {
       for (let i = 1; i <= count; i++) {
         const y = positionY - height * i;
@@ -112,7 +112,7 @@ const RowRuler = memo(function RowRuler({
 
       {/* Ghost preview lines — only visible while adjusting height */}
       {isAdjusting && previewLines.map((y, i) => {
-        const opacity = Math.max(0.35, 0.85 - i * 0.15);
+        const opacity = Math.max(0.1, 0.85 - i * 0.08);
         return (
           <div
             key={i}
