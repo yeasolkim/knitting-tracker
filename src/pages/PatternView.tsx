@@ -481,9 +481,9 @@ function PatternViewerPage({ pattern }: Props) {
     if (isCrochet) return;
     const { rulerHeight: rh } = latestRef.current;
     if (direction === 'up') {
-      setRulerY((prev) => prev + rh);
-    } else {
       setRulerY((prev) => prev - rh);
+    } else {
+      setRulerY((prev) => prev + rh);
     }
   }, [isCrochet]);
 
