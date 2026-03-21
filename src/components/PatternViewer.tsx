@@ -44,7 +44,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const [containerWidth, setContainerWidth] = useState(600);
     const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
 
-    // Notify parent of every transform change so ruler can track content coords
+    // Keep a ref to the latest transform so ResizeObserver can read it without
+    // being recreated on every pan/zoom frame.
+    const transformRef = useRef(transform);
+    useEffect(() => { transformRef.current = transform; }, [transform]);
+
+    // Notify parent whenever transform OR container size changes
+    const onTransformChangeRef = useRef(onTransformChange);
+    useEffect(() => { onTransformChangeRef.current = onTransformChange; }, [onTransformChange]);
+
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
@@ -54,7 +62,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     useEffect(() => {
       if (!sizeRef.current) return;
       const observer = new ResizeObserver((entries) => {
-        setContainerWidth(entries[0].contentRect.width);
+        const { width, height } = entries[0].contentRect;
+        setContainerWidth(width);
+        // Notify parent of new dimensions so content↔screen conversions stay accurate
+        onTransformChangeRef.current?.(transformRef.current, height, width);
       });
       observer.observe(sizeRef.current);
       return () => observer.disconnect();
