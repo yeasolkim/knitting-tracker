@@ -14,6 +14,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     const supabase = createClient();
+
+    // 현재 세션 확인
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
         navigate('/login');
@@ -22,6 +24,18 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       setUser(session.user);
       setLoading(false);
     });
+
+    // 토큰 갱신/로그아웃 이벤트 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate('/login');
+      } else if (session?.user) {
+        setUser(session.user);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   if (loading || !user) {
