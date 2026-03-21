@@ -568,16 +568,19 @@ function PatternViewerPage({ pattern }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
-          <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
-            {isCrochet ? '코바늘' : '대바늘'}
-          </span>
-          {pattern.yarn && (
-            <span className="text-[11px] text-[#a08060] shrink-0 hidden sm:block">{pattern.yarn}</span>
-          )}
-          {pattern.needle && (
-            <span className="text-[11px] text-[#a08060] shrink-0 hidden sm:block">· {pattern.needle}</span>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
+              <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
+                {isCrochet ? '코바늘' : '대바늘'}
+              </span>
+            </div>
+            {(pattern.yarn || pattern.needle) && (
+              <p className="text-[11px] text-[#a08060] truncate mt-0.5">
+                {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
