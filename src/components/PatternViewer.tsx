@@ -134,7 +134,12 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const trackEl = axis === 'v' ? vTrackRef.current : hTrackRef.current;
         if (!trackEl) return;
         const trackSize = axis === 'v' ? trackEl.clientHeight : trackEl.clientWidth;
-        const maxOffset = ((axis === 'v' ? H : W) * (s - 1)) / 2;
+        const containerSize = axis === 'v' ? H : W;
+        const imgSize = axis === 'v'
+          ? (contentItemRef.current?.offsetHeight || containerSize)
+          : (contentItemRef.current?.offsetWidth || containerSize);
+        const maxOffset = Math.max(0, (imgSize * s - containerSize) / 2);
+        const thumbFrac = Math.min(1, containerSize / Math.max(imgSize * s, containerSize));
         scrollDragRef.current = {
           axis,
           startClient: axis === 'v' ? e.clientY : e.clientX,
@@ -142,7 +147,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           otherAxis: axis === 'v' ? transform.x : transform.y,
           maxOffset,
           trackSize,
-          thumbFrac: 1 / s,
+          thumbFrac,
         };
       },
       [transform]
@@ -189,21 +194,24 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       };
     }, [isPanning]);
 
-    // Compute scrollbar thumb positions
+    // Compute scrollbar thumb positions based on actual content (image) size
     const H = sizeRef.current?.clientHeight || 1;
     const W = sizeRef.current?.clientWidth || 1;
     const s = transform.scale;
-    const showScrollbars = scrollbarVisible || s > 1.05;
+    const cImgH = contentItemRef.current?.offsetHeight || H;
+    const cImgW = contentItemRef.current?.offsetWidth || W;
 
-    const vThumbFrac = 1 / s;
-    const vMaxTy = (H * (s - 1)) / 2;
+    const vMaxTy = Math.max(0, (cImgH * s - H) / 2);
+    const vThumbFrac = Math.min(1, H / Math.max(cImgH * s, H));
     const vScrollPos = vMaxTy > 0 ? (vMaxTy - transform.y) / (2 * vMaxTy) : 0.5;
     const vThumbTop = Math.max(0, Math.min(1 - vThumbFrac, vScrollPos * (1 - vThumbFrac)));
 
-    const hThumbFrac = 1 / s;
-    const hMaxTx = (W * (s - 1)) / 2;
+    const hMaxTx = Math.max(0, (cImgW * s - W) / 2);
+    const hThumbFrac = Math.min(1, W / Math.max(cImgW * s, W));
     const hScrollPos = hMaxTx > 0 ? (hMaxTx - transform.x) / (2 * hMaxTx) : 0.5;
     const hThumbLeft = Math.max(0, Math.min(1 - hThumbFrac, hScrollPos * (1 - hThumbFrac)));
+
+    const showScrollbars = scrollbarVisible || vMaxTy > 1 || hMaxTx > 1;
 
     return (
       <div className="relative w-full h-full overflow-hidden bg-gray-50 rounded-xl" ref={sizeRef}>
