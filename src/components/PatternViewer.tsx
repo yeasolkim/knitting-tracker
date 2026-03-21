@@ -320,7 +320,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             className="px-2 h-9 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="진행선으로 이동"
           >
-            <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선<br/>이동</span>
+            <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선으로<br/>이동</span>
           </button>
 
           {onResetRuler && (
