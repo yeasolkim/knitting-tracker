@@ -37,13 +37,13 @@ export default function PatternNew() {
 
           <main className="max-w-lg mx-auto px-4 py-8 sm:py-12">
             <div className="mb-7">
-              <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 min-h-[44px] transition-colors">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] min-h-[44px] transition-colors tracking-wide font-medium">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 내 도안
               </Link>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">도안 추가</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] mt-1 tracking-tight">도안 추가</h1>
             </div>
 
             <UploadForm />
@@ -203,27 +203,28 @@ function UploadForm() {
       {!file ? (
         <FileDropZone onFileSelect={handleFileSelect} />
       ) : (
-        <div className="space-y-3">
-          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+        <div className="space-y-2.5">
+          <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#d4b896]">
             {preview ? (
               <img
                 src={preview}
                 alt="미리보기"
-                className="max-h-52 mx-auto rounded-xl object-contain"
+                className="max-h-52 mx-auto rounded-lg object-contain"
               />
             ) : (
-              <div className="flex items-center justify-center h-28 gap-3 text-gray-400">
-                <svg className="w-8 h-8 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="flex items-center justify-center h-28 gap-3">
+                <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
+                  <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
-                <p className="text-sm text-gray-400 truncate max-w-[200px]">{file.name}</p>
+                <p className="text-sm text-[#a08060] truncate max-w-[200px]">{file.name}</p>
               </div>
             )}
           </div>
           <button
             type="button"
             onClick={() => { setFile(null); setPreview(null); }}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             다른 파일로 바꾸기
           </button>
@@ -231,7 +232,7 @@ function UploadForm() {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           도안 이름
         </label>
         <input
@@ -239,13 +240,13 @@ function UploadForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full border border-gray-100 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 placeholder:text-gray-300"
+          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder="예: 봄 카디건"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           종류
         </label>
         <div className="flex gap-2">
@@ -257,10 +258,10 @@ function UploadForm() {
               key={option.value}
               type="button"
               onClick={() => setType(option.value)}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+              className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold tracking-wide transition-all ${
                 type === option.value
-                  ? 'border-rose-400 bg-rose-50 text-rose-500'
-                  : 'border-gray-100 bg-white text-gray-400 hover:border-gray-200'
+                  ? 'border-[#b5541e] bg-[#b5541e] text-[#fdf6e8]'
+                  : 'border-[#d4b896] bg-[#fdf6e8] text-[#7a5c46] hover:border-[#b5541e]'
               }`}
             >
               {option.label}
@@ -270,37 +271,37 @@ function UploadForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          실 <span className="text-gray-300 font-normal">(선택)</span>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+          실 <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">(선택)</span>
         </label>
         <input
           type="text"
           value={yarn}
           onChange={(e) => setYarn(e.target.value)}
-          className="w-full border border-gray-100 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 placeholder:text-gray-300"
+          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder="예: 코튼 4합, 울 혼방"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          바늘 <span className="text-gray-300 font-normal">(선택)</span>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+          바늘 <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">(선택)</span>
         </label>
         <input
           type="text"
           value={needle}
           onChange={(e) => setNeedle(e.target.value)}
-          className="w-full border border-gray-100 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 placeholder:text-gray-300"
+          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder="예: 4mm, 3/0호"
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-[#b5541e] font-medium">{error}</p>}
 
       <button
         type="submit"
         disabled={!file || !title || uploading}
-        className="w-full bg-rose-400 text-white py-3 min-h-[44px] rounded-xl text-sm font-medium hover:bg-rose-500 active:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="w-full bg-[#b5541e] text-[#fdf6e8] py-3 min-h-[48px] rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#9a4318] disabled:opacity-40 disabled:cursor-not-allowed transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
       >
         {uploading ? '올리는 중...' : '저장하기'}
       </button>

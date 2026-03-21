@@ -54,20 +54,24 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen">
       {/* Nav */}
-      <nav className="bg-[#faf9f7] border-b border-gray-100 sticky top-0 z-50">
+      <nav className="bg-[#f5edd6] border-b-2 border-[#d4b896] sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link to="/dashboard" className="font-bold text-gray-900 tracking-tight">
-            코따
+          <Link to="/dashboard" className="flex items-center gap-2.5">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
+              <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+            <span className="font-bold text-[#3d2b1f] tracking-tight">코따</span>
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-400 hidden sm:block truncate max-w-[160px]">
+            <span className="text-[11px] text-[#a08060] hidden sm:block truncate max-w-[160px] tracking-wide">
               {userEmail}
             </span>
             <button
               onClick={handleLogout}
-              className="text-xs text-gray-400 hover:text-gray-700 transition-colors min-h-[44px] flex items-center"
+              className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
             >
               로그아웃
             </button>
@@ -77,18 +81,18 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <div className="flex items-center justify-between mb-7 sm:mb-9">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">내 도안</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">내 도안</h1>
             {!loading && patterns.length > 0 && (
-              <p className="text-sm text-gray-400 mt-0.5">{patterns.length}개</p>
+              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{patterns.length}개 보관 중</p>
             )}
           </div>
           <Link
             to="/patterns/new"
-            className="inline-flex items-center gap-1.5 bg-rose-400 text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-rose-500 active:bg-rose-600 transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             도안 추가
@@ -98,20 +102,21 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-6 h-6 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : patterns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mb-5">
-              <svg className="w-7 h-7 text-rose-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <div className="w-16 h-16 rounded-xl bg-[#fdf6e8] border-2 border-[#d4b896] flex items-center justify-center mb-5 shadow-[3px_3px_0_#d4b896]">
+              <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
+                <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             </div>
-            <p className="text-gray-600 font-medium mb-1">아직 도안이 없어요</p>
-            <p className="text-sm text-gray-400 mb-6">첫 도안을 올려보세요</p>
+            <p className="text-[#3d2b1f] font-semibold mb-1.5">아직 도안이 없어요</p>
+            <p className="text-sm text-[#7a5c46] mb-7">첫 도안을 올려보세요</p>
             <Link
               to="/patterns/new"
-              className="text-sm text-rose-400 hover:text-rose-500 font-medium transition-colors"
+              className="text-sm font-semibold text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors border-b-2 border-[#b5541e] pb-0.5"
             >
               도안 추가하기 →
             </Link>

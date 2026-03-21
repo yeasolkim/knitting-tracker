@@ -1,36 +1,60 @@
 import { Link } from 'react-router-dom';
 
+function StitchDivider() {
+  return (
+    <div className="flex items-center gap-1.5 justify-center my-8">
+      {Array.from({ length: 7 }).map((_, i) => (
+        <svg key={i} width="10" height="8" viewBox="0 0 10 8" fill="none">
+          <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeOpacity="0.35" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-[#faf9f7] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between">
-        <span className="font-bold text-gray-900 tracking-tight text-lg">코따</span>
+      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#d4b896] bg-[#f5edd6]">
+        <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">코따</span>
         <Link
           to="/login"
-          className="text-sm text-gray-500 hover:text-gray-900 transition-colors min-h-[44px] flex items-center"
+          className="text-sm text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
         >
           로그인
         </Link>
       </nav>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-5 text-center -mt-8">
-        <p className="text-[11px] font-semibold tracking-widest text-rose-400 uppercase mb-5">
-          Knitting Tracker
-        </p>
-        <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 leading-tight mb-5">
-          내 도안,
+      <main className="flex-1 flex flex-col items-center justify-center px-5 text-center -mt-4">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 border-2 border-[#d4b896] rounded-full px-4 py-1.5 mb-8">
+          <svg width="12" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          </svg>
+          <span className="text-[10px] font-semibold tracking-[0.18em] text-[#b5541e] uppercase">Knitting Tracker</span>
+          <svg width="12" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          </svg>
+        </div>
+
+        {/* Headline */}
+        <h1 className="text-[2.8rem] sm:text-6xl font-bold text-[#3d2b1f] leading-[1.1] tracking-tight mb-5">
+          뜨다 멈춰도
           <br />
-          언제나 이어서.
+          <span className="text-[#b5541e]">괜찮아요.</span>
         </h1>
-        <p className="text-base sm:text-lg text-gray-400 max-w-sm leading-relaxed mb-10">
-          도안 파일을 올리면<br />
-          지금 뜨는 단을 기억해 둡니다.
+
+        <p className="text-[15px] sm:text-base text-[#7a5c46] max-w-[260px] sm:max-w-xs leading-relaxed mb-10">
+          어디까지 떴는지 까먹어도<br />
+          코따가 기억하고 있을게요.
         </p>
+
+        {/* CTA */}
         <Link
           to="/login"
-          className="inline-flex items-center gap-3 bg-gray-900 text-white px-7 py-3.5 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2.5 bg-[#b5541e] text-[#fdf6e8] px-7 py-3.5 rounded-lg text-sm font-semibold tracking-wide hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318]"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -41,22 +65,32 @@ export default function Landing() {
           Google로 시작하기
         </Link>
 
-        {/* Feature strip */}
-        <div className="mt-16 sm:mt-20 flex items-center gap-5 sm:gap-8 text-xs sm:text-sm text-gray-400 flex-wrap justify-center">
-          {['이미지 · PDF 도안', '진행선 표시', '단수 카운터', '자동 저장'].map((f, i) => (
-            <span key={f} className="flex items-center gap-2">
-              {i > 0 && <span className="w-px h-3 bg-gray-200 hidden sm:block" />}
-              {f}
-            </span>
+        <StitchDivider />
+
+        {/* Features */}
+        <div className="grid grid-cols-2 gap-2.5 max-w-xs w-full">
+          {[
+            { label: '이미지 & PDF', desc: '도안 파일 업로드' },
+            { label: '진행선', desc: '드래그로 위치 조정' },
+            { label: '단수 카운터', desc: '탭해서 올리기' },
+            { label: '자동 저장', desc: '끄고 켜도 그대로' },
+          ].map((f) => (
+            <div
+              key={f.label}
+              className="bg-[#fdf6e8] border-2 border-[#d4b896] rounded-lg px-3 py-2.5 text-left"
+            >
+              <p className="text-[11px] font-bold tracking-wide text-[#3d2b1f] uppercase">{f.label}</p>
+              <p className="text-[10px] text-[#a08060] mt-0.5">{f.desc}</p>
+            </div>
           ))}
         </div>
 
-        <p className="mt-5 text-xs text-gray-300">
-          코바늘 · 대바늘 모두 사용 가능
+        <p className="mt-7 text-[11px] text-[#a08060] tracking-wide">
+          코바늘 · 대바늘 모두 됩니다
         </p>
       </main>
 
-      <footer className="py-6 text-center text-xs text-gray-300">
+      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#d4b896]">
         © 2026 코따
       </footer>
     </div>

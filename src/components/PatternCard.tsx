@@ -22,10 +22,10 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
   const typeLabel = pattern.type === 'crochet' ? '코바늘' : '대바늘';
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group relative">
+    <div className="bg-[#fdf6e8] rounded-xl border-2 border-[#d4b896] overflow-hidden hover:shadow-[4px_4px_0_#d4b896] transition-all group relative">
       {/* Thumbnail */}
       <Link to={`/patterns/${pattern.id}`}>
-        <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
+        <div className="aspect-[4/3] bg-[#f5edd6] relative overflow-hidden border-b-2 border-[#d4b896]">
           {pattern.thumbnail_url || pattern.file_type === 'image' ? (
             <img
               src={pattern.thumbnail_url || pattern.file_url}
@@ -34,13 +34,14 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg width="32" height="22" viewBox="0 0 28 18" fill="none">
+                <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             </div>
           )}
           {/* Type badge */}
-          <span className="absolute top-2 left-2 text-[10px] font-medium bg-black/40 text-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
+          <span className="absolute top-2 left-2 text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded">
             {typeLabel}
           </span>
         </div>
@@ -50,11 +51,11 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
       <div className="p-3">
         <div className="flex items-start justify-between gap-1 mb-2.5">
           <Link to={`/patterns/${pattern.id}`} className="min-w-0 flex-1">
-            <h3 className="font-medium text-sm text-gray-900 line-clamp-1 group-hover:text-rose-500 transition-colors">
+            <h3 className="font-semibold text-sm text-[#3d2b1f] line-clamp-1 tracking-tight group-hover:text-[#b5541e] transition-colors">
               {pattern.title}
             </h3>
             {(pattern.yarn || pattern.needle) && (
-              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
+              <p className="text-[10px] text-[#a08060] mt-0.5 line-clamp-1 tracking-wide">
                 {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
               </p>
             )}
@@ -65,13 +66,13 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => onDelete(pattern.id)}
-                className="text-[10px] text-white bg-red-400 hover:bg-red-500 px-1.5 py-0.5 rounded-full transition-colors"
+                className="text-[10px] text-[#fdf6e8] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors"
               >
                 삭제
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 transition-colors"
+                className="text-[10px] text-[#a08060] hover:text-[#7a5c46] px-1.5 py-0.5 transition-colors"
               >
                 취소
               </button>
@@ -79,7 +80,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
           ) : (
             <button
               onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
-              className="text-gray-200 hover:text-red-300 transition-colors p-1 shrink-0 -mr-1 -mt-0.5"
+              className="text-[#d4b896] hover:text-[#b5541e] transition-colors p-1 shrink-0 -mr-1 -mt-0.5"
               aria-label="삭제"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -92,12 +93,12 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
         {/* Progress */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-400">{currentRows}단</span>
-            <span className="text-[10px] text-gray-300">/ {totalRows}단</span>
+            <span className="text-[10px] text-[#7a5c46] font-semibold tracking-wide">{currentRows}단</span>
+            <span className="text-[10px] text-[#a08060] tracking-wide">/ {totalRows}단</span>
           </div>
-          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#f5edd6] border border-[#d4b896] rounded-full overflow-hidden">
             <div
-              className="h-full bg-rose-300 rounded-full transition-all"
+              className="h-full bg-[#b5541e] rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>

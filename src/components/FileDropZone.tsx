@@ -58,8 +58,11 @@ export default function FileDropZone({
     <div>
       <div
         className={`
-          border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all min-h-[120px] flex flex-col items-center justify-center
-          ${isDragOver ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300 hover:bg-rose-50/50'}
+          border-2 border-dashed rounded-xl p-8 sm:p-12 text-center cursor-pointer transition-all min-h-[140px] flex flex-col items-center justify-center
+          ${isDragOver
+            ? 'border-[#b5541e] bg-[#fdf6e8]'
+            : 'border-[#d4b896] bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6]'
+          }
         `}
         onDragOver={(e) => {
           e.preventDefault();
@@ -69,12 +72,18 @@ export default function FileDropZone({
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
-        <div className="text-4xl mb-3">📁</div>
-        <p className="text-sm sm:text-base text-gray-600 font-medium mb-1">
-          파일을 드래그하거나 클릭하여 선택
+        {/* Knit icon */}
+        <div className="mb-4">
+          <svg width="36" height="24" viewBox="0 0 36 24" fill="none">
+            <path d="M0,12 L9,0 L18,12 L27,0 L36,12" stroke={isDragOver ? '#b5541e' : '#d4b896'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M0,24 L9,12 L18,24 L27,12 L36,24" stroke={isDragOver ? '#b5541e' : '#d4b896'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <p className="text-sm font-semibold text-[#3d2b1f] mb-1 tracking-wide">
+          파일을 여기 올려두거나 탭하기
         </p>
-        <p className="text-sm text-gray-400">
-          이미지 또는 PDF (최대 {maxSizeMB}MB)
+        <p className="text-xs text-[#a08060] tracking-wide">
+          이미지 · PDF (최대 {maxSizeMB}MB)
         </p>
         <input
           ref={inputRef}
@@ -84,7 +93,7 @@ export default function FileDropZone({
           className="hidden"
         />
       </div>
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-xs text-[#b5541e] font-medium">{error}</p>}
     </div>
   );
 }
