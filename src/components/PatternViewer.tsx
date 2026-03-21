@@ -270,13 +270,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
         {/* Vertical scrollbar */}
         {showScrollbars && (
-          <div
-            ref={vTrackRef}
-            className="absolute right-1 top-2 bottom-14 w-3 z-25"
-            onPointerMove={handleScrollPointerMove}
-            onPointerUp={handleScrollPointerUp}
-            onPointerCancel={handleScrollPointerUp}
-          >
+          <div ref={vTrackRef} className="absolute right-1 top-2 bottom-14 w-3 z-25">
             <div className="relative w-full h-full">
               <div
                 className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/20"
@@ -284,11 +278,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               />
               <div
                 className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
-                style={{
-                  top: `${vThumbTop * 100}%`,
-                  height: `${vThumbFrac * 100}%`,
-                }}
+                style={{ top: `${vThumbTop * 100}%`, height: `${vThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('v')}
+                onPointerMove={handleScrollPointerMove}
+                onPointerUp={handleScrollPointerUp}
+                onPointerCancel={handleScrollPointerUp}
               />
             </div>
           </div>
@@ -296,13 +290,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
         {/* Horizontal scrollbar */}
         {showScrollbars && (
-          <div
-            ref={hTrackRef}
-            className="absolute bottom-1 left-2 right-14 h-3 z-25"
-            onPointerMove={handleScrollPointerMove}
-            onPointerUp={handleScrollPointerUp}
-            onPointerCancel={handleScrollPointerUp}
-          >
+          <div ref={hTrackRef} className="absolute bottom-1 left-2 right-14 h-3 z-25">
             <div className="relative w-full h-full">
               <div
                 className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/20"
@@ -310,11 +298,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               />
               <div
                 className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
-                style={{
-                  left: `${hThumbLeft * 100}%`,
-                  width: `${hThumbFrac * 100}%`,
-                }}
+                style={{ left: `${hThumbLeft * 100}%`, width: `${hThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('h')}
+                onPointerMove={handleScrollPointerMove}
+                onPointerUp={handleScrollPointerUp}
+                onPointerCancel={handleScrollPointerUp}
               />
             </div>
           </div>
