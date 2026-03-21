@@ -124,11 +124,11 @@ const RowRuler = memo(function RowRuler({
               transition: 'none',
             }}
           >
-            {/* Filled band — punches through the dark overlay visually */}
-            <div className="absolute inset-0 bg-rose-300/40" />
-            {/* Top & bottom edge lines */}
-            <div className="absolute top-0 inset-x-0 h-0.5 bg-rose-400/90" />
-            <div className="absolute bottom-0 inset-x-0 h-0.5 bg-rose-400/90" />
+            {/* Filled band */}
+            <div className="absolute inset-0 bg-rose-300/20" />
+            {/* Top & bottom edge lines — thin but visible */}
+            <div className="absolute top-0 inset-x-0 h-px bg-rose-400/70" />
+            <div className="absolute bottom-0 inset-x-0 h-px bg-rose-400/70" />
             {/* Row number label */}
             <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-rose-500/80 select-none">
               +{i + 1}
@@ -150,8 +150,6 @@ const RowRuler = memo(function RowRuler({
           <div className={`absolute top-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
           {/* Bottom edge */}
           <div className={`absolute bottom-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
-          {/* Center dashed reference */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-px h-px border-t border-dashed border-rose-400/25 pointer-events-none" />
         </div>
       </div>
 
