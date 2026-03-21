@@ -28,6 +28,7 @@ function applyZoom(prev: Transform, newScale: number, pivotX = 0, pivotY = 0): T
 
 export function useGestures(minScale = 0.5, maxScale = 5) {
   const [transform, setTransform] = useState<Transform>({ scale: 1, x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
   const lastTouchDistance = useRef<number | null>(null);
   const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
   const isDragging = useRef(false);
@@ -64,6 +65,7 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
   }, [clampScale]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setIsPanning(true);
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -122,10 +124,12 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
   const handleTouchEnd = useCallback(() => {
     lastTouchDistance.current = null;
     lastTouchCenter.current = null;
+    setIsPanning(false);
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     isDragging.current = true;
+    setIsPanning(true);
     lastMouse.current = { x: e.clientX, y: e.clientY };
   }, []);
 
@@ -139,6 +143,7 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
+    setIsPanning(false);
     lastMouse.current = null;
   }, []);
 
@@ -185,5 +190,6 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
     setXY,
     resetTransform,
     setFullTransform,
+    isPanning,
   };
 }

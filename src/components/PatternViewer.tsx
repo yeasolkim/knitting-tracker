@@ -34,7 +34,7 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform } = useGestures(0.5, 5);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
       cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
@@ -314,27 +314,60 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           </div>
         )}
 
-        {/* Controls */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
+        {/* Right-edge scroll buttons — visible only while panning */}
+        <div
+          className={`absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 transition-all duration-200 ${
+            isPanning ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           <button
             {...makeScrollPressHandlers('up')}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] touch-none select-none transition-colors"
+            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
             aria-label="한 단 위로"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
             </svg>
           </button>
           <button
             {...makeScrollPressHandlers('down')}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] touch-none select-none transition-colors"
+            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
             aria-label="한 단 아래로"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
+        </div>
 
+        {/* Bottom-edge pan buttons — visible only while panning */}
+        <div
+          className={`absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-row gap-1.5 z-20 transition-all duration-200 ${
+            isPanning ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <button
+            onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); panBy(W * 0.15, 0); }}
+            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
+            aria-label="왼쪽으로"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); panBy(-W * 0.15, 0); }}
+            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
+            aria-label="오른쪽으로"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Fixed controls — always visible */}
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
           <div className="h-1" />
 
           <button
