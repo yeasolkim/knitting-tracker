@@ -249,6 +249,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                   options={pdfOptions}
                   className="flex flex-col items-center gap-2"
                   ref={(el: HTMLElement | null) => { contentItemRef.current = el; }}
+                >
                   {Array.from({ length: pdfPages }, (_, i) => (
                     <PdfPage
                       key={i + 1}
