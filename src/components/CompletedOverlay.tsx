@@ -7,11 +7,12 @@ interface CompletedOverlayProps {
   onDelete: (index: number) => void;
   onDeleteAll: () => void;
   onSelectionChange?: (hasSelection: boolean) => void;
+  onDragStart?: () => void;
 }
 
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
-const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange }: CompletedOverlayProps) {
+const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart }: CompletedOverlayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,6 +28,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
     (index: number, mode: DragMode) => (e: React.PointerEvent) => {
       e.stopPropagation();
       e.preventDefault();
+      onDragStart?.();
       setSelectedIndex(index);
       setDragMode(mode);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -36,7 +38,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
         startH: marks[index].height,
       };
     },
-    [marks]
+    [marks, onDragStart]
   );
 
   const handlePointerMove = useCallback(

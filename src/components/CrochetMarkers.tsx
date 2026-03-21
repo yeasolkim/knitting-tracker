@@ -9,6 +9,7 @@ interface CrochetMarkersProps {
   onDelete: (id: string) => void;
   onDeleteAll: () => void;
   onCancelPlace: () => void;
+  onDragStart?: () => void;
 }
 
 function PinIcon({ label, selected, dragging }: { label: string; selected: boolean; dragging: boolean }) {
@@ -51,6 +52,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
   onDelete,
   onDeleteAll,
   onCancelPlace,
+  onDragStart,
 }: CrochetMarkersProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -82,12 +84,13 @@ const CrochetMarkers = memo(function CrochetMarkers({
     (mark: CrochetMark) => (e: React.PointerEvent) => {
       e.stopPropagation();
       if (isPlacing) return;
+      onDragStart?.();
       setSelectedId(mark.id);
       setDraggingId(mark.id);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartRef.current = { x: e.clientX, y: e.clientY, markX: mark.x, markY: mark.y };
     },
-    [isPlacing]
+    [isPlacing, onDragStart]
   );
 
   const handlePointerMove = useCallback(

@@ -80,6 +80,19 @@ interface Props {
   pattern: PatternWithProgress;
 }
 
+type Snapshot = {
+  subPatterns: SubPattern[];
+  activeSubId: string;
+  rulerY: number;
+  rulerHeight: number;
+  rulerDirection: RulerDirection;
+  completedMarks: CompletedMark[];
+  crochetMarks: CrochetMark[];
+  knittingMarks: KnittingMark[];
+};
+
+const MAX_HISTORY = 20;
+
 function PatternViewerPage({ pattern }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const viewerRef = useRef<PatternViewerHandle>(null);
@@ -144,6 +157,76 @@ function PatternViewerPage({ pattern }: Props) {
     []
   );
 
+  // Undo/Redo history
+  const undoStackRef = useRef<Snapshot[]>([]);
+  const redoStackRef = useRef<Snapshot[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const undoStateRef = useRef<Snapshot>({
+    subPatterns,
+    activeSubId,
+    rulerY,
+    rulerHeight,
+    rulerDirection,
+    completedMarks,
+    crochetMarks: [],
+    knittingMarks: [],
+  });
+
+  const captureHistory = useCallback(() => {
+    undoStackRef.current.push({ ...undoStateRef.current });
+    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+    redoStackRef.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const applySnapshot = useCallback((snap: Snapshot) => {
+    setSubPatterns(snap.subPatterns);
+    setActiveSubId(snap.activeSubId);
+    setRulerY(snap.rulerY);
+    setRulerHeight(snap.rulerHeight);
+    setRulerDirection(snap.rulerDirection);
+    setCompletedMarks(snap.completedMarks);
+    setCrochetMarks(snap.crochetMarks);
+    setKnittingMarks(snap.knittingMarks);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    const snap = undoStackRef.current.pop();
+    if (!snap) return;
+    redoStackRef.current.push({ ...undoStateRef.current });
+    if (redoStackRef.current.length > MAX_HISTORY) redoStackRef.current.shift();
+    applySnapshot(snap);
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(true);
+  }, [applySnapshot]);
+
+  const handleRedo = useCallback(() => {
+    const snap = redoStackRef.current.pop();
+    if (!snap) return;
+    undoStackRef.current.push({ ...undoStateRef.current });
+    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+    applySnapshot(snap);
+    setCanUndo(true);
+    setCanRedo(redoStackRef.current.length > 0);
+  }, [applySnapshot]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo]);
+
   // Convert content % → screen % using current transform
   const contentToScreenY = (contentPct: number, t = viewTransform, H = containerH) => {
     const contentY = (contentPct / 100) * H;
@@ -185,6 +268,11 @@ function PatternViewerPage({ pattern }: Props) {
     (pattern.progress?.knitting_marks as KnittingMark[]) || []
   );
   const [isPlacingKnittingMarker, setIsPlacingKnittingMarker] = useState(false);
+
+  // Keep undoStateRef in sync with all undoable state
+  useEffect(() => {
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
@@ -251,6 +339,7 @@ function PatternViewerPage({ pattern }: Props) {
   }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
 
   const handleRowChange = (row: number) => {
+    captureHistory();
     if (row !== prevRow) {
       updateActiveSub((s) => ({ ...s, stitch_count: 0 }));
       setPrevRow(row);
@@ -259,6 +348,7 @@ function PatternViewerPage({ pattern }: Props) {
   };
 
   const handleStitchChange = (count: number) => {
+    captureHistory();
     updateActiveSub((s) => ({ ...s, stitch_count: count }));
   };
 
@@ -289,8 +379,8 @@ function PatternViewerPage({ pattern }: Props) {
   );
 
   const handleComplete = useCallback(() => {
+    captureHistory();
     const { rulerY: ry, rulerHeight: rh } = latestRef.current;
-    // rulerY and rulerHeight are already in content coords
     const newMark: CompletedMark = { y: ry, height: rh };
 
     setCompletedMarks((prev) => [...prev, newMark]);
@@ -301,7 +391,7 @@ function PatternViewerPage({ pattern }: Props) {
     } else {
       setRulerY(ry + rh);
     }
-  }, [rulerDirection, updateActiveSub]);
+  }, [captureHistory, rulerDirection, updateActiveSub]);
 
   // Convert screen % → content % for marker placement (markers now outside CSS transform)
   const screenToContent = useCallback((screenX: number, screenY: number) => {
@@ -315,6 +405,7 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   const handlePlaceMarker = useCallback((screenX: number, screenY: number) => {
+    captureHistory();
     const pos = screenToContent(screenX, screenY);
     const nextRow = (activeSub?.current_row || 0) + 1;
     const newMark: CrochetMark = {
@@ -326,7 +417,7 @@ function PatternViewerPage({ pattern }: Props) {
     setCrochetMarks((prev) => [...prev, newMark]);
     updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
     setIsPlacingMarker(false);
-  }, [activeSub, updateActiveSub, screenToContent]);
+  }, [captureHistory, activeSub, updateActiveSub, screenToContent]);
 
   // CompletedOverlay is rendered outside the CSS transform (screen space),
   // so its y/height values are in screen % — convert back to content % on update.
@@ -340,10 +431,11 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   const handleCompletedMarkDelete = useCallback((index: number) => {
+    captureHistory();
     setCompletedMarks((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [captureHistory]);
 
-  const handleCompletedMarkDeleteAll = useCallback(() => setCompletedMarks([]), []);
+  const handleCompletedMarkDeleteAll = useCallback(() => { captureHistory(); setCompletedMarks([]); }, [captureHistory]);
 
   const handleCrochetMarkMove = useCallback((id: string, screenX: number, screenY: number) => {
     const pos = screenToContent(screenX, screenY);
@@ -351,14 +443,16 @@ function PatternViewerPage({ pattern }: Props) {
   }, [screenToContent]);
 
   const handleCrochetMarkDelete = useCallback((id: string) => {
+    captureHistory();
     setCrochetMarks((prev) => prev.filter((m) => m.id !== id));
-  }, []);
+  }, [captureHistory]);
 
-  const handleCrochetMarkDeleteAll = useCallback(() => setCrochetMarks([]), []);
+  const handleCrochetMarkDeleteAll = useCallback(() => { captureHistory(); setCrochetMarks([]); }, [captureHistory]);
 
   const handleCancelPlace = useCallback(() => setIsPlacingMarker(false), []);
 
   const handlePlaceKnittingMarker = useCallback((screenX: number, screenY: number) => {
+    captureHistory();
     const pos = screenToContent(screenX, screenY);
     const newMark: KnittingMark = {
       id: generateId(),
@@ -368,7 +462,7 @@ function PatternViewerPage({ pattern }: Props) {
     };
     setKnittingMarks((prev) => [...prev, newMark]);
     setIsPlacingKnittingMarker(false);
-  }, [knittingMarks.length, screenToContent]);
+  }, [captureHistory, knittingMarks.length, screenToContent]);
 
   const handleKnittingMarkMove = useCallback((id: string, screenX: number, screenY: number) => {
     const pos = screenToContent(screenX, screenY);
@@ -376,10 +470,11 @@ function PatternViewerPage({ pattern }: Props) {
   }, [screenToContent]);
 
   const handleKnittingMarkDelete = useCallback((id: string) => {
+    captureHistory();
     setKnittingMarks((prev) => prev.filter((m) => m.id !== id));
-  }, []);
+  }, [captureHistory]);
 
-  const handleKnittingMarkDeleteAll = useCallback(() => setKnittingMarks([]), []);
+  const handleKnittingMarkDeleteAll = useCallback(() => { captureHistory(); setKnittingMarks([]); }, [captureHistory]);
   const handleCancelKnittingPlace = useCallback(() => setIsPlacingKnittingMarker(false), []);
 
   const handleScrollStep = useCallback((direction: 'up' | 'down') => {
@@ -397,6 +492,7 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   const handleAddSubPattern = () => {
+    captureHistory();
     const newSub = createDefaultSubPattern(subPatterns.length + 1);
     setSubPatterns((prev) => [...prev, newSub]);
     setActiveSubId(newSub.id);
@@ -407,6 +503,7 @@ function PatternViewerPage({ pattern }: Props) {
   };
 
   const handleDeleteSubPattern = (id: string) => {
+    captureHistory();
     setSubPatterns((prev) => {
       const next = prev.filter((s) => s.id !== id);
       if (activeSubId === id && next.length > 0) {
@@ -482,6 +579,28 @@ function PatternViewerPage({ pattern }: Props) {
             <span className="text-[11px] text-gray-400 shrink-0 hidden sm:block">🪡 {pattern.needle}</span>
           )}
         </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-25 transition-colors"
+            title="되돌리기 (Ctrl+Z)"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-25 transition-colors"
+            title="다시 실행 (Ctrl+Shift+Z)"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Viewer area */}
@@ -516,6 +635,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDelete={handleKnittingMarkDelete}
               onDeleteAll={handleKnittingMarkDeleteAll}
               onCancelPlace={handleCancelKnittingPlace}
+              onDragStart={captureHistory}
             />
           )}
           {isCrochet && (
@@ -527,6 +647,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDelete={handleCrochetMarkDelete}
               onDeleteAll={handleCrochetMarkDeleteAll}
               onCancelPlace={handleCancelPlace}
+              onDragStart={captureHistory}
             />
           )}
           {!isCrochet && (
@@ -536,6 +657,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDelete={handleCompletedMarkDelete}
               onDeleteAll={handleCompletedMarkDeleteAll}
               onSelectionChange={setHasMarkSelection}
+              onDragStart={captureHistory}
             />
           )}
           {!isCrochet && (
@@ -549,8 +671,9 @@ function PatternViewerPage({ pattern }: Props) {
               onChangePosition={handleRulerPositionChange}
               onChangeHeight={handleRulerHeightChange}
               onComplete={handleComplete}
-              onToggleDirection={() => setRulerDirection((d) => (d === 'up' ? 'down' : 'up'))}
+              onToggleDirection={() => { captureHistory(); setRulerDirection((d) => (d === 'up' ? 'down' : 'up')); }}
               onToggleSettings={() => setShowRulerSettings((v) => !v)}
+              onDragStart={captureHistory}
             />
           )}
         </PatternViewer>
@@ -573,6 +696,7 @@ function PatternViewerPage({ pattern }: Props) {
                 max={1000}
                 step={1}
                 value={Math.round(rulerHeight * 100)}
+                onPointerDown={captureHistory}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
                   setRulerHeight(Math.max(0.3, Number(e.target.value) / 100));

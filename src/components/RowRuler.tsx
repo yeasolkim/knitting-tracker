@@ -14,6 +14,7 @@ interface RowRulerProps {
   onComplete: () => void;
   onToggleDirection: () => void;
   onToggleSettings: () => void;
+  onDragStart?: () => void;
 }
 
 const RowRuler = memo(function RowRuler({
@@ -28,6 +29,7 @@ const RowRuler = memo(function RowRuler({
   onComplete,
   onToggleDirection,
   onToggleSettings,
+  onDragStart,
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -43,11 +45,12 @@ const RowRuler = memo(function RowRuler({
     (e: React.PointerEvent) => {
       e.stopPropagation();
       e.preventDefault();
+      onDragStart?.();
       setIsDragging(true);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartRef.current = { clientY: e.clientY, startY: positionY };
     },
-    [positionY]
+    [positionY, onDragStart]
   );
 
   const handlePointerMove = useCallback(

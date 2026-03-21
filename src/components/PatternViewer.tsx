@@ -150,6 +150,37 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       scrollDragRef.current = null;
     }, []);
 
+    // Long-press continuous scroll
+    const scrollRepeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const stopScrollRepeat = useCallback(() => {
+      if (scrollRepeatRef.current) { clearInterval(scrollRepeatRef.current); scrollRepeatRef.current = null; }
+      if (scrollTimeoutRef.current) { clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = null; }
+    }, []);
+
+    const makeScrollPressHandlers = useCallback((dir: 'up' | 'down') => {
+      const doScroll = () => {
+        const H = sizeRef.current?.clientHeight || 1;
+        const px = (rulerHeightPercent / 100) * H * transform.scale;
+        panBy(0, dir === 'up' ? px : -px);
+        onScrollStep?.(dir);
+      };
+      return {
+        onPointerDown: (e: React.PointerEvent) => {
+          e.preventDefault();
+          (e.target as HTMLElement).setPointerCapture(e.pointerId);
+          doScroll();
+          scrollTimeoutRef.current = setTimeout(() => {
+            scrollRepeatRef.current = setInterval(doScroll, 120);
+          }, 400);
+        },
+        onPointerUp: stopScrollRepeat,
+        onPointerLeave: stopScrollRepeat,
+        onPointerCancel: stopScrollRepeat,
+      };
+    }, [rulerHeightPercent, transform.scale, panBy, onScrollStep, stopScrollRepeat]);
+
     // Compute scrollbar thumb positions
     const H = sizeRef.current?.clientHeight || 1;
     const W = sizeRef.current?.clientWidth || 1;
@@ -264,13 +295,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Controls */}
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
           <button
-            onClick={() => {
-              const H = sizeRef.current?.clientHeight || 1;
-              const px = (rulerHeightPercent / 100) * H * transform.scale;
-              panBy(0, px);
-              onScrollStep?.('up');
-            }}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            {...makeScrollPressHandlers('up')}
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 touch-none select-none"
             aria-label="한 단 위로"
             title="한 단 위로"
           >
@@ -279,13 +305,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             </svg>
           </button>
           <button
-            onClick={() => {
-              const H = sizeRef.current?.clientHeight || 1;
-              const px = (rulerHeightPercent / 100) * H * transform.scale;
-              panBy(0, -px);
-              onScrollStep?.('down');
-            }}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            {...makeScrollPressHandlers('down')}
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 touch-none select-none"
             aria-label="한 단 아래로"
             title="한 단 아래로"
           >

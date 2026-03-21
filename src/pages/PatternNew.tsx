@@ -110,15 +110,28 @@ function UploadForm() {
 
       const ext = file.name.split('.').pop();
       const path = `${user.id}/${pattern.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('pattern-files')
-        .upload(path, file);
 
-      if (uploadError) throw uploadError;
+      // Get presigned URL from edge function, then upload directly to R2
+      const presignRes = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ path, contentType: file.type }),
+        }
+      );
+      if (!presignRes.ok) throw new Error('파일 업로드 준비에 실패했습니다.');
+      const { presignedUrl, fileUrl } = await presignRes.json();
 
-      const { data: urlData } = supabase.storage
-        .from('pattern-files')
-        .getPublicUrl(path);
+      const uploadRes = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error('파일 업로드에 실패했습니다.');
 
       let thumbnailUrl: string | null = null;
 
@@ -127,20 +140,35 @@ function UploadForm() {
         if (thumbBlob) {
           try {
             const thumbPath = `${user.id}/${pattern.id}/thumb.jpg`;
-            await supabase.storage.from('pattern-files').upload(thumbPath, thumbBlob, {
-              contentType: 'image/jpeg',
-            });
-            const { data: thumbUrlData } = supabase.storage
-              .from('pattern-files')
-              .getPublicUrl(thumbPath);
-            thumbnailUrl = thumbUrlData.publicUrl;
+            const thumbPresignRes = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ path: thumbPath, contentType: 'image/jpeg' }),
+              }
+            );
+            if (thumbPresignRes.ok) {
+              const { presignedUrl: thumbPresigned, fileUrl: thumbFileUrl } = await thumbPresignRes.json();
+              const thumbUpload = await fetch(thumbPresigned, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'image/jpeg' },
+                body: thumbBlob,
+              });
+              if (thumbUpload.ok) thumbnailUrl = thumbFileUrl;
+            }
           } catch {
             // Thumbnail upload failed, proceed without
           }
         }
       } else {
-        thumbnailUrl = urlData.publicUrl;
+        thumbnailUrl = fileUrl;
       }
+
+      const urlData = { publicUrl: fileUrl };
 
       await Promise.all([
         supabase
