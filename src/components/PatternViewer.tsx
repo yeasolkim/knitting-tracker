@@ -34,13 +34,14 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform } = useGestures(0.5, 5);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
       cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
       cMapPacked: true,
     }), []);
     const sizeRef = useRef<HTMLDivElement>(null);
+    const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
     const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
 
@@ -70,6 +71,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       observer.observe(sizeRef.current);
       return () => observer.disconnect();
     }, []);
+
+    const fitToRuler = useCallback(() => {
+      const H = sizeRef.current?.clientHeight || 1;
+      const W = sizeRef.current?.clientWidth || 1;
+      const contentW = contentItemRef.current?.offsetWidth;
+      if (!contentW || contentW <= 0) return;
+      const newScale = Math.min(5, Math.max(0.5, W / contentW));
+      const contentY = (rulerYPercent / 100) * H;
+      const newTy = -(contentY - H / 2) * newScale;
+      setFullTransform({ scale: newScale, x: 0, y: newTy });
+    }, [rulerYPercent, setFullTransform]);
 
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
@@ -214,19 +226,20 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           >
             {fileType === 'image' ? (
               <img
+                ref={(el) => { contentItemRef.current = el; }}
                 src={fileUrl}
                 alt="패턴"
                 className="max-w-full max-h-full object-contain select-none pointer-events-none"
                 draggable={false}
               />
             ) : (
-              <Suspense fallback={<div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />}>
+              <Suspense fallback={<div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />}>
                 <PdfDocument
                   file={fileUrl}
                   onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
                   options={pdfOptions}
                   className="flex flex-col items-center gap-2"
-                >
+                  ref={(el: HTMLElement | null) => { contentItemRef.current = el; }}
                   {Array.from({ length: pdfPages }, (_, i) => (
                     <PdfPage
                       key={i + 1}
@@ -296,61 +309,68 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
           <button
             {...makeScrollPressHandlers('up')}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 touch-none select-none"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] touch-none select-none transition-colors"
             aria-label="한 단 위로"
-            title="한 단 위로"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
             </svg>
           </button>
           <button
             {...makeScrollPressHandlers('down')}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 touch-none select-none"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] touch-none select-none transition-colors"
             aria-label="한 단 아래로"
-            title="한 단 아래로"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          <div className="h-0.5 sm:h-1" />
+          <div className="h-1" />
 
           <button
             onClick={zoomIn}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-lg font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="확대"
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-lg font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="축소"
           >
             −
           </button>
+
+          <div className="h-1" />
+
+          {/* 진행선 맞춤: 가로 폭 맞추고 진행선으로 이동 */}
           <button
-            onClick={resetTransform}
-            className="w-9 h-9 sm:w-auto bg-white/90 rounded-lg shadow-sm border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-1 sm:py-1.5 leading-tight text-center"
-            aria-label="화면 맞춤"
+            onClick={fitToRuler}
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label="가로 맞춤 후 진행선으로 이동"
+            title="가로 맞춤 + 진행선으로"
           >
-            <span className="sm:hidden">맞춤</span>
-            <span className="hidden sm:inline">화면<br />맞춤</span>
+            {/* ←|→ icon representing fit-width + go to ruler */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16M4 12l3-3M4 12l3 3M20 12l-3-3M20 12l-3 3" />
+              <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" strokeDasharray="2 2" />
+            </svg>
           </button>
 
           {onResetRuler && (
             <>
-              <div className="h-0.5 sm:h-1" />
+              <div className="h-1" />
               <button
                 onClick={onResetRuler}
-                className="w-9 h-9 sm:w-auto bg-rose-50 rounded-lg shadow-sm border border-rose-200 flex items-center justify-center text-rose-500 hover:bg-rose-100 active:bg-rose-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-1 sm:py-1.5 leading-tight text-center"
+                className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
                 aria-label="진행선 위치 초기화"
-                title="진행선을 위쪽으로 초기화"
+                title="진행선 초기화"
               >
-                <span className="sm:hidden">선<br/>초기화</span>
-                <span className="hidden sm:inline">진행선<br />초기화</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18" />
+                </svg>
               </button>
             </>
           )}

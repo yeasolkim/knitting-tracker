@@ -162,6 +162,10 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
     setTransform({ scale: 1, x: 0, y: 0 });
   }, []);
 
+  const setFullTransform = useCallback((t: Transform) => {
+    setTransform({ ...t, scale: Math.min(maxScale, Math.max(minScale, t.scale)) });
+  }, [minScale, maxScale]);
+
   return {
     transform,
     containerRef,
@@ -180,5 +184,6 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
     panBy,
     setXY,
     resetTransform,
+    setFullTransform,
   };
 }
