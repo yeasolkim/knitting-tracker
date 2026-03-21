@@ -313,46 +313,43 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         )}
 
         {/* Fixed controls — always visible */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
-          <div className="h-1" />
-
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-1.5 z-20 w-11">
+          {/* Zoom buttons */}
           <button
             onClick={zoomIn}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-lg font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl rounded-b border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="확대"
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-lg font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl rounded-t border-2 border-t-0 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="축소"
           >
             −
           </button>
 
-          <div className="h-1" />
+          {/* Divider */}
+          <div className="h-px bg-[#d4b896]/60 mx-0.5 mt-0.5" />
 
           {/* 진행선으로 이동 */}
           <button
             onClick={goToRuler}
-            className="px-2 h-9 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="진행선으로 이동"
           >
-            <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선으로<br/>이동</span>
+            <span className="text-[10px] font-bold leading-snug text-center">진행선으로<br/>이동</span>
           </button>
 
           {onResetRuler && (
-            <>
-              <div className="h-1" />
-              <button
-                onClick={onResetRuler}
-                className="px-2 h-9 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-                aria-label="진행선 가져오기"
-              >
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선<br/>가져오기</span>
-              </button>
-            </>
+            <button
+              onClick={onResetRuler}
+              className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+              aria-label="진행선 가져오기"
+            >
+              <span className="text-[10px] font-bold leading-snug text-center">진행선<br/>가져오기</span>
+            </button>
           )}
         </div>
       </div>
