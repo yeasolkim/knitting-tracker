@@ -26,9 +26,6 @@ export default function SubPatternSelector({
 
   const active = subPatterns.find((s) => s.id === activeId);
 
-  const countLabel = '단';
-  const totalLabel = '총 단수';
-
   const startRename = (sub: SubPattern) => {
     setEditingId(sub.id);
     setEditName(sub.name);
@@ -48,24 +45,24 @@ export default function SubPatternSelector({
       {/* Active sub-pattern tab */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
+        className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#d4b896] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
       >
         <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || '도안 1'}</span>
         <svg
           className={`w-3 h-3 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {/* Dropdown */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 min-w-[220px] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
+        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#d4b896] shadow-[3px_3px_0_#d4b896] py-1 min-w-[220px] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
           {subPatterns.map((sub) => (
             <div
               key={sub.id}
-              className={`px-3 py-2.5 sm:py-2 hover:bg-gray-50 ${sub.id === activeId ? 'bg-rose-50' : ''}`}
+              className={`px-3 py-2.5 sm:py-2 hover:bg-[#f5edd6] ${sub.id === activeId ? 'bg-[#f5edd6]' : ''}`}
             >
               {editingId === sub.id ? (
                 <input
@@ -77,20 +74,20 @@ export default function SubPatternSelector({
                     if (e.key === 'Enter') commitRename();
                     if (e.key === 'Escape') setEditingId(null);
                   }}
-                  className="w-full text-sm border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-rose-200"
+                  className="w-full text-sm border-2 border-[#d4b896] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
                 />
               ) : (
                 <div className="flex items-center gap-2">
                   <button
-                    className="flex-1 text-left text-sm text-gray-700 truncate"
+                    className="flex-1 text-left text-sm text-[#3d2b1f] truncate"
                     onClick={() => {
                       onSelect(sub.id);
                       setIsExpanded(false);
                     }}
                   >
-                    <span className="font-medium">{sub.name}</span>
-                    <span className="text-gray-400 ml-1.5 text-xs">
-                      {sub.current_row}/{sub.total_rows}{countLabel}
+                    <span className="font-semibold">{sub.name}</span>
+                    <span className="text-[#a08060] ml-1.5 text-xs">
+                      {sub.current_row}/{sub.total_rows}단
                     </span>
                   </button>
 
@@ -100,7 +97,7 @@ export default function SubPatternSelector({
                         e.stopPropagation();
                         startRename(sub);
                       }}
-                      className="text-gray-300 hover:text-gray-500 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      className="text-[#d4b896] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title="이름 변경"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,7 +112,7 @@ export default function SubPatternSelector({
                             onDelete(sub.id);
                           }
                         }}
-                        className="text-gray-300 hover:text-red-400 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        className="text-[#d4b896] hover:text-[#b5541e] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         title="삭제"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,7 +127,7 @@ export default function SubPatternSelector({
               {/* Total setting */}
               {sub.id === activeId && editingId !== sub.id && (
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[11px] text-gray-400">{totalLabel}</span>
+                  <span className="text-[10px] text-[#a08060] tracking-wide">총 단수</span>
                   <input
                     type="number"
                     value={sub.total_rows}
@@ -139,7 +136,7 @@ export default function SubPatternSelector({
                       onUpdate(sub.id, { total_rows: val });
                     }}
                     min={1}
-                    className="w-16 text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-rose-200 text-center"
+                    className="w-16 text-xs border-2 border-[#d4b896] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -148,13 +145,13 @@ export default function SubPatternSelector({
           ))}
 
           {/* Add button */}
-          <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-1">
+          <div className="border-t-2 border-[#d4b896] mt-1 pt-1 px-3 py-1">
             <button
               onClick={() => {
                 onAdd();
                 setIsExpanded(false);
               }}
-              className="text-sm text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1 min-h-[44px] w-full"
+              className="text-sm text-[#b5541e] hover:text-[#9a4318] font-semibold flex items-center gap-1 min-h-[44px] w-full tracking-wide"
             >
               <span>+</span> {isCrochet ? '도안/모티브 추가' : '도안 추가'}
             </button>

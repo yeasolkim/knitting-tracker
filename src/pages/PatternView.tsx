@@ -67,8 +67,8 @@ export default function PatternView() {
 
   if (loading || !pattern) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-        <div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -559,31 +559,31 @@ function PatternViewerPage({ pattern }: Props) {
   });
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50/50">
+    <div className="flex flex-col h-screen bg-[#f5edd6]">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-100 px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
+      <div className="bg-[#f5edd6] border-b-2 border-[#d4b896] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center">
+          <Link to="/dashboard" className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <h1 className="font-medium text-gray-800 truncate text-sm sm:text-base">{pattern.title}</h1>
-          <span className="text-[10px] sm:text-xs text-gray-400 shrink-0">
+          <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
+          <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
             {isCrochet ? '코바늘' : '대바늘'}
           </span>
           {pattern.yarn && (
-            <span className="text-[11px] text-gray-400 shrink-0 hidden sm:block">🧶 {pattern.yarn}</span>
+            <span className="text-[11px] text-[#a08060] shrink-0 hidden sm:block">{pattern.yarn}</span>
           )}
           {pattern.needle && (
-            <span className="text-[11px] text-gray-400 shrink-0 hidden sm:block">🪡 {pattern.needle}</span>
+            <span className="text-[11px] text-[#a08060] shrink-0 hidden sm:block">· {pattern.needle}</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={handleUndo}
             disabled={!canUndo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-25 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] disabled:opacity-25 transition-colors"
             title="되돌리기 (Ctrl+Z)"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -593,7 +593,7 @@ function PatternViewerPage({ pattern }: Props) {
           <button
             onClick={handleRedo}
             disabled={!canRedo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-25 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] disabled:opacity-25 transition-colors"
             title="다시 실행 (Ctrl+Shift+Z)"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -681,7 +681,7 @@ function PatternViewerPage({ pattern }: Props) {
         {/* Ruler settings floating panel — opposite side of direction */}
         {showRulerSettings && !isCrochet && (
           <div
-            className="absolute z-30 bg-white/96 backdrop-blur-sm rounded-2xl shadow-lg border border-rose-100 px-3 py-2.5"
+            className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] shadow-[3px_3px_0_#d4b896] px-3 py-2.5"
             style={
               rulerDirection === 'up'
                 ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px' }
@@ -689,7 +689,7 @@ function PatternViewerPage({ pattern }: Props) {
             }
           >
             <div className="flex items-center gap-2.5">
-              <span className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">높이</span>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap">높이</span>
               <input
                 type="range"
                 min={0}
@@ -704,9 +704,9 @@ function PatternViewerPage({ pattern }: Props) {
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
-                className="flex-1 min-w-0 h-1.5 accent-rose-400 cursor-pointer"
+                className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
               />
-              <span className="text-[11px] text-rose-500 font-mono w-10 text-right shrink-0">
+              <span className="text-[11px] text-[#b5541e] font-mono w-10 text-right shrink-0">
                 {Math.round(rulerHeight * 100)}
               </span>
             </div>
@@ -730,7 +730,7 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-white border-t border-gray-100 px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom">
+      <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom">
         <div className="flex items-center gap-2 sm:gap-3">
           <SubPatternSelector
             subPatterns={subPatterns}
@@ -752,17 +752,17 @@ function PatternViewerPage({ pattern }: Props) {
               <button
                 onClick={() => handleRowChange(Math.max(0, (activeSub?.current_row || 0) - 1))}
                 disabled={(activeSub?.current_row || 0) <= 0}
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center hover:bg-gray-200 active:bg-gray-300 disabled:opacity-30 transition-colors"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] disabled:opacity-30 transition-colors"
               >
                 −
               </button>
               <div className="text-center min-w-[45px] sm:min-w-[50px]">
-                <div className="text-lg sm:text-xl font-bold text-gray-800">{activeSub?.current_row || 0}</div>
-                <div className="text-[10px] text-gray-400">/ {activeSub?.total_rows || 1}단</div>
+                <div className="text-lg sm:text-xl font-bold text-[#3d2b1f]">{activeSub?.current_row || 0}</div>
+                <div className="text-[10px] text-[#a08060] tracking-wide">/ {activeSub?.total_rows || 1}단</div>
               </div>
               <button
                 onClick={() => handleRowChange((activeSub?.current_row || 0) + 1)}
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-rose-400 text-white text-sm font-bold flex items-center justify-center hover:bg-rose-500 active:bg-rose-600 transition-colors"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-sm font-bold flex items-center justify-center hover:bg-[#9a4318] transition-colors shadow-[2px_2px_0_#9a4318]"
               >
                 +
               </button>
@@ -772,7 +772,7 @@ function PatternViewerPage({ pattern }: Props) {
               <button
                 onClick={() => setIsPlacingMarker(true)}
                 disabled={isPlacingMarker}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] text-xs font-semibold bg-rose-500 text-white rounded-xl hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 min-h-[44px] text-xs font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] disabled:opacity-50 transition-colors shadow-[2px_2px_0_#9a4318]"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -783,7 +783,7 @@ function PatternViewerPage({ pattern }: Props) {
               {crochetMarks.length > 0 && (
                 <button
                   onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleCrochetMarkDeleteAll(); }}
-                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400 active:bg-red-100 transition-colors"
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
                   title="마커 전체 삭제"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -805,7 +805,7 @@ function PatternViewerPage({ pattern }: Props) {
               <button
                 onClick={() => setIsPlacingKnittingMarker(true)}
                 disabled={isPlacingKnittingMarker}
-                className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold bg-violet-500 text-white rounded-xl hover:bg-violet-600 active:bg-violet-700 disabled:opacity-50 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-bold tracking-wide bg-[#8b6b4a] text-[#fdf6e8] rounded-lg border-2 border-[#6b4f36] hover:bg-[#6b4f36] disabled:opacity-50 transition-colors shadow-[2px_2px_0_#6b4f36]"
                 title="마커 배치"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -816,7 +816,7 @@ function PatternViewerPage({ pattern }: Props) {
               {knittingMarks.length > 0 && (
                 <button
                   onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleKnittingMarkDeleteAll(); }}
-                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-400 active:bg-red-100 transition-colors"
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
                   title="마커 전체 삭제"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -10,13 +10,13 @@ const ProgressBar = memo(function ProgressBar({ current, total }: ProgressBarPro
 
   return (
     <div className="w-full">
-      <div className="flex justify-between text-xs text-gray-500 mb-1">
+      <div className="flex justify-between text-[10px] text-[#a08060] mb-1 tracking-wide">
         <span>{current} / {total}단</span>
         <span>{Math.round(percent)}%</span>
       </div>
-      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-[#f5edd6] border border-[#d4b896] rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-rose-300 to-rose-400 rounded-full transition-all duration-300"
+          className="h-full bg-[#b5541e] rounded-full transition-all duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>
