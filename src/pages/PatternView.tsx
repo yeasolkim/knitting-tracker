@@ -265,8 +265,10 @@ function PatternViewerPage({ pattern }: Props) {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const screenY = (screenYPct / 100) * H;
     const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-    const newY = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
-    setRulerY(Math.max(0, Math.min(100, newY)));
+    // No clamp: RowRuler already clamps to screen-space [0, 100-height].
+    // Clamping here causes the ruler to snap to the image edge when dragged
+    // into letterbox areas, making the UI appear broken.
+    setRulerY(iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100);
   }, []);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
