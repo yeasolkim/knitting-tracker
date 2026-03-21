@@ -72,16 +72,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       return () => observer.disconnect();
     }, []);
 
-    const fitToRuler = useCallback(() => {
+    const goToRuler = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      const W = sizeRef.current?.clientWidth || 1;
-      const contentW = contentItemRef.current?.offsetWidth;
-      if (!contentW || contentW <= 0) return;
-      const newScale = Math.min(5, Math.max(0.5, W / contentW));
       const contentY = (rulerYPercent / 100) * H;
-      const newTy = -(contentY - H / 2) * newScale;
-      setFullTransform({ scale: newScale, x: 0, y: newTy });
-    }, [rulerYPercent, setFullTransform]);
+      setXY(transform.x, -(contentY - H / 2) * transform.scale);
+    }, [rulerYPercent, transform.x, transform.scale, setXY]);
 
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
@@ -389,17 +384,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
           <div className="h-1" />
 
-          {/* 진행선 맞춤: 가로 폭 맞추고 진행선으로 이동 */}
+          {/* 진행선으로 이동 */}
           <button
-            onClick={fitToRuler}
+            onClick={goToRuler}
             className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="가로 맞춤 후 진행선으로 이동"
-            title="가로 맞춤 + 진행선으로"
+            aria-label="진행선으로 이동"
+            title="진행선으로 이동"
           >
-            {/* ←|→ icon representing fit-width + go to ruler */}
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16M4 12l3-3M4 12l3 3M20 12l-3-3M20 12l-3 3" />
-              <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" strokeDasharray="2 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5l-4 7h8l-4-7z" fill="currentColor" stroke="none" />
             </svg>
           </button>
 
