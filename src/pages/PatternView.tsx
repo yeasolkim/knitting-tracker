@@ -613,8 +613,6 @@ function PatternViewerPage({ pattern }: Props) {
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
           rulerYPercent={rulerY}
-          rulerHeightPercent={rulerHeight}
-          onScrollStep={handleScrollStep}
           onTransformChange={handleTransformChange}
           onResetRuler={!isCrochet ? () => {
             const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;

@@ -24,8 +24,6 @@ interface PatternViewerProps {
   fileUrl: string;
   fileType: 'image' | 'pdf';
   rulerYPercent?: number;
-  rulerHeightPercent?: number;
-  onScrollStep?: (direction: 'up' | 'down') => void;
   onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number, containerW: number) => void;
   onResetRuler?: () => void;
   contentOverlay?: React.ReactNode;
@@ -33,7 +31,7 @@ interface PatternViewerProps {
 }
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerHeightPercent = 5, onScrollStep, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
@@ -157,51 +155,27 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       scrollDragRef.current = null;
     }, []);
 
-    // Long-press continuous scroll with acceleration
-    const scrollRepeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const stopScrollRepeat = useCallback(() => {
-      if (scrollRepeatRef.current) { clearTimeout(scrollRepeatRef.current); scrollRepeatRef.current = null; }
-      if (scrollTimeoutRef.current) { clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = null; }
-    }, []);
-
-    const makeScrollPressHandlers = useCallback((dir: 'up' | 'down') => {
-      const doScroll = () => {
-        const H = sizeRef.current?.clientHeight || 1;
-        const px = (rulerHeightPercent / 100) * H * transform.scale;
-        panBy(0, dir === 'up' ? px : -px);
-        onScrollStep?.(dir);
+    // Scrollbar linger: stay visible for 2s after panning ends
+    const [scrollbarVisible, setScrollbarVisible] = useState(false);
+    const lingerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+      if (isPanning) {
+        if (lingerTimerRef.current) clearTimeout(lingerTimerRef.current);
+        setScrollbarVisible(true);
+      } else {
+        lingerTimerRef.current = setTimeout(() => setScrollbarVisible(false), 2000);
+      }
+      return () => {
+        if (lingerTimerRef.current) clearTimeout(lingerTimerRef.current);
       };
-      return {
-        onPointerDown: (e: React.PointerEvent) => {
-          e.preventDefault();
-          (e.target as HTMLElement).setPointerCapture(e.pointerId);
-          doScroll();
-          // After initial delay, start accelerating repeat
-          scrollTimeoutRef.current = setTimeout(() => {
-            let interval = 280;
-            const scheduleNext = () => {
-              scrollRepeatRef.current = setTimeout(() => {
-                doScroll();
-                interval = Math.max(40, interval * 0.80);
-                scheduleNext();
-              }, interval);
-            };
-            scheduleNext();
-          }, 400);
-        },
-        onPointerUp: stopScrollRepeat,
-        onPointerLeave: stopScrollRepeat,
-        onPointerCancel: stopScrollRepeat,
-      };
-    }, [rulerHeightPercent, transform.scale, panBy, onScrollStep, stopScrollRepeat]);
+    }, [isPanning]);
 
     // Compute scrollbar thumb positions
     const H = sizeRef.current?.clientHeight || 1;
     const W = sizeRef.current?.clientWidth || 1;
     const s = transform.scale;
-    const showScrollbars = s > 1.05;
+    const showScrollbars = scrollbarVisible || s > 1.05;
 
     const vThumbFrac = 1 / s;
     const vMaxTy = (H * (s - 1)) / 2;
@@ -271,14 +245,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {showScrollbars && (
           <div
             ref={vTrackRef}
-            className="absolute right-1 top-2 bottom-14 w-1.5 z-25 pointer-events-none"
+            className="absolute right-1 top-2 bottom-14 w-3 z-25"
             onPointerMove={handleScrollPointerMove}
             onPointerUp={handleScrollPointerUp}
             onPointerCancel={handleScrollPointerUp}
           >
-            <div className="relative w-full h-full rounded-full bg-black/8">
+            <div className="relative w-full h-full">
               <div
-                className="absolute w-full rounded-full bg-gray-500/40 hover:bg-gray-600/50 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/20"
+                style={{ top: 0, bottom: 0 }}
+              />
+              <div
+                className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{
                   top: `${vThumbTop * 100}%`,
                   height: `${vThumbFrac * 100}%`,
@@ -293,14 +271,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {showScrollbars && (
           <div
             ref={hTrackRef}
-            className="absolute bottom-1 left-2 right-14 h-1.5 z-25 pointer-events-none"
+            className="absolute bottom-1 left-2 right-14 h-3 z-25"
             onPointerMove={handleScrollPointerMove}
             onPointerUp={handleScrollPointerUp}
             onPointerCancel={handleScrollPointerUp}
           >
-            <div className="relative w-full h-full rounded-full bg-black/8">
+            <div className="relative w-full h-full">
               <div
-                className="absolute h-full rounded-full bg-gray-500/40 hover:bg-gray-600/50 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/20"
+                style={{ left: 0, right: 0 }}
+              />
+              <div
+                className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{
                   left: `${hThumbLeft * 100}%`,
                   width: `${hThumbFrac * 100}%`,
@@ -310,58 +292,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             </div>
           </div>
         )}
-
-        {/* Right-edge scroll buttons — visible only while panning */}
-        <div
-          className={`absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 transition-all duration-200 ${
-            isPanning ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <button
-            {...makeScrollPressHandlers('up')}
-            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
-            aria-label="한 단 위로"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-            </svg>
-          </button>
-          <button
-            {...makeScrollPressHandlers('down')}
-            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
-            aria-label="한 단 아래로"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Bottom-edge pan buttons — visible only while panning */}
-        <div
-          className={`absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-row gap-1.5 z-20 transition-all duration-200 ${
-            isPanning ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <button
-            onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); panBy(W * 0.15, 0); }}
-            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
-            aria-label="왼쪽으로"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); panBy(-W * 0.15, 0); }}
-            className="w-10 h-10 bg-[#3d2b1f]/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-[#fdf6e8] touch-none select-none active:bg-[#3d2b1f]/90"
-            aria-label="오른쪽으로"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
 
         {/* Fixed controls — always visible */}
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col gap-1 z-20">
