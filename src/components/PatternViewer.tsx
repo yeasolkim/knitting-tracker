@@ -313,7 +313,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         )}
 
         {/* Fixed controls — always visible */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-1.5 z-20 w-11">
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-1.5 z-20 w-16">
           {/* Zoom buttons */}
           <button
             onClick={zoomIn}
