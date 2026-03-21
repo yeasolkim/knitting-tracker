@@ -416,6 +416,16 @@ function PatternViewerPage({ pattern }: Props) {
     });
   };
 
+  // On first load, scroll the viewer so the ruler is visible at screen center
+  const initialScrollDone = useRef(false);
+  useEffect(() => {
+    if (initialScrollDone.current || containerH <= 1 || isCrochet) return;
+    initialScrollDone.current = true;
+    viewerRef.current?.scrollToContentY(rulerY + rulerHeight / 2);
+  // Only trigger when containerH becomes available (real height after mount)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerH]);
+
   useEffect(() => {
     requestWakeLock();
     document.body.classList.add('viewer-open');

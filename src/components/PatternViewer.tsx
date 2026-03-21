@@ -17,6 +17,7 @@ const PdfPage = lazy(() =>
 
 export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
+  scrollToContentY: (contentYPercent: number) => void;
 }
 
 interface PatternViewerProps {
@@ -63,16 +64,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
         const H = sizeRef.current?.clientHeight || 1;
         const { scale, y: ty } = transform;
-
         const screenY = (screenYPercent / 100) * H;
         const contentY = (screenY - H / 2 - ty) / scale + H / 2;
-        const contentYPercent = (contentY / H) * 100;
-
-        const contentHeightPercent = screenHeightPercent / scale;
-
-        return { y: contentYPercent, height: contentHeightPercent };
+        return { y: (contentY / H) * 100, height: screenHeightPercent / scale };
       },
-    }), [transform]);
+      scrollToContentY(contentYPercent: number) {
+        const H = sizeRef.current?.clientHeight || 1;
+        const contentY = (contentYPercent / 100) * H;
+        // Set ty so the ruler center appears at screen center
+        setXY(transform.x, -(contentY - H / 2) * transform.scale);
+      },
+    }), [transform, setXY]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
