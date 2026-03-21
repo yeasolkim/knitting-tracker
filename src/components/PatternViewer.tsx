@@ -162,12 +162,12 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       scrollDragRef.current = null;
     }, []);
 
-    // Long-press continuous scroll
-    const scrollRepeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Long-press continuous scroll with acceleration
+    const scrollRepeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const stopScrollRepeat = useCallback(() => {
-      if (scrollRepeatRef.current) { clearInterval(scrollRepeatRef.current); scrollRepeatRef.current = null; }
+      if (scrollRepeatRef.current) { clearTimeout(scrollRepeatRef.current); scrollRepeatRef.current = null; }
       if (scrollTimeoutRef.current) { clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = null; }
     }, []);
 
@@ -183,8 +183,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           e.preventDefault();
           (e.target as HTMLElement).setPointerCapture(e.pointerId);
           doScroll();
+          // After initial delay, start accelerating repeat
           scrollTimeoutRef.current = setTimeout(() => {
-            scrollRepeatRef.current = setInterval(doScroll, 120);
+            let interval = 280;
+            const scheduleNext = () => {
+              scrollRepeatRef.current = setTimeout(() => {
+                doScroll();
+                interval = Math.max(40, interval * 0.80);
+                scheduleNext();
+              }, interval);
+            };
+            scheduleNext();
           }, 400);
         },
         onPointerUp: stopScrollRepeat,
