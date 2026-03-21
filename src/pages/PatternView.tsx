@@ -569,21 +569,21 @@ function PatternViewerPage({ pattern }: Props) {
               <span className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">높이</span>
               <input
                 type="range"
-                min={0.3}
-                max={10}
-                step={0.05}
-                value={rulerHeight}
+                min={0}
+                max={1000}
+                step={1}
+                value={Math.round(rulerHeight * 100)}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
-                  setRulerHeight(Number(e.target.value));
+                  setRulerHeight(Math.max(0.3, Number(e.target.value) / 100));
                 }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
                 className="flex-1 min-w-0 h-1.5 accent-rose-400 cursor-pointer"
               />
-              <span className="text-[11px] text-rose-500 font-mono w-8 text-right shrink-0">
-                {rulerHeight.toFixed(2)}
+              <span className="text-[11px] text-rose-500 font-mono w-10 text-right shrink-0">
+                {Math.round(rulerHeight * 100)}
               </span>
             </div>
           </div>
