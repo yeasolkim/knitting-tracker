@@ -25,13 +25,14 @@ interface PatternViewerProps {
   fileType: 'image' | 'pdf';
   rulerYPercent?: number;
   onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number, containerW: number) => void;
+  onImageSize?: (w: number, h: number) => void;
   onResetRuler?: () => void;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onResetRuler, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
     const pdfOptions = useMemo(() => ({
@@ -52,6 +53,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const onTransformChangeRef = useRef(onTransformChange);
     useEffect(() => { onTransformChangeRef.current = onTransformChange; }, [onTransformChange]);
 
+    // Report rendered image size to parent so it can use image-relative coordinates
+    const onImageSizeRef = useRef(onImageSize);
+    useEffect(() => { onImageSizeRef.current = onImageSize; }, [onImageSize]);
+    const reportImageSize = useCallback(() => {
+      const el = contentItemRef.current;
+      if (!el || !onImageSizeRef.current) return;
+      onImageSizeRef.current(el.offsetWidth, el.offsetHeight);
+    }, []);
+
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
@@ -63,18 +73,27 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const observer = new ResizeObserver((entries) => {
         const { width, height } = entries[0].contentRect;
         setContainerWidth(width);
-        // Notify parent of new dimensions so content↔screen conversions stay accurate
         onTransformChangeRef.current?.(transformRef.current, height, width);
+        // Re-measure image size after layout (image resizes proportionally)
+        requestAnimationFrame(reportImageSize);
       });
       observer.observe(sizeRef.current);
       return () => observer.disconnect();
     }, []);
 
+    // Convert image-relative % to container-absolute px (content space)
+    const imageToContentY = useCallback((imageYPct: number) => {
+      const H = sizeRef.current?.clientHeight || 1;
+      const imgH = contentItemRef.current?.offsetHeight || 0;
+      if (imgH > 0) return (H - imgH) / 2 + (imageYPct / 100) * imgH;
+      return (imageYPct / 100) * H;
+    }, []);
+
     const goToRuler = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      const contentY = (rulerYPercent / 100) * H;
+      const contentY = imageToContentY(rulerYPercent);
       setXY(transform.x, -(contentY - H / 2) * transform.scale);
-    }, [rulerYPercent, transform.x, transform.scale, setXY]);
+    }, [rulerYPercent, imageToContentY, transform.x, transform.scale, setXY]);
 
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
@@ -84,13 +103,12 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const contentY = (screenY - H / 2 - ty) / scale + H / 2;
         return { y: (contentY / H) * 100, height: screenHeightPercent / scale };
       },
-      scrollToContentY(contentYPercent: number) {
+      scrollToContentY(imageYPercent: number) {
         const H = sizeRef.current?.clientHeight || 1;
-        const contentY = (contentYPercent / 100) * H;
-        // Set ty so the ruler center appears at screen center
+        const contentY = imageToContentY(imageYPercent);
         setXY(transform.x, -(contentY - H / 2) * transform.scale);
       },
-    }), [transform, setXY]);
+    }), [transform, setXY, imageToContentY]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
@@ -209,6 +227,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 alt="패턴"
                 className="max-w-full max-h-full object-contain select-none pointer-events-none"
                 draggable={false}
+                onLoad={reportImageSize}
               />
             ) : (
               <Suspense fallback={<div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />}>

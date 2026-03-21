@@ -141,12 +141,20 @@ function PatternViewerPage({ pattern }: Props) {
   const [viewTransform, setViewTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [containerH, setContainerH] = useState(600);
   const [containerW, setContainerW] = useState(600);
+  // Rendered image size in CSS px (at scale=1). 0 = not yet measured.
+  const [imgH, setImgH] = useState(0);
+  const [imgW, setImgW] = useState(0);
+
+  const handleImageSize = useCallback((w: number, h: number) => {
+    setImgW(w);
+    setImgH(h);
+  }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW });
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW };
-  }, [rulerY, rulerHeight, viewTransform, containerH, containerW]);
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW };
+  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -227,36 +235,45 @@ function PatternViewerPage({ pattern }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [handleUndo, handleRedo]);
 
-  // Convert content % → screen % using current transform
-  const contentToScreenY = (contentPct: number, t = viewTransform, H = containerH) => {
-    const contentY = (contentPct / 100) * H;
+  // Convert image-relative % → screen % using current transform.
+  // rulerY/rulerHeight are stored as % of the rendered IMAGE height,
+  // making them device-independent regardless of container size or letterboxing.
+  const contentToScreenY = (imagePct: number, t = viewTransform, H = containerH, iH = imgH) => {
+    const imgTop = iH > 0 ? (H - iH) / 2 : 0;
+    const refH = iH > 0 ? iH : H;
+    const contentY = imgTop + (imagePct / 100) * refH;
     const screenY = (contentY - H / 2) * t.scale + H / 2 + t.y;
     return (screenY / H) * 100;
   };
 
-  // Convert screen % → content %
-  const screenToContentY = (screenPct: number, t = viewTransform, H = containerH) => {
+  // Convert screen % → image-relative %
+  const screenToContentY = (screenPct: number, t = viewTransform, H = containerH, iH = imgH) => {
     const screenY = (screenPct / 100) * H;
     const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    if (iH > 0) return ((contentY - (H - iH) / 2) / iH) * 100;
     return (contentY / H) * 100;
   };
 
   // Screen positions for RowRuler display (derived, not stored)
   const screenRulerY = contentToScreenY(rulerY);
-  const screenRulerHeight = rulerHeight * viewTransform.scale;
+  const screenRulerHeight = imgH > 0
+    ? (rulerHeight / 100) * imgH * viewTransform.scale / containerH * 100
+    : rulerHeight * viewTransform.scale;
 
-  // When RowRuler reports drag (screen coords) → convert to content coords
+  // When RowRuler reports drag (screen coords) → convert to image-relative coords
   const handleRulerPositionChange = useCallback((screenYPct: number) => {
-    const { viewTransform: t, containerH: H } = latestRef.current;
+    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const screenY = (screenYPct / 100) * H;
     const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-    setRulerY((contentY / H) * 100);
+    const newY = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+    setRulerY(Math.max(0, Math.min(100, newY)));
   }, []);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
-    const { viewTransform: t } = latestRef.current;
-    const contentH = screenHPct / t.scale;
-    setRulerHeight(Math.max(0.3, contentH));
+    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
+    const contentH_px = (screenHPct / 100) * H / t.scale;
+    const refH = iH > 0 ? iH : H;
+    setRulerHeight(Math.max(0.3, (contentH_px / refH) * 100));
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
@@ -477,16 +494,6 @@ function PatternViewerPage({ pattern }: Props) {
   const handleKnittingMarkDeleteAll = useCallback(() => { captureHistory(); setKnittingMarks([]); }, [captureHistory]);
   const handleCancelKnittingPlace = useCallback(() => setIsPlacingKnittingMarker(false), []);
 
-  const handleScrollStep = useCallback((direction: 'up' | 'down') => {
-    if (isCrochet) return;
-    const { rulerHeight: rh } = latestRef.current;
-    if (direction === 'up') {
-      setRulerY((prev) => prev - rh);
-    } else {
-      setRulerY((prev) => prev + rh);
-    }
-  }, [isCrochet]);
-
   const handleNotePositionChange = useCallback((key: string, pos: NotePosition) => {
     setNotePositions((prev) => ({ ...prev, [key]: pos }));
   }, []);
@@ -614,6 +621,7 @@ function PatternViewerPage({ pattern }: Props) {
           fileType={pattern.file_type}
           rulerYPercent={rulerY}
           onTransformChange={handleTransformChange}
+          onImageSize={handleImageSize}
           onResetRuler={!isCrochet ? () => {
             const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
             const contentY = (H / 2 - H / 2 - t.y) / t.scale + H / 2;
