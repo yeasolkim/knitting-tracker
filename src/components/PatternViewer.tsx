@@ -25,7 +25,7 @@ interface PatternViewerProps {
   rulerYPercent?: number;
   rulerHeightPercent?: number;
   onScrollStep?: (direction: 'up' | 'down') => void;
-  onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number) => void;
+  onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number, containerW: number) => void;
   onResetRuler?: () => void;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
@@ -46,7 +46,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Notify parent of every transform change so ruler can track content coords
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      onTransformChange?.(transform, H);
+      const W = sizeRef.current?.clientWidth || 1;
+      onTransformChange?.(transform, H, W);
     }, [transform, onTransformChange]);
 
     useEffect(() => {

@@ -127,17 +127,19 @@ function PatternViewerPage({ pattern }: Props) {
   // Current viewer transform — updated every frame during pan/zoom
   const [viewTransform, setViewTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [containerH, setContainerH] = useState(600);
+  const [containerW, setContainerW] = useState(600);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH });
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH };
-  }, [rulerY, rulerHeight, viewTransform, containerH]);
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW };
+  }, [rulerY, rulerHeight, viewTransform, containerH, containerW]);
 
   const handleTransformChange = useCallback(
-    (t: { scale: number; x: number; y: number }, H: number) => {
+    (t: { scale: number; x: number; y: number }, H: number, W: number) => {
       setViewTransform(t);
       setContainerH(H);
+      setContainerW(W);
     },
     []
   );
@@ -301,18 +303,30 @@ function PatternViewerPage({ pattern }: Props) {
     }
   }, [rulerDirection, updateActiveSub]);
 
-  const handlePlaceMarker = useCallback((x: number, y: number) => {
+  // Convert screen % → content % for marker placement (markers now outside CSS transform)
+  const screenToContent = useCallback((screenX: number, screenY: number) => {
+    const { viewTransform: t, containerH: H, containerW: W } = latestRef.current;
+    const sx = (screenX / 100) * W;
+    const sy = (screenY / 100) * H;
+    return {
+      x: ((sx - W / 2 - t.x) / t.scale + W / 2) / W * 100,
+      y: ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100,
+    };
+  }, []);
+
+  const handlePlaceMarker = useCallback((screenX: number, screenY: number) => {
+    const pos = screenToContent(screenX, screenY);
     const nextRow = (activeSub?.current_row || 0) + 1;
     const newMark: CrochetMark = {
       id: generateId(),
-      x,
-      y,
+      x: pos.x,
+      y: pos.y,
       label: String(nextRow),
     };
     setCrochetMarks((prev) => [...prev, newMark]);
     updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
     setIsPlacingMarker(false);
-  }, [activeSub, updateActiveSub]);
+  }, [activeSub, updateActiveSub, screenToContent]);
 
   // CompletedOverlay is rendered outside the CSS transform (screen space),
   // so its y/height values are in screen % — convert back to content % on update.
@@ -331,9 +345,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCompletedMarkDeleteAll = useCallback(() => setCompletedMarks([]), []);
 
-  const handleCrochetMarkMove = useCallback((id: string, x: number, y: number) => {
-    setCrochetMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x, y } : m)));
-  }, []);
+  const handleCrochetMarkMove = useCallback((id: string, screenX: number, screenY: number) => {
+    const pos = screenToContent(screenX, screenY);
+    setCrochetMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x: pos.x, y: pos.y } : m)));
+  }, [screenToContent]);
 
   const handleCrochetMarkDelete = useCallback((id: string) => {
     setCrochetMarks((prev) => prev.filter((m) => m.id !== id));
@@ -343,20 +358,22 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCancelPlace = useCallback(() => setIsPlacingMarker(false), []);
 
-  const handlePlaceKnittingMarker = useCallback((x: number, y: number) => {
+  const handlePlaceKnittingMarker = useCallback((screenX: number, screenY: number) => {
+    const pos = screenToContent(screenX, screenY);
     const newMark: KnittingMark = {
       id: generateId(),
-      x,
-      y,
+      x: pos.x,
+      y: pos.y,
       label: String(knittingMarks.length + 1),
     };
     setKnittingMarks((prev) => [...prev, newMark]);
     setIsPlacingKnittingMarker(false);
-  }, [knittingMarks.length]);
+  }, [knittingMarks.length, screenToContent]);
 
-  const handleKnittingMarkMove = useCallback((id: string, x: number, y: number) => {
-    setKnittingMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x, y } : m)));
-  }, []);
+  const handleKnittingMarkMove = useCallback((id: string, screenX: number, screenY: number) => {
+    const pos = screenToContent(screenX, screenY);
+    setKnittingMarks((prev) => prev.map((m) => (m.id === id ? { ...m, x: pos.x, y: pos.y } : m)));
+  }, [screenToContent]);
 
   const handleKnittingMarkDelete = useCallback((id: string) => {
     setKnittingMarks((prev) => prev.filter((m) => m.id !== id));
@@ -409,7 +426,25 @@ function PatternViewerPage({ pattern }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // CompletedOverlay is outside the CSS transform — convert content % → screen %
+  // All overlay components are outside the CSS transform — convert content % → screen %
+  const toScreen = (cx: number, cy: number) => {
+    const t = viewTransform;
+    return {
+      x: ((cx / 100) * containerW - containerW / 2) * t.scale + containerW / 2 + t.x,
+      y: ((cy / 100) * containerH - containerH / 2) * t.scale + containerH / 2 + t.y,
+    };
+  };
+
+  const screenKnittingMarks: KnittingMark[] = knittingMarks.map((m) => {
+    const s = toScreen(m.x, m.y);
+    return { ...m, x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
+  });
+
+  const screenCrochetMarks: CrochetMark[] = crochetMarks.map((m) => {
+    const s = toScreen(m.x, m.y);
+    return { ...m, x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
+  });
+
   const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
     const contentY = (m.y / 100) * containerH;
     const screenY = (contentY - containerH / 2) * viewTransform.scale + containerH / 2 + viewTransform.y;
@@ -455,39 +490,35 @@ function PatternViewerPage({ pattern }: Props) {
             setRulerY((contentY / H) * 100 - rh / 2);
           } : undefined}
           contentOverlay={
-            <>
-              {!isCrochet && (
-                <KnittingMarkers
-                  marks={knittingMarks}
-                  isPlacing={isPlacingKnittingMarker}
-                  onPlace={handlePlaceKnittingMarker}
-                  onMove={handleKnittingMarkMove}
-                  onDelete={handleKnittingMarkDelete}
-                  onDeleteAll={handleKnittingMarkDeleteAll}
-                  onCancelPlace={handleCancelKnittingPlace}
-                />
-              )}
-
-              {isCrochet && (
-                <CrochetMarkers
-                  marks={crochetMarks}
-                  isPlacing={isPlacingMarker}
-                  onPlace={handlePlaceMarker}
-                  onMove={handleCrochetMarkMove}
-                  onDelete={handleCrochetMarkDelete}
-                  onDeleteAll={handleCrochetMarkDeleteAll}
-                  onCancelPlace={handleCancelPlace}
-                />
-              )}
-
-              <NoteBubbles
-                notes={notes}
-                positions={notePositions}
-                onPositionChange={handleNotePositionChange}
-              />
-            </>
+            <NoteBubbles
+              notes={notes}
+              positions={notePositions}
+              onPositionChange={handleNotePositionChange}
+            />
           }
         >
+          {!isCrochet && (
+            <KnittingMarkers
+              marks={screenKnittingMarks}
+              isPlacing={isPlacingKnittingMarker}
+              onPlace={handlePlaceKnittingMarker}
+              onMove={handleKnittingMarkMove}
+              onDelete={handleKnittingMarkDelete}
+              onDeleteAll={handleKnittingMarkDeleteAll}
+              onCancelPlace={handleCancelKnittingPlace}
+            />
+          )}
+          {isCrochet && (
+            <CrochetMarkers
+              marks={screenCrochetMarks}
+              isPlacing={isPlacingMarker}
+              onPlace={handlePlaceMarker}
+              onMove={handleCrochetMarkMove}
+              onDelete={handleCrochetMarkDelete}
+              onDeleteAll={handleCrochetMarkDeleteAll}
+              onCancelPlace={handleCancelPlace}
+            />
+          )}
           {!isCrochet && (
             <CompletedOverlay
               marks={screenCompletedMarks}

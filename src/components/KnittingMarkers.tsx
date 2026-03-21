@@ -61,8 +61,8 @@ const KnittingMarkers = memo(function KnittingMarkers({
     if (!containerRef.current) return { x: 50, y: 50 };
     const rect = containerRef.current.getBoundingClientRect();
     return {
-      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
-      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
     };
   }, []);
 
@@ -97,8 +97,8 @@ const KnittingMarkers = memo(function KnittingMarkers({
       const rect = containerRef.current.getBoundingClientRect();
       const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
       const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newX = Math.max(0, Math.min(100, dragStartRef.current.markX + dx));
-      const newY = Math.max(0, Math.min(100, dragStartRef.current.markY + dy));
+      const newX = dragStartRef.current.markX + dx;
+      const newY = dragStartRef.current.markY + dy;
       onMove(draggingId, newX, newY);
     },
     [draggingId, onMove]
