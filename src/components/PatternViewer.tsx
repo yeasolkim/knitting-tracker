@@ -243,24 +243,25 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               />
             ) : (
               <Suspense fallback={<div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />}>
-                <PdfDocument
-                  file={fileUrl}
-                  onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
-                  options={pdfOptions}
-                  className="flex flex-col items-center gap-2"
-                  ref={(el: HTMLElement | null) => { contentItemRef.current = el; }}
-                >
-                  {Array.from({ length: pdfPages }, (_, i) => (
-                    <PdfPage
-                      key={i + 1}
-                      pageNumber={i + 1}
-                      width={containerWidth * 0.9}
-                      scale={devicePixelRatio}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                    />
-                  ))}
-                </PdfDocument>
+                <div ref={(el) => { contentItemRef.current = el; }} className="flex flex-col items-center gap-2">
+                  <PdfDocument
+                    file={fileUrl}
+                    onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
+                    options={pdfOptions}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    {Array.from({ length: pdfPages }, (_, i) => (
+                      <PdfPage
+                        key={i + 1}
+                        pageNumber={i + 1}
+                        width={containerWidth * 0.9}
+                        scale={devicePixelRatio}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    ))}
+                  </PdfDocument>
+                </div>
               </Suspense>
             )}
 
