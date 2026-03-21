@@ -317,14 +317,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           {/* 진행선으로 이동 */}
           <button
             onClick={goToRuler}
-            className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="px-2 h-9 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="진행선으로 이동"
-            title="진행선으로 이동"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5l-4 7h8l-4-7z" fill="currentColor" stroke="none" />
-            </svg>
+            <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선<br/>이동</span>
           </button>
 
           {onResetRuler && (
@@ -332,13 +328,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               <div className="h-1" />
               <button
                 onClick={onResetRuler}
-                className="w-9 h-9 sm:w-10 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-                aria-label="진행선 위치 초기화"
-                title="진행선 초기화"
+                className="px-2 h-9 sm:h-10 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+                aria-label="진행선 가져오기"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18" />
-                </svg>
+                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">진행선<br/>가져오기</span>
               </button>
             </>
           )}
