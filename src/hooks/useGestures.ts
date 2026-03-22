@@ -97,11 +97,15 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
         const pivotX = cx - rect.left - rect.width / 2;
         const pivotY = cy - rect.top - rect.height / 2;
 
+        // Capture ref value before the async state updater runs.
+        // handleTouchEnd can set lastTouchCenter.current to null between
+        // this call and when React executes the updater, causing a crash.
+        const prevCenter = lastTouchCenter.current;
+        if (!prevCenter) return;
+
         setTransform((prev) => {
           const newScale = clampScale(prev.scale * scaleRatio);
           const zoomed = applyZoom(prev, newScale, pivotX, pivotY);
-          // Also pan by how much the midpoint moved between frames
-          const prevCenter = lastTouchCenter.current!;
           return {
             ...zoomed,
             x: zoomed.x + cx - prevCenter.x,

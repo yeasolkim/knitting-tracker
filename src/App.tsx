@@ -5,9 +5,11 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import PatternNew from './pages/PatternNew';
 import PatternView from './pages/PatternView';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <HashRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -18,5 +20,6 @@ export default function App() {
         <Route path="/patterns/:id" element={<PatternView />} />
       </Routes>
     </HashRouter>
+    </ErrorBoundary>
   );
 }

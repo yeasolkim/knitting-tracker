@@ -126,7 +126,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 5, 10));
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 80, 100));
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -621,13 +621,17 @@ function PatternViewerPage({ pattern }: Props) {
           ref={viewerRef}
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
-          rulerYPercent={rulerY}
+          rulerYPercent={rulerY + rulerHeight / 2}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
           onResetRuler={!isCrochet ? () => {
-            const { viewTransform: t, containerH: H, rulerHeight: rh } = latestRef.current;
-            const contentY = (H / 2 - H / 2 - t.y) / t.scale + H / 2;
-            setRulerY((contentY / H) * 100 - rh / 2);
+            const { viewTransform: t, containerH: H, imgH: iH, rulerHeight: rh } = latestRef.current;
+            // Content Y (container px) that is currently at screen center
+            const contentY = H / 2 - t.y / t.scale;
+            // Convert to image-relative % (same logic as screenToContentY)
+            const refH = iH > 0 ? iH : H;
+            const offset = iH > 0 ? (H - iH) / 2 : 0;
+            setRulerY((contentY - offset) / refH * 100 - rh / 2);
           } : undefined}
           contentOverlay={
             <NoteBubbles
@@ -704,21 +708,21 @@ function PatternViewerPage({ pattern }: Props) {
               <input
                 type="range"
                 min={0}
-                max={1000}
+                max={8000}
                 step={1}
-                value={Math.round(rulerHeight * 100)}
+                value={Math.round(rulerHeight * 80)}
                 onPointerDown={captureHistory}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.3, Number(e.target.value) / 100));
+                  setRulerHeight(Math.max(0.1, Number(e.target.value) / 80));
                 }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
                 className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
               />
-              <span className="text-[11px] text-[#b5541e] font-mono w-10 text-right shrink-0">
-                {Math.round(rulerHeight * 100)}
+              <span className="text-[11px] text-[#b5541e] font-mono w-12 text-right shrink-0">
+                {rulerHeight.toFixed(2)}
               </span>
             </div>
           </div>

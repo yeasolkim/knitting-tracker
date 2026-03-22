@@ -74,8 +74,21 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const { width, height } = entries[0].contentRect;
         setContainerWidth(width);
         onTransformChangeRef.current?.(transformRef.current, height, width);
-        // Re-measure image size after layout (image resizes proportionally)
-        requestAnimationFrame(reportImageSize);
+        // Re-measure image size after layout, then clamp pan offset so content
+        // stays visible after orientation/resize changes.
+        requestAnimationFrame(() => {
+          reportImageSize();
+          const imgEl = contentItemRef.current;
+          if (!imgEl) return;
+          const s = transformRef.current.scale;
+          const maxTy = Math.max(0, (imgEl.offsetHeight * s - height) / 2);
+          const maxTx = Math.max(0, (imgEl.offsetWidth * s - width) / 2);
+          const cx = Math.max(-maxTx, Math.min(maxTx, transformRef.current.x));
+          const cy = Math.max(-maxTy, Math.min(maxTy, transformRef.current.y));
+          if (cx !== transformRef.current.x || cy !== transformRef.current.y) {
+            setXY(cx, cy);
+          }
+        });
       });
       observer.observe(sizeRef.current);
       return () => observer.disconnect();
@@ -254,6 +267,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                         scale={devicePixelRatio}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
+                        onRenderSuccess={reportImageSize}
                       />
                     ))}
                   </PdfDocument>
@@ -280,6 +294,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{ top: `${vThumbTop * 100}%`, height: `${vThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('v')}
+                onMouseDown={(e) => e.stopPropagation()}
                 onPointerMove={handleScrollPointerMove}
                 onPointerUp={handleScrollPointerUp}
                 onPointerCancel={handleScrollPointerUp}
@@ -300,6 +315,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{ left: `${hThumbLeft * 100}%`, width: `${hThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('h')}
+                onMouseDown={(e) => e.stopPropagation()}
                 onPointerMove={handleScrollPointerMove}
                 onPointerUp={handleScrollPointerUp}
                 onPointerCancel={handleScrollPointerUp}
