@@ -1,4 +1,10 @@
-export type Lang = 'ko' | 'en';
+export type Lang = 'ko' | 'en' | 'ja';
+
+export const LANGUAGES: { code: Lang; label: string; native: string }[] = [
+  { code: 'ko', label: 'Korean',   native: '한국어' },
+  { code: 'en', label: 'English',  native: 'English' },
+  { code: 'ja', label: 'Japanese', native: '日本語' },
+];
 
 type Translations = Record<string, string>;
 
@@ -250,4 +256,128 @@ const en: Translations = {
   'notes.clearAllConfirm': 'Clear all notes?',
 };
 
-export const translations: Record<Lang, Translations> = { ko, en };
+const ja: Translations = {
+  // app
+  'app.name': 'コッタ',
+  // nav
+  'nav.login': 'ログイン',
+  'nav.logout': 'ログアウト',
+  'nav.start': 'はじめる →',
+  // landing
+  'landing.hero1': '途中で止まっても',
+  'landing.hero2': '大丈夫。',
+  'landing.sub1': 'どこまで編んだか忘れても、',
+  'landing.sub2': 'コッタが覚えています。',
+  'landing.cta': 'Googleではじめる',
+  'landing.feat.imagePdf': '画像 & PDF',
+  'landing.feat.imagePdfDesc': '編み図をアップロード',
+  'landing.feat.ruler': '進行ライン',
+  'landing.feat.rulerDesc': 'ドラッグで位置調整',
+  'landing.feat.counter': '段数カウンター',
+  'landing.feat.counterDesc': 'タップでカウントアップ',
+  'landing.feat.save': '自動保存',
+  'landing.feat.saveDesc': '閉じても続きから',
+  // login
+  'login.welcome': 'コッタへようこそ',
+  'login.subtitle': 'ログインして編み図を管理しよう',
+  'login.google': 'Googleでログイン',
+  // footer
+  'footer.copyright': '© 2025 コッタ · All rights reserved.',
+  'footer.business': 'ビジネスのお問い合わせ',
+  'footer.bug': 'バグを報告',
+  // dashboard
+  'dashboard.title': 'マイ編み図',
+  'dashboard.count': '{n}件',
+  'dashboard.addBtn': '編み図を追加',
+  'dashboard.empty.title': 'まだ編み図がありません',
+  'dashboard.empty.sub': '最初の編み図をアップロードしよう',
+  'dashboard.empty.link': '編み図を追加する →',
+  // pattern card
+  'card.type.knitting': '棒針',
+  'card.type.crochet': 'かぎ針',
+  'card.delete': '削除',
+  'card.cancel': 'キャンセル',
+  'card.edit': '編集',
+  'card.rowCurrent': '{n}段',
+  'card.rowTotal': '/ {n}段',
+  // pattern new/edit form
+  'form.backToList': 'マイ編み図',
+  'form.backToPattern': '編み図に戻る',
+  'form.titleNew': '編み図を追加',
+  'form.titleEdit': '編み図を編集',
+  'form.file': '編み図ファイル',
+  'form.fileReplaceTip': '新しいファイルを選択して置き換えられます。',
+  'form.fileCancelReplace': '変更をキャンセル（元のファイルを保持）',
+  'form.fileChange': '別のファイルに変更',
+  'form.filePdf': 'PDFファイル',
+  'form.fileImage': '画像ファイル',
+  'form.name': '編み図名',
+  'form.namePlaceholder': '例：春のカーディガン',
+  'form.type': '種類',
+  'form.knitting': '棒針',
+  'form.crochet': 'かぎ針',
+  'form.yarn': '毛糸',
+  'form.yarnOptional': '（任意）',
+  'form.yarnPlaceholder': '例：コットン合太、ウール混',
+  'form.needle': '針',
+  'form.needlePlaceholder': '例：4mm、3号',
+  'form.save': '保存',
+  'form.uploading': 'アップロード中...',
+  'form.saving': '保存中...',
+  'form.error.login': 'ログインが必要です。',
+  'form.error.presign': 'アップロードの準備に失敗しました。',
+  'form.error.upload': 'ファイルのアップロードに失敗しました。',
+  'form.error.save': '保存に失敗しました。',
+  'form.error.generic': 'アップロードに失敗しました。',
+  // file drop zone
+  'dropzone.label': 'ここにドロップまたはタップして選択',
+  'dropzone.hint': '画像 · PDF（最大{max}MB）',
+  'dropzone.errorSize': 'ファイルは{max}MB以下にしてください。',
+  'dropzone.errorType': '画像またはPDFファイルのみアップロードできます。',
+  // viewer buttons
+  'viewer.goToRuler': 'ラインへ\n移動',
+  'viewer.bringRuler': 'ラインを\nここへ',
+  'viewer.zoomIn': '拡大',
+  'viewer.zoomOut': '縮小',
+  // pattern view
+  'view.edit': '編み図を編集',
+  'view.undo': '元に戻す (Ctrl+Z)',
+  'view.redo': 'やり直す (Ctrl+Shift+Z)',
+  'view.deleteAllMarks': 'すべての完了マークを削除しますか？',
+  'view.deleteAll': 'すべて削除',
+  // ruler
+  'ruler.complete': '完了（次の段へ）',
+  'ruler.dirUp': '進行方向：上',
+  'ruler.dirDown': '進行方向：下',
+  'ruler.direction': '進行方向',
+  'ruler.heightSettings': '高さを調整',
+  'ruler.height': '高さ',
+  // sub-pattern selector
+  'sub.defaultPrefix': '編み図',
+  'sub.rename': '名前を変更',
+  'sub.delete': '削除',
+  'sub.deleteConfirm': '"{name}"を削除しますか？',
+  'sub.totalRows': '総段数',
+  'sub.addPattern': '編み図を追加',
+  'sub.addPatternCrochet': '編み図／モチーフを追加',
+  'sub.rowDisplay': '{current}/{total}段',
+  // row / stitch counter
+  'counter.rowUnit': '段',
+  'counter.rowOf': '/ {total}段',
+  'counter.stitchLabel': '目',
+  // markers
+  'marker.place': 'マーカー',
+  'marker.deleteTitle': 'マーカーをすべて削除',
+  'marker.deleteConfirm': 'すべてのマーカーを削除しますか？',
+  // notes
+  'notes.title': 'メモ',
+  'notes.currentPlaceholder': '現在の段のメモ...',
+  'notes.clearCurrent': '現在を削除',
+  'notes.clearAll': 'すべて削除',
+  'notes.rowLabel': '{n}段',
+  'notes.count': '{n}件',
+  'notes.clearCurrentConfirm': '"{name}"のメモをすべて削除しますか？',
+  'notes.clearAllConfirm': 'すべてのメモを削除しますか？',
+};
+
+export const translations: Record<Lang, Translations> = { ko, en, ja };
