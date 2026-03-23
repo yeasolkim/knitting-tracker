@@ -148,21 +148,20 @@ function PatternViewerPage({ pattern }: Props) {
   const [imgH, setImgH] = useState(0);
   const [imgW, setImgW] = useState(0);
 
-  // Scroll to ruler on first image load if ruler position was saved
+  // Scroll to ruler once: after image is loaded (imgH > 0)
   const initialScrollDoneRef = useRef(false);
-  const hasSavedRulerPosition = pattern.progress?.ruler_position_y != null;
 
   const handleImageSize = useCallback((w: number, h: number) => {
     setImgW(w);
     setImgH(h);
-    if (!initialScrollDoneRef.current && h > 0 && hasSavedRulerPosition) {
+    if (!initialScrollDoneRef.current && h > 0) {
       initialScrollDoneRef.current = true;
       const { rulerY: ry, rulerHeight: rh } = latestRef.current;
       requestAnimationFrame(() => {
         viewerRef.current?.scrollToContentY(ry + rh / 2);
       });
     }
-  }, [hasSavedRulerPosition]);
+  }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
   const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
@@ -536,15 +535,6 @@ function PatternViewerPage({ pattern }: Props) {
     });
   };
 
-  // On first load, scroll the viewer so the ruler is visible at screen center
-  const initialScrollDone = useRef(false);
-  useEffect(() => {
-    if (initialScrollDone.current || containerH <= 1 || isCrochet) return;
-    initialScrollDone.current = true;
-    viewerRef.current?.scrollToContentY(rulerY + rulerHeight / 2);
-  // Only trigger when containerH becomes available (real height after mount)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerH]);
 
   useEffect(() => {
     requestWakeLock();
