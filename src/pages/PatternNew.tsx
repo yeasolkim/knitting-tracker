@@ -96,11 +96,14 @@ function UploadForm() {
     setError(null);
 
     let createdPatternId: string | null = null;
+    let uploadedUrls: string[] = [];
+    let accessToken: string | null = null;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error(t('form.error.login'));
       const user = session.user;
+      accessToken = session.access_token;
 
       const isPdf = file.type === 'application/pdf';
 
@@ -148,6 +151,7 @@ function UploadForm() {
         body: file,
       });
       if (!uploadRes.ok) throw new Error(t('form.error.upload'));
+      uploadedUrls.push(fileUrl); // track for cleanup on failure
 
       let thumbnailUrl: string | null = null;
 
@@ -174,7 +178,10 @@ function UploadForm() {
                 headers: { 'Content-Type': 'image/jpeg' },
                 body: thumbBlob,
               });
-              if (thumbUpload.ok) thumbnailUrl = thumbFileUrl;
+              if (thumbUpload.ok) {
+                thumbnailUrl = thumbFileUrl;
+                uploadedUrls.push(thumbFileUrl); // track for cleanup on failure
+              }
             }
           } catch {
             // Thumbnail upload failed, proceed without
@@ -184,13 +191,11 @@ function UploadForm() {
         thumbnailUrl = fileUrl;
       }
 
-      const urlData = { publicUrl: fileUrl };
-
-      await Promise.all([
+      const [updateResult, progressResult] = await Promise.all([
         supabase
           .from('patterns')
           .update({
-            file_url: urlData.publicUrl,
+            file_url: fileUrl,
             thumbnail_url: thumbnailUrl,
             file_size: file.size,
           })
@@ -205,16 +210,28 @@ function UploadForm() {
         }),
       ]);
 
+      if (updateResult.error) throw updateResult.error;
+      if (progressResult.error) throw progressResult.error;
+
       createdPatternId = null; // 성공 — cleanup 불필요
+      uploadedUrls = [];
       navigate(`/patterns/${pattern.id}`);
     } catch (err) {
-      // 업로드 실패 시 생성된 DB 레코드 정리
+      // DB 레코드 정리
       if (createdPatternId) {
         const pid = createdPatternId;
         Promise.all([
           supabase.from('pattern_progress').delete().eq('pattern_id', pid),
           supabase.from('patterns').delete().eq('id', pid),
         ]).catch(() => {});
+      }
+      // R2 업로드된 파일 정리
+      if (uploadedUrls.length > 0 && accessToken) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ urls: uploadedUrls }),
+        }).catch(() => {});
       }
       setError(err instanceof Error ? err.message : t('form.error.generic'));
       setUploading(false);

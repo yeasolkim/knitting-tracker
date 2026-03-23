@@ -16,6 +16,7 @@ create table if not exists patterns (
   total_rows integer not null default 1,
   yarn text not null default '',
   needle text not null default '',
+  file_size bigint,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -37,6 +38,9 @@ create table if not exists pattern_progress (
   active_sub_pattern_id text not null default '',
   crochet_marks jsonb not null default '[]',
   knitting_marks jsonb not null default '[]',
+  view_scale float,
+  view_x float,
+  view_y float,
   updated_at timestamptz default now() not null,
   unique(pattern_id, user_id)
 );

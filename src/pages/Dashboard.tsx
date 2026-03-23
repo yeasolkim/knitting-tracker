@@ -126,11 +126,16 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
       }
     }
 
-    await Promise.all([
+    const [, deleteResult] = await Promise.all([
       supabase.from('pattern_progress').delete().eq('pattern_id', id),
       supabase.from('patterns').delete().eq('id', id),
     ]);
-  }, [supabase, patterns]);
+
+    // If DB delete failed, restore the pattern in UI
+    if (deleteResult.error) {
+      fetchPatterns();
+    }
+  }, [supabase, patterns, fetchPatterns]);
 
   const { t } = useLanguage();
 
