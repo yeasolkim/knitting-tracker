@@ -154,9 +154,6 @@ function PatternViewerPage({ pattern }: Props) {
   const savedViewY     = pattern.progress?.view_y     as number | null ?? null;
   const hasSavedView   = savedViewScale != null && savedViewX != null && savedViewY != null;
 
-  // Gate: don't save viewTransform until after the initial restore is done
-  const viewRestoredRef = useRef(false);
-
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
 
@@ -173,7 +170,6 @@ function PatternViewerPage({ pattern }: Props) {
           } else {
             viewerRef.current?.goToRuler();
           }
-          viewRestoredRef.current = true;
         });
       });
     }
@@ -384,14 +380,24 @@ function PatternViewerPage({ pattern }: Props) {
       note_positions: notePositions,
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
-      // Only save view transform after initial restore to avoid overwriting saved state
-      ...(viewRestoredRef.current ? {
-        view_scale: viewTransform.scale,
-        view_x: viewTransform.x,
-        view_y: viewTransform.y,
-      } : {}),
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
+
+  // Explicit "save view" — saves current zoom/pan to DB immediately
+  const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
+  const saveViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSaveView = useCallback(async () => {
+    setSaveViewStatus('saving');
+    await saveFn({
+      view_scale: viewTransform.scale,
+      view_x: viewTransform.x,
+      view_y: viewTransform.y,
+    });
+    setSaveViewStatus('done');
+    if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current);
+    saveViewTimerRef.current = setTimeout(() => setSaveViewStatus('idle'), 2000);
+  }, [saveFn, viewTransform]);
 
   const handleRowChange = (row: number) => {
     captureHistory();
@@ -648,6 +654,29 @@ function PatternViewerPage({ pattern }: Props) {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
             </svg>
+          </button>
+
+          {/* Save view button */}
+          <button
+            onClick={handleSaveView}
+            disabled={saveViewStatus === 'saving'}
+            className="h-9 px-2 flex items-center gap-1 rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] disabled:opacity-50 transition-colors"
+            title={t('view.saveView')}
+          >
+            {saveViewStatus === 'done' ? (
+              <>
+                <svg className="w-4 h-4 text-[#7a9c72]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-[10px] font-semibold text-[#7a9c72] tracking-wide">{t('view.saveViewDone')}</span>
+              </>
+            ) : saveViewStatus === 'saving' ? (
+              <div className="w-4 h-4 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
