@@ -126,7 +126,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 8, 10));
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 0.3, 0.3));
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -275,7 +275,7 @@ function PatternViewerPage({ pattern }: Props) {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const contentH_px = (screenHPct / 100) * H / t.scale;
     const refH = iH > 0 ? iH : H;
-    setRulerHeight(Math.max(0.3, (contentH_px / refH) * 100));
+    setRulerHeight(Math.min(0.3, Math.max(0.001, (contentH_px / refH) * 100)));
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
@@ -708,13 +708,13 @@ function PatternViewerPage({ pattern }: Props) {
               <input
                 type="range"
                 min={0}
-                max={8000}
+                max={10000}
                 step={1}
-                value={Math.round(rulerHeight * 800)}
+                value={Math.round(rulerHeight / 0.3 * 10000)}
                 onPointerDown={captureHistory}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.01, Number(e.target.value) / 800));
+                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 0.3));
                 }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
@@ -722,7 +722,7 @@ function PatternViewerPage({ pattern }: Props) {
                 className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
               />
               <span className="text-[11px] text-[#b5541e] font-mono w-12 text-right shrink-0">
-                {(rulerHeight * 10).toFixed(2)}
+                {(rulerHeight / 0.3 * 100).toFixed(2)}
               </span>
             </div>
           </div>
