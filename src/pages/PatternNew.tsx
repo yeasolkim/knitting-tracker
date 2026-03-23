@@ -94,6 +94,8 @@ function UploadForm() {
     setUploading(true);
     setError(null);
 
+    let createdPatternId: string | null = null;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error(t('form.error.login'));
@@ -119,6 +121,7 @@ function UploadForm() {
         .single();
 
       if (insertError) throw insertError;
+      createdPatternId = pattern.id;
 
       const ext = file.name.split('.').pop();
       const path = `${user.id}/${pattern.id}/${Date.now()}.${ext}`;
@@ -201,8 +204,17 @@ function UploadForm() {
         }),
       ]);
 
+      createdPatternId = null; // 성공 — cleanup 불필요
       navigate(`/patterns/${pattern.id}`);
     } catch (err) {
+      // 업로드 실패 시 생성된 DB 레코드 정리
+      if (createdPatternId) {
+        const pid = createdPatternId;
+        Promise.all([
+          supabase.from('pattern_progress').delete().eq('pattern_id', pid),
+          supabase.from('patterns').delete().eq('id', pid),
+        ]).catch(() => {});
+      }
       setError(err instanceof Error ? err.message : t('form.error.generic'));
       setUploading(false);
     }

@@ -184,6 +184,27 @@ function EditForm() {
 
       if (updateError) throw updateError;
 
+      // 파일이 교체된 경우 기존 R2 파일 삭제
+      if (newFile) {
+        const newUrls = new Set([fileUrl, thumbnailUrl].filter(Boolean));
+        const oldUrls = [currentFileUrl, currentThumbnailUrl]
+          .filter((u): u is string => !!u && !newUrls.has(u));
+        const toDelete = [...new Set(oldUrls)];
+        if (toDelete.length > 0) {
+          fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ urls: toDelete }),
+            },
+          ).catch(() => {});
+        }
+      }
+
       navigate(`/patterns/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('form.error.save'));
