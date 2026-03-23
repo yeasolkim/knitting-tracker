@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
@@ -634,7 +634,6 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <LanguageToggle />
           <Link
             to={`/patterns/${pattern.id}/edit`}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] transition-colors"
