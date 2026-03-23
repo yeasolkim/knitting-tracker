@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 import PatternCard from '@/components/PatternCard';
+import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
 export default function Dashboard() {
   return (
@@ -48,6 +49,8 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
     ]);
   }, [supabase]);
 
+  const { t } = useLanguage();
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
@@ -63,17 +66,18 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
               <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             </svg>
-            <span className="font-bold text-[#3d2b1f] tracking-tight">코따</span>
+            <span className="font-bold text-[#3d2b1f] tracking-tight">{t('app.name')}</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <span className="text-[11px] text-[#a08060] hidden sm:block truncate max-w-[160px] tracking-wide">
               {userEmail}
             </span>
+            <LanguageToggle />
             <button
               onClick={handleLogout}
               className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
             >
-              로그아웃
+              {t('nav.logout')}
             </button>
           </div>
         </div>
@@ -83,9 +87,9 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-7 sm:mb-9">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">내 도안</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
             {!loading && patterns.length > 0 && (
-              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{patterns.length}개 보관 중</p>
+              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{t('dashboard.count', { n: patterns.length })}</p>
             )}
           </div>
           <Link
@@ -95,7 +99,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            도안 추가
+            {t('dashboard.addBtn')}
           </Link>
         </div>
 
@@ -112,13 +116,13 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
                 <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             </div>
-            <p className="text-[#3d2b1f] font-semibold mb-1.5">아직 도안이 없어요</p>
-            <p className="text-sm text-[#7a5c46] mb-7">첫 도안을 올려보세요</p>
+            <p className="text-[#3d2b1f] font-semibold mb-1.5">{t('dashboard.empty.title')}</p>
+            <p className="text-sm text-[#7a5c46] mb-7">{t('dashboard.empty.sub')}</p>
             <Link
               to="/patterns/new"
               className="text-sm font-semibold text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors border-b-2 border-[#b5541e] pb-0.5"
             >
-              도안 추가하기 →
+              {t('dashboard.empty.link')}
             </Link>
           </div>
         ) : (

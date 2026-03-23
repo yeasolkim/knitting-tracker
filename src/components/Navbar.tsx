@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Navbar({ userEmail }: { userEmail?: string }) {
   const navigate = useNavigate();
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -18,7 +20,7 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
             <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
-          <span className="font-bold text-[#3d2b1f] tracking-tight">코따</span>
+          <span className="font-bold text-[#3d2b1f] tracking-tight">{t('app.name')}</span>
         </Link>
 
         {userEmail ? (
@@ -28,7 +30,7 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
               onClick={handleLogout}
               className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] px-1 flex items-center tracking-wide"
             >
-              로그아웃
+              {t('nav.logout')}
             </button>
           </div>
         ) : (
@@ -36,7 +38,7 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
             to="/login"
             className="text-xs font-semibold text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors min-h-[44px] flex items-center"
           >
-            시작하기 →
+            {t('nav.start')}
           </Link>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import type { SubPattern } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SubPatternSelectorProps {
   subPatterns: SubPattern[];
@@ -49,6 +50,7 @@ export default function SubPatternSelector({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useLanguage();
 
   const active = subPatterns.find((s) => s.id === activeId);
 
@@ -73,7 +75,7 @@ export default function SubPatternSelector({
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#d4b896] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
       >
-        <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || '도안 1'}</span>
+        <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
         <svg
           className={`w-3 h-3 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -113,7 +115,7 @@ export default function SubPatternSelector({
                   >
                     <span className="font-semibold">{sub.name}</span>
                     <span className="text-[#a08060] ml-1.5 text-xs">
-                      {sub.current_row}/{sub.total_rows}단
+                      {t('sub.rowDisplay', { current: sub.current_row, total: sub.total_rows })}
                     </span>
                   </button>
 
@@ -124,7 +126,7 @@ export default function SubPatternSelector({
                         startRename(sub);
                       }}
                       className="text-[#d4b896] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      title="이름 변경"
+                      title={t('sub.rename')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -134,7 +136,7 @@ export default function SubPatternSelector({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm(`"${sub.name}"을(를) 삭제하시겠습니까?`)) {
+                          if (confirm(t('sub.deleteConfirm').replace('{name}', sub.name))) {
                             onDelete(sub.id);
                           }
                         }}
@@ -153,7 +155,7 @@ export default function SubPatternSelector({
               {/* Total setting */}
               {sub.id === activeId && editingId !== sub.id && (
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[10px] text-[#a08060] tracking-wide">총 단수</span>
+                  <span className="text-[10px] text-[#a08060] tracking-wide">{t('sub.totalRows')}</span>
                   <TotalRowsInput
                     value={sub.total_rows}
                     onChange={(val) => onUpdate(sub.id, { total_rows: val })}
@@ -172,7 +174,7 @@ export default function SubPatternSelector({
               }}
               className="text-sm text-[#b5541e] hover:text-[#9a4318] font-semibold flex items-center gap-1 min-h-[44px] w-full tracking-wide"
             >
-              <span>+</span> {isCrochet ? '도안/모티브 추가' : '도안 추가'}
+              <span>+</span> {isCrochet ? t('sub.addPatternCrochet') : t('sub.addPattern')}
             </button>
           </div>
         </div>

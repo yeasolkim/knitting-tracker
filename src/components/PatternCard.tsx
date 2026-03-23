@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PatternWithProgress, SubPattern } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PatternCardProps {
   pattern: PatternWithProgress;
@@ -9,6 +10,7 @@ interface PatternCardProps {
 
 const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { t } = useLanguage();
 
   const subPatterns = (pattern.progress?.sub_patterns as SubPattern[]) || [];
   const totalRows = subPatterns.length > 0
@@ -19,7 +21,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
     : pattern.progress?.current_row || 0;
 
   const progress = totalRows > 0 ? Math.min(100, (currentRows / totalRows) * 100) : 0;
-  const typeLabel = pattern.type === 'crochet' ? '코바늘' : '대바늘';
+  const typeLabel = pattern.type === 'crochet' ? t('card.type.crochet') : t('card.type.knitting');
 
   return (
     <div className="bg-[#fdf6e8] rounded-xl border-2 border-[#d4b896] overflow-hidden hover:shadow-[4px_4px_0_#d4b896] transition-all group relative">
@@ -68,13 +70,13 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
                 onClick={() => onDelete(pattern.id)}
                 className="text-[10px] text-[#fdf6e8] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors"
               >
-                삭제
+                {t('card.delete')}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 className="text-[10px] text-[#a08060] hover:text-[#7a5c46] px-1.5 py-0.5 transition-colors"
               >
-                취소
+                {t('card.cancel')}
               </button>
             </div>
           ) : (
@@ -105,8 +107,8 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
         {/* Progress */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-[#7a5c46] font-semibold tracking-wide">{currentRows}단</span>
-            <span className="text-[10px] text-[#a08060] tracking-wide">/ {totalRows}단</span>
+            <span className="text-[10px] text-[#7a5c46] font-semibold tracking-wide">{t('card.rowCurrent', { n: currentRows })}</span>
+            <span className="text-[10px] text-[#a08060] tracking-wide">{t('card.rowTotal', { n: totalRows })}</span>
           </div>
           <div className="h-1.5 bg-[#f5edd6] border border-[#d4b896] rounded-full overflow-hidden">
             <div

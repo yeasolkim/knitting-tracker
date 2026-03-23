@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SubPattern } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PatternNotesProps {
   currentRow: number;
@@ -29,6 +30,7 @@ export default function PatternNotes({
   const [isOpen, setIsOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   const currentKey = noteKey(activeSubPattern.id, currentRow);
   const currentNote = notes[currentKey] || '';
@@ -87,7 +89,7 @@ export default function PatternNotes({
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          메모{totalCount > 0 && <span className="text-[#b5541e]"> ({totalCount})</span>}
+          {t('notes.title')}{totalCount > 0 && <span className="text-[#b5541e]"> ({totalCount})</span>}
           <svg
             className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -101,7 +103,7 @@ export default function PatternNotes({
             {(entriesBySub.get(activeSubPattern.id)?.length || 0) > 0 && (
               <button
                 onClick={() => {
-                  if (confirm(`"${activeSubPattern.name}" 메모를 모두 삭제하시겠습니까?`)) {
+                  if (confirm(t('notes.clearCurrentConfirm').replace('{name}', activeSubPattern.name))) {
                     const updated = { ...notes };
                     for (const key of Object.keys(updated)) {
                       if (key.startsWith(activeSubPattern.id + ':')) delete updated[key];
@@ -111,17 +113,17 @@ export default function PatternNotes({
                 }}
                 className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
               >
-                현재 삭제
+                {t('notes.clearCurrent')}
               </button>
             )}
             {totalCount > 0 && subPatterns.length > 1 && (
               <button
                 onClick={() => {
-                  if (confirm('모든 메모를 삭제하시겠습니까?')) onUpdate({});
+                  if (confirm(t('notes.clearAllConfirm'))) onUpdate({});
                 }}
                 className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
               >
-                전체 삭제
+                {t('notes.clearAll')}
               </button>
             )}
           </div>
@@ -141,7 +143,7 @@ export default function PatternNotes({
             <textarea
               value={currentNote}
               onChange={(e) => handleChange(currentKey, e.target.value)}
-              placeholder="현재 단 메모..."
+              placeholder={t('notes.currentPlaceholder')}
               className="w-full h-16 text-sm border-2 border-[#d4b896] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
           </div>
@@ -161,7 +163,7 @@ export default function PatternNotes({
                     >
                       {sub.name}
                     </span>
-                    <span className="text-[10px] text-[#a08060]">{entries.length}개</span>
+                    <span className="text-[10px] text-[#a08060]">{t('notes.count', { n: entries.length })}</span>
                   </div>
 
                   <div className="space-y-0.5">
@@ -180,7 +182,7 @@ export default function PatternNotes({
                               isCurrent ? 'text-[#b5541e]' : 'text-[#a08060]'
                             }`}
                           >
-                            {row}단
+                            {t('notes.rowLabel', { n: row })}
                           </span>
 
                           {editingKey === key ? (

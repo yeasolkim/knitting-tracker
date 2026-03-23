@@ -1,4 +1,5 @@
 import { useCallback, useState, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FileDropZoneProps {
   onFileSelect: (file: File) => void;
@@ -14,20 +15,21 @@ export default function FileDropZone({
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
 
   const validateAndSelect = useCallback(
     (file: File) => {
       setError(null);
 
       if (file.size > maxSizeMB * 1024 * 1024) {
-        setError(`파일 크기는 ${maxSizeMB}MB 이하여야 합니다.`);
+        setError(t('dropzone.errorSize').replace('{max}', String(maxSizeMB)));
         return;
       }
 
       const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf';
       if (!isImage && !isPdf) {
-        setError('이미지 또는 PDF 파일만 업로드할 수 있습니다.');
+        setError(t('dropzone.errorType'));
         return;
       }
 
@@ -80,10 +82,10 @@ export default function FileDropZone({
           </svg>
         </div>
         <p className="text-sm font-semibold text-[#3d2b1f] mb-1 tracking-wide">
-          파일을 여기 올려두거나 탭하기
+          {t('dropzone.label')}
         </p>
         <p className="text-xs text-[#a08060] tracking-wide">
-          이미지 · PDF (최대 {maxSizeMB}MB)
+          {t('dropzone.hint').replace('{max}', String(maxSizeMB))}
         </p>
         <input
           ref={inputRef}

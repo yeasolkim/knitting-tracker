@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StitchCounterProps {
   count: number;
@@ -8,6 +9,7 @@ interface StitchCounterProps {
 export default function StitchCounter({ count, onChange }: StitchCounterProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const { t } = useLanguage();
 
   const startEdit = () => {
     setEditValue(String(count));
@@ -24,7 +26,7 @@ export default function StitchCounter({ count, onChange }: StitchCounterProps) {
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      <span className="text-[10px] font-bold tracking-widest uppercase text-[#a08060] mr-0.5 sm:mr-1">코</span>
+      <span className="text-[10px] font-bold tracking-widest uppercase text-[#a08060] mr-0.5 sm:mr-1">{t('counter.stitchLabel')}</span>
       <button
         onClick={() => onChange(count - 1)}
         disabled={count <= 0}

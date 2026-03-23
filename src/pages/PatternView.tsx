@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
@@ -20,10 +21,10 @@ function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function createDefaultSubPattern(index: number): SubPattern {
+function createDefaultSubPattern(index: number, prefix = '도안'): SubPattern {
   return {
     id: generateId(),
-    name: `도안 ${index}`,
+    name: `${prefix} ${index}`,
     total_rows: 1,
     current_row: 0,
     stitch_count: 0,
@@ -96,6 +97,7 @@ const MAX_HISTORY = 20;
 function PatternViewerPage({ pattern }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const viewerRef = useRef<PatternViewerHandle>(null);
+  const { t } = useLanguage();
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
   const isCrochet = pattern.type === 'crochet';
@@ -513,7 +515,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleAddSubPattern = () => {
     captureHistory();
-    const newSub = createDefaultSubPattern(subPatterns.length + 1);
+    const newSub = createDefaultSubPattern(subPatterns.length + 1, t('sub.defaultPrefix'));
     setSubPatterns((prev) => [...prev, newSub]);
     setActiveSubId(newSub.id);
   };
@@ -606,7 +608,7 @@ function PatternViewerPage({ pattern }: Props) {
           <Link
             to={`/patterns/${pattern.id}/edit`}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] transition-colors"
-            title="도안 수정"
+            title={t('view.edit')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -616,7 +618,7 @@ function PatternViewerPage({ pattern }: Props) {
             onClick={handleUndo}
             disabled={!canUndo}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] disabled:opacity-25 transition-colors"
-            title="되돌리기 (Ctrl+Z)"
+            title={t('view.undo')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -626,7 +628,7 @@ function PatternViewerPage({ pattern }: Props) {
             onClick={handleRedo}
             disabled={!canRedo}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#d4b896] disabled:opacity-25 transition-colors"
-            title="다시 실행 (Ctrl+Shift+Z)"
+            title={t('view.redo')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
@@ -724,7 +726,7 @@ function PatternViewerPage({ pattern }: Props) {
             }
           >
             <div className="flex items-center gap-2.5">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap">높이</span>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap">{t('ruler.height')}</span>
               <input
                 type="range"
                 min={0}
@@ -752,13 +754,13 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute top-4 right-4 z-30">
             <button
               onClick={() => {
-                if (confirm('모든 완료 표시를 삭제하시겠습니까?')) {
+                if (confirm(t('view.deleteAllMarks'))) {
                   setCompletedMarks([]);
                 }
               }}
               className="px-3 py-1.5 text-xs font-medium bg-red-500/90 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
             >
-              전체 삭제
+              {t('view.deleteAll')}
             </button>
           </div>
         )}
@@ -793,7 +795,7 @@ function PatternViewerPage({ pattern }: Props) {
               </button>
               <div className="text-center min-w-[45px] sm:min-w-[50px]">
                 <div className="text-lg sm:text-xl font-bold text-[#3d2b1f]">{activeSub?.current_row || 0}</div>
-                <div className="text-[10px] text-[#a08060] tracking-wide">/ {activeSub?.total_rows || 1}단</div>
+                <div className="text-[10px] text-[#a08060] tracking-wide">{t('counter.rowOf', { total: activeSub?.total_rows || 1 })}</div>
               </div>
               <button
                 onClick={() => handleRowChange((activeSub?.current_row || 0) + 1)}
@@ -813,13 +815,13 @@ function PatternViewerPage({ pattern }: Props) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="hidden sm:inline">마커</span> ({crochetMarks.length})
+                <span className="hidden sm:inline">{t('marker.place')}</span> ({crochetMarks.length})
               </button>
               {crochetMarks.length > 0 && (
                 <button
-                  onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleCrochetMarkDeleteAll(); }}
+                  onClick={() => { if (confirm(t('marker.deleteConfirm'))) handleCrochetMarkDeleteAll(); }}
                   className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
-                  title="마커 전체 삭제"
+                  title={t('marker.deleteTitle')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -841,20 +843,20 @@ function PatternViewerPage({ pattern }: Props) {
                 onClick={() => setIsPlacingKnittingMarker(true)}
                 disabled={isPlacingKnittingMarker}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 min-h-[44px] text-xs font-bold tracking-wide bg-[#8b6b4a] text-[#fdf6e8] rounded-lg border-2 border-[#6b4f36] hover:bg-[#6b4f36] disabled:opacity-50 transition-colors shadow-[2px_2px_0_#6b4f36]"
-                title="마커 배치"
+                title={t('marker.place')}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="hidden sm:inline">마커</span>
+                <span className="hidden sm:inline">{t('marker.place')}</span>
                 {knittingMarks.length > 0 && <span>({knittingMarks.length})</span>}
               </button>
               {knittingMarks.length > 0 && (
                 <button
-                  onClick={() => { if (confirm('모든 마커를 삭제하시겠습니까?')) handleKnittingMarkDeleteAll(); }}
+                  onClick={() => { if (confirm(t('marker.deleteConfirm'))) handleKnittingMarkDeleteAll(); }}
                   className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
-                  title="마커 전체 삭제"
+                  title={t('marker.deleteTitle')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

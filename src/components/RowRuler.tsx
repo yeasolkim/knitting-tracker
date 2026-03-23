@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
-
 import type { RulerDirection } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RowRulerProps {
   positionY: number;
@@ -34,6 +34,7 @@ const RowRuler = memo(function RowRuler({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ clientY: number; startY: number } | null>(null);
+  const { t } = useLanguage();
 
   const toPercent = useCallback((clientY: number) => {
     if (!containerRef.current) return 0;
@@ -165,7 +166,7 @@ const RowRuler = memo(function RowRuler({
           onClick={(e) => { e.stopPropagation(); onComplete(); }}
           onPointerDown={(e) => e.stopPropagation()}
           className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
-          title="완료 (다음 단으로)"
+          title={t('ruler.complete')}
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -176,7 +177,7 @@ const RowRuler = memo(function RowRuler({
           onClick={(e) => { e.stopPropagation(); onToggleDirection(); }}
           onPointerDown={(e) => e.stopPropagation()}
           className="flex flex-col items-center justify-center gap-0.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
-          title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
+          title={direction === 'up' ? t('ruler.dirUp') : t('ruler.dirDown')}
         >
           <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             {direction === 'up' ? (
@@ -193,7 +194,7 @@ const RowRuler = memo(function RowRuler({
               </>
             )}
           </svg>
-          <span className="text-[7px] sm:text-[8px] font-semibold leading-none tracking-tight">진행방향</span>
+          <span className="text-[7px] sm:text-[8px] font-semibold leading-none tracking-tight">{t('ruler.direction')}</span>
         </button>
 
         <button
@@ -204,7 +205,7 @@ const RowRuler = memo(function RowRuler({
               ? 'bg-rose-500 border-rose-500 text-white'
               : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
           }`}
-          title="진행선 높이 설정"
+          title={t('ruler.heightSettings')}
         >
           <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />

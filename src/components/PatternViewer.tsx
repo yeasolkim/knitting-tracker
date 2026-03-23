@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useGestures } from '@/hooks/useGestures';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 let pdfVersion = '';
 const pdfVersionListeners: Array<(v: string) => void> = [];
@@ -37,6 +38,7 @@ interface PatternViewerProps {
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
+    const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
     useEffect(() => {
@@ -360,18 +362,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           <button
             onClick={goToRuler}
             className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="진행선으로 이동"
+            aria-label={t('viewer.goToRuler')}
           >
-            <span className="text-[10px] font-bold leading-snug text-center">진행선으로<br/>이동</span>
+            <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
           </button>
 
           {onResetRuler && (
             <button
               onClick={onResetRuler}
               className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-              aria-label="진행선 가져오기"
+              aria-label={t('viewer.bringRuler')}
             >
-              <span className="text-[10px] font-bold leading-snug text-center">진행선<br/>가져오기</span>
+              <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>
             </button>
           )}
         </div>

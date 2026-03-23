@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RowCounterProps {
   current: number;
@@ -9,6 +10,7 @@ interface RowCounterProps {
 export default function RowCounter({ current, total, onChange }: RowCounterProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const { t } = useLanguage();
 
   const startEdit = () => {
     setEditValue(String(current));
@@ -53,7 +55,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
             {current}
           </div>
         )}
-        <div className="text-[10px] sm:text-xs text-[#a08060] tracking-wide">/ {total}단</div>
+        <div className="text-[10px] sm:text-xs text-[#a08060] tracking-wide">{t('counter.rowOf', { total })}</div>
       </div>
       <button
         onClick={() => onChange(current + 1)}

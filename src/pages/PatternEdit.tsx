@@ -5,6 +5,7 @@ import type { PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
   const pdfjsLib = await import('pdfjs-dist');
@@ -49,6 +50,7 @@ function EditForm() {
   const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<PatternType>('knitting');
   const [yarn, setYarn] = useState('');
@@ -99,7 +101,7 @@ function EditForm() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('로그인이 필요합니다.');
+      if (!session?.user) throw new Error(t('form.error.login'));
 
       let fileUrl = currentFileUrl;
       let fileType = currentFileType;
@@ -124,7 +126,7 @@ function EditForm() {
             body: JSON.stringify({ path, contentType: newFile.type }),
           }
         );
-        if (!presignRes.ok) throw new Error('파일 업로드 준비에 실패했습니다.');
+        if (!presignRes.ok) throw new Error(t('form.error.presign'));
         const { presignedUrl, fileUrl: uploadedUrl } = await presignRes.json();
 
         const uploadRes = await fetch(presignedUrl, {
@@ -132,7 +134,7 @@ function EditForm() {
           headers: { 'Content-Type': newFile.type },
           body: newFile,
         });
-        if (!uploadRes.ok) throw new Error('파일 업로드에 실패했습니다.');
+        if (!uploadRes.ok) throw new Error(t('form.error.upload'));
 
         fileUrl = uploadedUrl;
         fileType = isPdf ? 'pdf' : 'image';
@@ -180,7 +182,7 @@ function EditForm() {
 
       navigate(`/patterns/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '저장에 실패했습니다.');
+      setError(err instanceof Error ? err.message : t('form.error.save'));
       setSaving(false);
     }
   };
@@ -206,15 +208,15 @@ function EditForm() {
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          도안으로 돌아가기
+          {t('form.backToPattern')}
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] mt-1 tracking-tight">도안 수정</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] mt-1 tracking-tight">{t('form.titleEdit')}</h1>
       </div>
 
       {/* File section */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          도안 파일
+          {t('form.file')}
         </label>
         {newFile ? (
           <div className="space-y-2.5">
@@ -236,7 +238,7 @@ function EditForm() {
               onClick={() => { setNewFile(null); setNewPreview(null); }}
               className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
             >
-              변경 취소 (기존 파일 유지)
+              {t('form.fileCancelReplace')}
             </button>
           </div>
         ) : (
@@ -251,12 +253,12 @@ function EditForm() {
                     <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                     <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
-                  <p className="text-sm text-[#a08060]">{currentFileType === 'pdf' ? 'PDF 파일' : '이미지 파일'}</p>
+                  <p className="text-sm text-[#a08060]">{currentFileType === 'pdf' ? t('form.filePdf') : t('form.fileImage')}</p>
                 </div>
               )}
             </div>
             <div>
-              <p className="text-[10px] text-[#a08060] mb-2 tracking-wide">파일을 교체하려면 새 파일을 선택하세요.</p>
+              <p className="text-[10px] text-[#a08060] mb-2 tracking-wide">{t('form.fileReplaceTip')}</p>
               <FileDropZone onFileSelect={handleFileSelect} />
             </div>
           </div>
@@ -266,7 +268,7 @@ function EditForm() {
       {/* Title */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          도안 이름
+          {t('form.name')}
         </label>
         <input
           type="text"
@@ -274,19 +276,19 @@ function EditForm() {
           onChange={(e) => setTitle(e.target.value)}
           required
           className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
-          placeholder="예: 봄 카디건"
+          placeholder={t('form.namePlaceholder')}
         />
       </div>
 
       {/* Type */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          종류
+          {t('form.type')}
         </label>
         <div className="flex gap-2">
           {[
-            { value: 'knitting' as const, label: '대바늘' },
-            { value: 'crochet' as const, label: '코바늘' },
+            { value: 'knitting' as const, label: t('form.knitting') },
+            { value: 'crochet' as const, label: t('form.crochet') },
           ].map((option) => (
             <button
               key={option.value}
@@ -307,28 +309,28 @@ function EditForm() {
       {/* Yarn */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          실 <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">(선택)</span>
+          {t('form.yarn')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
         </label>
         <input
           type="text"
           value={yarn}
           onChange={(e) => setYarn(e.target.value)}
           className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
-          placeholder="예: 코튼 4합, 울 혼방"
+          placeholder={t('form.yarnPlaceholder')}
         />
       </div>
 
       {/* Needle */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          바늘 <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">(선택)</span>
+          {t('form.needle')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
         </label>
         <input
           type="text"
           value={needle}
           onChange={(e) => setNeedle(e.target.value)}
           className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
-          placeholder="예: 4mm, 3/0호"
+          placeholder={t('form.needlePlaceholder')}
         />
       </div>
 
@@ -339,7 +341,7 @@ function EditForm() {
         disabled={!title || saving}
         className="w-full bg-[#b5541e] text-[#fdf6e8] py-3 min-h-[48px] rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#9a4318] disabled:opacity-40 disabled:cursor-not-allowed transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
       >
-        {saving ? '저장 중...' : '저장하기'}
+        {saving ? t('form.saving') : t('form.save')}
       </button>
     </form>
   );

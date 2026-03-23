@@ -7,10 +7,12 @@ import PatternNew from './pages/PatternNew';
 import PatternEdit from './pages/PatternEdit';
 import PatternView from './pages/PatternView';
 import ErrorBoundary from './components/ErrorBoundary';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 export default function App() {
   return (
     <ErrorBoundary>
+    <LanguageProvider>
     <HashRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -22,6 +24,7 @@ export default function App() {
         <Route path="/patterns/:id" element={<PatternView />} />
       </Routes>
     </HashRouter>
+    </LanguageProvider>
     </ErrorBoundary>
   );
 }
