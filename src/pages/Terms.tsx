@@ -16,7 +16,7 @@ export default function Terms() {
         </Link>
 
         <h1 className="text-2xl font-bold text-[#3d2b1f] mb-2 tracking-tight">이용약관</h1>
-        <p className="text-xs text-[#a08060] mb-10">시행일: 2025년 1월 1일</p>
+        <p className="text-xs text-[#a08060] mb-10">시행일: 2026년 1월 1일</p>
 
         <div className="space-y-8 text-sm text-[#3d2b1f] leading-relaxed">
 
