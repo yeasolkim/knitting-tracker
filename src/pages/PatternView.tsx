@@ -126,7 +126,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 80, 100));
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 8, 10));
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -710,11 +710,11 @@ function PatternViewerPage({ pattern }: Props) {
                 min={0}
                 max={8000}
                 step={1}
-                value={Math.round(rulerHeight * 80)}
+                value={Math.round(rulerHeight * 800)}
                 onPointerDown={captureHistory}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.1, Number(e.target.value) / 80));
+                  setRulerHeight(Math.max(0.01, Number(e.target.value) / 800));
                 }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
@@ -722,7 +722,7 @@ function PatternViewerPage({ pattern }: Props) {
                 className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
               />
               <span className="text-[11px] text-[#b5541e] font-mono w-12 text-right shrink-0">
-                {rulerHeight.toFixed(2)}
+                {(rulerHeight * 10).toFixed(2)}
               </span>
             </div>
           </div>
