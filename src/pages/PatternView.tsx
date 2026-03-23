@@ -644,12 +644,12 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
-              <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
+              <span className="hidden sm:inline text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
                 {isCrochet ? '코바늘' : '대바늘'}
               </span>
             </div>
             {(pattern.yarn || pattern.needle) && (
-              <p className="text-[11px] text-[#a08060] truncate mt-0.5">
+              <p className="hidden sm:block text-[11px] text-[#a08060] truncate mt-0.5">
                 {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
               </p>
             )}
@@ -890,7 +890,7 @@ function PatternViewerPage({ pattern }: Props) {
             <ProgressBar current={activeSub?.current_row || 0} total={activeSub?.total_rows || 1} />
           </div>
         </div>
-        <div className="px-3 sm:px-4 pb-2 sm:pb-3 mt-2 sm:mt-3 space-y-2 sm:space-y-3 overflow-y-auto max-h-[42vh] sm:max-h-[36vh]">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-3 mt-2 sm:mt-3 space-y-2 sm:space-y-3 overflow-y-auto max-h-[52vh] sm:max-h-[36vh]">
 
         {isCrochet ? (
           <div className="flex items-center justify-between gap-2 sm:gap-3">
