@@ -135,7 +135,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
       </main>
 
       <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#d4b896] space-y-1.5">
-        <p>© 2025 코따 · All rights reserved.</p>
+        <p>{t('footer.copyright')}</p>
         <p className="flex items-center justify-center gap-3">
           <a
             href="https://www.instagram.com/kotta_knitting/"
@@ -143,7 +143,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             rel="noopener noreferrer"
             className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
           >
-            비즈니스 문의
+            {t('footer.business')}
           </a>
           <span className="text-[#d4b896]">·</span>
           <a
@@ -152,7 +152,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             rel="noopener noreferrer"
             className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
           >
-            오류 문의
+            {t('footer.bug')}
           </a>
         </p>
       </footer>

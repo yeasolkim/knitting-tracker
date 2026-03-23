@@ -1,6 +1,32 @@
 import { Link } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
+function KottaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
+  // ^^ stacked twice — two rows of knitting V-stitches
+  const w = size;
+  const h = size * 0.78;
+  const mid = h / 2;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
+      <path
+        d={`M0,${mid} L${w * 0.25},0 L${w * 0.5},${mid} L${w * 0.75},0 L${w},${mid}`}
+        stroke={color}
+        strokeWidth={size * 0.115}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M0,${h} L${w * 0.25},${mid} L${w * 0.5},${h} L${w * 0.75},${mid} L${w},${h}`}
+        stroke={color}
+        strokeOpacity={opacity2}
+        strokeWidth={size * 0.115}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function StitchDivider() {
   return (
     <div className="flex items-center gap-1.5 justify-center my-8">
@@ -20,7 +46,10 @@ export default function Landing() {
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#d4b896] bg-[#f5edd6]">
-        <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
+        <div className="flex items-center gap-2">
+          <KottaIcon size={22} color="#b5541e" opacity2={0.4} />
+          <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
+        </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />
           <Link
@@ -34,6 +63,11 @@ export default function Landing() {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-5 text-center -mt-4">
+        {/* Hero icon */}
+        <div className="mb-6">
+          <KottaIcon size={64} color="#b5541e" opacity2={0.35} />
+        </div>
+
         {/* Badge */}
         <div className="inline-flex items-center gap-2 border-2 border-[#d4b896] rounded-full px-4 py-1.5 mb-8">
           <svg width="12" height="8" viewBox="0 0 10 8" fill="none">
