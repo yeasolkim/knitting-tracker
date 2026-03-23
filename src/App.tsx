@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import PatternNew from './pages/PatternNew';
+import PatternEdit from './pages/PatternEdit';
 import PatternView from './pages/PatternView';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/patterns/new" element={<PatternNew />} />
+        <Route path="/patterns/:id/edit" element={<PatternEdit />} />
         <Route path="/patterns/:id" element={<PatternView />} />
       </Routes>
     </HashRouter>
