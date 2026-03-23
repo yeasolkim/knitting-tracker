@@ -35,9 +35,9 @@ const STITCH_PATH = "M0,6 L8,0 L16,6 L24,0 L32,6 L40,0 L48,6 L56,0 L64,6 L72,0 L
 const STITCH_PATH2 = "M0,12 L8,6 L16,12 L24,6 L32,12 L40,6 L48,12 L56,6 L64,12 L72,6 L80,12 L88,6 L96,12 L104,6 L112,12 L120,6 L128,12 L136,6 L144,12 L152,6 L160,12 L168,6 L176,12 L184,6 L190,12";
 
 function AppMockup() {
+  const { t } = useLanguage();
   const currentRow = 7;
   const totalRows = 40;
-  // Rows visible in the viewport (rows 3–11)
   const visibleRows = Array.from({ length: 9 }, (_, i) => i + 3);
 
   return (
@@ -46,7 +46,7 @@ function AppMockup() {
       {/* ── Callout: 진행선 ── */}
       <div className="absolute z-10 flex items-center gap-1.5" style={{ right: -10, top: 148 }}>
         <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
-          진행선
+          {t('landing.feat.ruler')}
         </div>
         <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
           <path d="M16 5H2M6 1L2 5L6 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -59,7 +59,7 @@ function AppMockup() {
           <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
-          완료 표시
+          {t('landing.mockup.completedMark')}
         </div>
       </div>
 
@@ -69,7 +69,7 @@ function AppMockup() {
           <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
-          단수 카운터
+          {t('landing.feat.counter')}
         </div>
       </div>
 
@@ -93,8 +93,8 @@ function AppMockup() {
               </svg>
               <div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-bold text-[#3d2b1f] tracking-tight">봄 카디건</span>
-                  <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#fdf6e8] px-1 py-0.5 rounded leading-none">대바늘</span>
+                  <span className="text-[9px] font-bold text-[#3d2b1f] tracking-tight">{t('landing.mockup.patternName')}</span>
+                  <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#fdf6e8] px-1 py-0.5 rounded leading-none">{t('card.type.knitting')}</span>
                 </div>
                 <p className="text-[7px] text-[#a08060]">메리노 · 4mm</p>
               </div>
@@ -185,12 +185,12 @@ function AppMockup() {
           {/* Sub-pattern tabs */}
           <div className="bg-[#f5edd6] border-t-2 border-[#d4b896] flex gap-1 px-2 py-1.5">
             <div className="bg-[#b5541e] text-[#fdf6e8] rounded px-2 py-1 leading-none">
-              <p className="font-bold" style={{ fontSize: 8 }}>도안 1</p>
-              <p style={{ fontSize: 7, opacity: 0.85 }}>7/40단</p>
+              <p className="font-bold" style={{ fontSize: 8 }}>{t('sub.defaultPrefix')} 1</p>
+              <p style={{ fontSize: 7, opacity: 0.85 }}>{t('sub.rowDisplay', { current: 7, total: 40 })}</p>
             </div>
             <div className="bg-[#ede5cc] text-[#7a5c46] rounded px-2 py-1 leading-none">
-              <p className="font-bold" style={{ fontSize: 8 }}>도안 2</p>
-              <p style={{ fontSize: 7 }}>0/25단</p>
+              <p className="font-bold" style={{ fontSize: 8 }}>{t('sub.defaultPrefix')} 2</p>
+              <p style={{ fontSize: 7 }}>{t('sub.rowDisplay', { current: 0, total: 25 })}</p>
             </div>
           </div>
 
@@ -204,7 +204,7 @@ function AppMockup() {
               </div>
               <div className="text-center leading-none">
                 <span className="font-bold text-[#3d2b1f]" style={{ fontSize: 26 }}>7</span>
-                <span className="text-[#a08060] ml-0.5" style={{ fontSize: 10 }}>/ 40단</span>
+                <span className="text-[#a08060] ml-0.5" style={{ fontSize: 10 }}>{t('counter.rowOf', { total: totalRows })}</span>
               </div>
               <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#d4b896] bg-[#f5edd6]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -224,7 +224,7 @@ function AppMockup() {
               className="w-full bg-[#b5541e] text-[#fdf6e8] rounded-lg flex items-center justify-center font-bold border-2 border-[#9a4318]"
               style={{ height: 32, fontSize: 9, letterSpacing: '0.05em', boxShadow: '2px 2px 0 #9a4318' }}
             >
-              완료 (다음 단으로)
+              {t('ruler.complete')}
             </div>
           </div>
 

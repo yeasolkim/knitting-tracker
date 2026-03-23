@@ -139,6 +139,8 @@ const ko: Translations = {
   'notes.count': '{n}개',
   'notes.clearCurrentConfirm': '"{name}" 메모를 모두 삭제하시겠습니까?',
   'notes.clearAllConfirm': '모든 메모를 삭제하시겠습니까?',
+  'landing.mockup.patternName': '봄 카디건',
+  'landing.mockup.completedMark': '완료 표시',
 };
 
 const en: Translations = {
@@ -263,6 +265,8 @@ const en: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Clear all notes for "{name}"?',
   'notes.clearAllConfirm': 'Clear all notes?',
+  'landing.mockup.patternName': 'Spring Cardigan',
+  'landing.mockup.completedMark': 'Completed',
 };
 
 const ja: Translations = {
@@ -387,6 +391,8 @@ const ja: Translations = {
   'notes.count': '{n}件',
   'notes.clearCurrentConfirm': '"{name}"のメモをすべて削除しますか？',
   'notes.clearAllConfirm': 'すべてのメモを削除しますか？',
+  'landing.mockup.patternName': '春のカーディガン',
+  'landing.mockup.completedMark': '完了済み',
 };
 
 const zh: Translations = {
@@ -511,6 +517,8 @@ const zh: Translations = {
   'notes.count': '{n}条',
   'notes.clearCurrentConfirm': '确定删除"{name}"的所有备注吗？',
   'notes.clearAllConfirm': '确定删除所有备注吗？',
+  'landing.mockup.patternName': '春季开衫',
+  'landing.mockup.completedMark': '已完成',
 };
 
 const es: Translations = {
@@ -619,6 +627,8 @@ const es: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': '¿Borrar notas de "{name}"?',
   'notes.clearAllConfirm': '¿Borrar todas las notas?',
+  'landing.mockup.patternName': 'Cárdigan de primavera',
+  'landing.mockup.completedMark': 'Completadas',
 };
 
 const fr: Translations = {
@@ -727,6 +737,8 @@ const fr: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Effacer les notes de « {name} » ?',
   'notes.clearAllConfirm': 'Effacer toutes les notes ?',
+  'landing.mockup.patternName': 'Cardigan de printemps',
+  'landing.mockup.completedMark': 'Terminées',
 };
 
 const it: Translations = {
@@ -835,6 +847,8 @@ const it: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Cancellare le note di "{name}"?',
   'notes.clearAllConfirm': 'Cancellare tutte le note?',
+  'landing.mockup.patternName': 'Cardigan primaverile',
+  'landing.mockup.completedMark': 'Completate',
 };
 
 const de: Translations = {
@@ -943,6 +957,8 @@ const de: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Notizen für „{name}" löschen?',
   'notes.clearAllConfirm': 'Alle Notizen löschen?',
+  'landing.mockup.patternName': 'Frühlingsjacke',
+  'landing.mockup.completedMark': 'Abgeschlossen',
 };
 
 const pt: Translations = {
@@ -1051,6 +1067,8 @@ const pt: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Limpar notas de "{name}"?',
   'notes.clearAllConfirm': 'Limpar todas as notas?',
+  'landing.mockup.patternName': 'Cardigan de primavera',
+  'landing.mockup.completedMark': 'Concluídas',
 };
 
 const ru: Translations = {
@@ -1159,6 +1177,8 @@ const ru: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Удалить заметки «{name}»?',
   'notes.clearAllConfirm': 'Удалить все заметки?',
+  'landing.mockup.patternName': 'Весенний кардиган',
+  'landing.mockup.completedMark': 'Завершено',
 };
 
 const no: Translations = {
@@ -1267,6 +1287,8 @@ const no: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Fjerne notater for «{name}»?',
   'notes.clearAllConfirm': 'Fjerne alle notater?',
+  'landing.mockup.patternName': 'Vårjakke',
+  'landing.mockup.completedMark': 'Fullførte',
 };
 
 const nl: Translations = {
@@ -1375,6 +1397,8 @@ const nl: Translations = {
   'notes.count': '{n}',
   'notes.clearCurrentConfirm': 'Notities voor "{name}" wissen?',
   'notes.clearAllConfirm': 'Alle notities wissen?',
+  'landing.mockup.patternName': 'Lentevest',
+  'landing.mockup.completedMark': 'Voltooid',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };
