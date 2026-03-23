@@ -85,9 +85,6 @@ export default function Landing() {
           ))}
         </div>
 
-        <p className="mt-7 text-[11px] text-[#a08060] tracking-wide">
-          코바늘 · 대바늘 모두 됩니다
-        </p>
       </main>
 
       <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#d4b896] space-y-1.5">
