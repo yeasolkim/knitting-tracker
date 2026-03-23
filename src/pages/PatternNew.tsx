@@ -204,7 +204,6 @@ function UploadForm() {
           pattern_id: pattern.id,
           user_id: user.id,
           current_row: 0,
-          stitch_count: 0,
           ruler_position_y: 50,
           notes: {},
         }),

@@ -48,7 +48,6 @@ export interface SubPattern {
   name: string;
   total_rows: number;
   current_row: number;
-  stitch_count: number;
 }
 
 export interface PatternProgress {
@@ -56,7 +55,6 @@ export interface PatternProgress {
   pattern_id: string;
   user_id: string;
   current_row: number;
-  stitch_count: number;
   ruler_position_y: number;
   ruler_height: number;
   ruler_direction: RulerDirection;

@@ -27,7 +27,6 @@ create table if not exists pattern_progress (
   pattern_id uuid references patterns(id) on delete cascade not null,
   user_id uuid references auth.users(id) on delete cascade not null,
   current_row integer not null default 0,
-  stitch_count integer not null default 0,
   ruler_position_y float not null default 50,
   ruler_height float not null default 5,
   ruler_direction text not null default 'up',

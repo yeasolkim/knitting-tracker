@@ -12,7 +12,6 @@ import KnittingMarkers from '@/components/KnittingMarkers';
 import NoteBubbles from '@/components/NoteBubbles';
 import SubPatternSelector from '@/components/SubPatternSelector';
 import RowCounter from '@/components/RowCounter';
-import StitchCounter from '@/components/StitchCounter';
 import PatternNotes from '@/components/PatternNotes';
 import ProgressBar from '@/components/ProgressBar';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -28,7 +27,6 @@ function createDefaultSubPattern(index: number, prefix = '도안'): SubPattern {
     name: `${prefix} ${index}`,
     total_rows: 1,
     current_row: 0,
-    stitch_count: 0,
   };
 }
 
@@ -117,7 +115,6 @@ function PatternViewerPage({ pattern }: Props) {
       name: '도안 1',
       total_rows: pattern.total_rows || 1,
       current_row: pattern.progress?.current_row || 0,
-      stitch_count: pattern.progress?.stitch_count || 0,
     }];
   };
 
@@ -370,7 +367,6 @@ function PatternViewerPage({ pattern }: Props) {
   useEffect(() => {
     save({
       current_row: activeSub?.current_row || 0,
-      stitch_count: activeSub?.stitch_count || 0,
       ruler_position_y: rulerY,
       ruler_height: rulerHeight,
       ruler_direction: rulerDirection,
@@ -387,7 +383,6 @@ function PatternViewerPage({ pattern }: Props) {
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => saveFn({
     current_row: activeSub?.current_row || 0,
-    stitch_count: activeSub?.stitch_count || 0,
     ruler_position_y: rulerY,
     ruler_height: rulerHeight,
     ruler_direction: rulerDirection,
@@ -417,16 +412,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleRowChange = (row: number) => {
     captureHistory();
-    if (row !== prevRow) {
-      updateActiveSub((s) => ({ ...s, stitch_count: 0 }));
-      setPrevRow(row);
-    }
+    setPrevRow(row);
     updateActiveSub((s) => ({ ...s, current_row: row }));
-  };
-
-  const handleStitchChange = (count: number) => {
-    captureHistory();
-    updateActiveSub((s) => ({ ...s, stitch_count: count }));
   };
 
   const handleNotesUpdate = useCallback(
@@ -461,7 +448,7 @@ function PatternViewerPage({ pattern }: Props) {
     const newMark: CompletedMark = { y: ry, height: rh };
 
     setCompletedMarks((prev) => [...prev, newMark]);
-    updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
+    updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
 
     if (rulerDirection === 'up') {
       setRulerY(ry - rh);
@@ -492,7 +479,7 @@ function PatternViewerPage({ pattern }: Props) {
       label: String(nextRow),
     };
     setCrochetMarks((prev) => [...prev, newMark]);
-    updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1, stitch_count: 0 }));
+    updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
     setIsPlacingMarker(false);
   }, [captureHistory, activeSub, updateActiveSub, screenToContent]);
 
@@ -907,7 +894,6 @@ function PatternViewerPage({ pattern }: Props) {
               total={activeSub?.total_rows || 1}
               onChange={handleRowChange}
             />
-            <StitchCounter count={activeSub?.stitch_count || 0} onChange={handleStitchChange} />
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setIsPlacingKnittingMarker(true)}
