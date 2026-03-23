@@ -1,9 +1,10 @@
-export type Lang = 'ko' | 'en' | 'ja';
+export type Lang = 'ko' | 'en' | 'ja' | 'zh';
 
 export const LANGUAGES: { code: Lang; label: string; native: string }[] = [
   { code: 'ko', label: 'Korean',   native: '한국어' },
   { code: 'en', label: 'English',  native: 'English' },
   { code: 'ja', label: 'Japanese', native: '日本語' },
+  { code: 'zh', label: 'Chinese',  native: '中文' },
 ];
 
 type Translations = Record<string, string>;
@@ -380,4 +381,128 @@ const ja: Translations = {
   'notes.clearAllConfirm': 'すべてのメモを削除しますか？',
 };
 
-export const translations: Record<Lang, Translations> = { ko, en, ja };
+const zh: Translations = {
+  // app
+  'app.name': '코따',
+  // nav
+  'nav.login': '登录',
+  'nav.logout': '退出',
+  'nav.start': '立即开始 →',
+  // landing
+  'landing.hero1': '编到一半停下来',
+  'landing.hero2': '也没关系。',
+  'landing.sub1': '就算忘了编到哪一行，',
+  'landing.sub2': '코따会帮你记住。',
+  'landing.cta': '用 Google 开始',
+  'landing.feat.imagePdf': '图片 & PDF',
+  'landing.feat.imagePdfDesc': '上传编织图文件',
+  'landing.feat.ruler': '进度线',
+  'landing.feat.rulerDesc': '拖动调整位置',
+  'landing.feat.counter': '行数计数器',
+  'landing.feat.counterDesc': '点击增加行数',
+  'landing.feat.save': '自动保存',
+  'landing.feat.saveDesc': '随时关闭随时继续',
+  // login
+  'login.welcome': '欢迎来到코따',
+  'login.subtitle': '登录后管理你的编织图',
+  'login.google': '用 Google 登录',
+  // footer
+  'footer.copyright': '© 2025 코따 · All rights reserved.',
+  'footer.business': '商务合作',
+  'footer.bug': '反馈问题',
+  // dashboard
+  'dashboard.title': '我的编织图',
+  'dashboard.count': '共 {n} 个',
+  'dashboard.addBtn': '添加编织图',
+  'dashboard.empty.title': '还没有编织图',
+  'dashboard.empty.sub': '上传你的第一个编织图吧',
+  'dashboard.empty.link': '添加编织图 →',
+  // pattern card
+  'card.type.knitting': '棒针',
+  'card.type.crochet': '钩针',
+  'card.delete': '删除',
+  'card.cancel': '取消',
+  'card.edit': '编辑',
+  'card.rowCurrent': '第{n}行',
+  'card.rowTotal': '/ 共{n}行',
+  // pattern new/edit form
+  'form.backToList': '我的编织图',
+  'form.backToPattern': '返回编织图',
+  'form.titleNew': '添加编织图',
+  'form.titleEdit': '编辑编织图',
+  'form.file': '编织图文件',
+  'form.fileReplaceTip': '选择新文件以替换当前文件。',
+  'form.fileCancelReplace': '取消更换（保留原文件）',
+  'form.fileChange': '更换文件',
+  'form.filePdf': 'PDF 文件',
+  'form.fileImage': '图片文件',
+  'form.name': '编织图名称',
+  'form.namePlaceholder': '例：春季开衫',
+  'form.type': '类型',
+  'form.knitting': '棒针',
+  'form.crochet': '钩针',
+  'form.yarn': '线材',
+  'form.yarnOptional': '（可选）',
+  'form.yarnPlaceholder': '例：棉线合细、混纺毛线',
+  'form.needle': '针',
+  'form.needlePlaceholder': '例：4mm、3号',
+  'form.save': '保存',
+  'form.uploading': '上传中...',
+  'form.saving': '保存中...',
+  'form.error.login': '请先登录。',
+  'form.error.presign': '文件上传准备失败。',
+  'form.error.upload': '文件上传失败。',
+  'form.error.save': '保存失败。',
+  'form.error.generic': '上传失败。',
+  // file drop zone
+  'dropzone.label': '拖拽文件到此处或点击选择',
+  'dropzone.hint': '图片 · PDF（最大 {max}MB）',
+  'dropzone.errorSize': '文件大小不能超过 {max}MB。',
+  'dropzone.errorType': '仅支持图片或 PDF 文件。',
+  // viewer buttons
+  'viewer.goToRuler': '跳转到\n进度线',
+  'viewer.bringRuler': '移进度线\n到此处',
+  'viewer.zoomIn': '放大',
+  'viewer.zoomOut': '缩小',
+  // pattern view
+  'view.edit': '编辑编织图',
+  'view.undo': '撤销 (Ctrl+Z)',
+  'view.redo': '重做 (Ctrl+Shift+Z)',
+  'view.deleteAllMarks': '确定删除所有完成标记吗？',
+  'view.deleteAll': '全部删除',
+  // ruler
+  'ruler.complete': '完成（下一行）',
+  'ruler.dirUp': '进行方向：向上',
+  'ruler.dirDown': '进行方向：向下',
+  'ruler.direction': '进行方向',
+  'ruler.heightSettings': '调整进度线高度',
+  'ruler.height': '高度',
+  // sub-pattern selector
+  'sub.defaultPrefix': '编织图',
+  'sub.rename': '重命名',
+  'sub.delete': '删除',
+  'sub.deleteConfirm': '确定删除"{name}"吗？',
+  'sub.totalRows': '总行数',
+  'sub.addPattern': '添加编织图',
+  'sub.addPatternCrochet': '添加编织图／花样',
+  'sub.rowDisplay': '第{current}/{total}行',
+  // row / stitch counter
+  'counter.rowUnit': '行',
+  'counter.rowOf': '/ 共{total}行',
+  'counter.stitchLabel': '针',
+  // markers
+  'marker.place': '标记',
+  'marker.deleteTitle': '删除所有标记',
+  'marker.deleteConfirm': '确定删除所有标记吗？',
+  // notes
+  'notes.title': '备注',
+  'notes.currentPlaceholder': '当前行备注...',
+  'notes.clearCurrent': '删除当前',
+  'notes.clearAll': '全部删除',
+  'notes.rowLabel': '第{n}行',
+  'notes.count': '{n}条',
+  'notes.clearCurrentConfirm': '确定删除"{name}"的所有备注吗？',
+  'notes.clearAllConfirm': '确定删除所有备注吗？',
+};
+
+export const translations: Record<Lang, Translations> = { ko, en, ja, zh };
