@@ -312,6 +312,8 @@ function PatternViewerPage({ pattern }: Props) {
   );
   const [isPlacingKnittingMarker, setIsPlacingKnittingMarker] = useState(false);
 
+  const [isPlacingNote, setIsPlacingNote] = useState(false);
+
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
     undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks };
@@ -419,20 +421,15 @@ function PatternViewerPage({ pattern }: Props) {
   const handleNotesUpdate = useCallback(
     (updatedNotes: Record<string, string>) => {
       setNotes(updatedNotes);
+      // Auto-add position for newly typed notes (no explicit placement yet).
+      // Positions are NOT removed here — use handleNoteDelete to remove both.
       setNotePositions((prev) => {
         const next = { ...prev };
         let changed = false;
         const { rulerY: ry, rulerHeight: rh } = latestRef.current;
         for (const key of Object.keys(updatedNotes)) {
           if (!next[key]) {
-            // rulerY/rulerHeight are already content coords
             next[key] = { x: 90, y: ry + rh / 2 };
-            changed = true;
-          }
-        }
-        for (const key of Object.keys(next)) {
-          if (!updatedNotes[key]) {
-            delete next[key];
             changed = true;
           }
         }
@@ -441,6 +438,22 @@ function PatternViewerPage({ pattern }: Props) {
     },
     []
   );
+
+  // Delete a note: removes both text and position
+  const handleNoteDelete = useCallback((key: string) => {
+    setNotes((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setNotePositions((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
   const handleComplete = useCallback(() => {
     captureHistory();
@@ -467,6 +480,15 @@ function PatternViewerPage({ pattern }: Props) {
       y: ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100,
     };
   }, []);
+
+  // Place a note bubble at a tapped screen position (screen %)
+  const handlePlaceNote = useCallback((screenX: number, screenY: number) => {
+    const pos = screenToContent(screenX, screenY);
+    const key = `${activeSubId}:${activeSub?.current_row || 0}`;
+    setNotePositions((prev) => ({ ...prev, [key]: pos }));
+    setNotes((prev) => (key in prev ? prev : { ...prev, [key]: '' }));
+    setIsPlacingNote(false);
+  }, [activeSubId, activeSub, screenToContent]);
 
   const handlePlaceMarker = useCallback((screenX: number, screenY: number) => {
     captureHistory();
@@ -714,6 +736,7 @@ function PatternViewerPage({ pattern }: Props) {
               notes={notes}
               positions={notePositions}
               onPositionChange={handleNotePositionChange}
+              onDelete={handleNoteDelete}
             />
           }
         >
@@ -766,6 +789,36 @@ function PatternViewerPage({ pattern }: Props) {
               onToggleSettings={() => setShowRulerSettings((v) => !v)}
               onDragStart={captureHistory}
             />
+          )}
+
+          {/* Note placement overlay */}
+          {isPlacingNote && (
+            <div
+              className="absolute inset-0 z-[60] cursor-crosshair"
+              onPointerDown={(e) => {
+                if (e.isPrimary === false) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const screenX = ((e.clientX - rect.left) / rect.width) * 100;
+                const screenY = ((e.clientY - rect.top) / rect.height) * 100;
+                handlePlaceNote(screenX, screenY);
+              }}
+            >
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-amber-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"/>
+                </svg>
+                {t('notes.placeHint')}
+              </div>
+              <button
+                className="absolute top-3 right-3 pointer-events-auto bg-white/80 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center hover:bg-white shadow"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setIsPlacingNote(false)}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           )}
         </PatternViewer>
 
@@ -884,6 +937,21 @@ function PatternViewerPage({ pattern }: Props) {
                   </svg>
                 </button>
               )}
+              <button
+                onClick={() => setIsPlacingNote(true)}
+                disabled={isPlacingNote}
+                className={`flex items-center gap-1 px-2.5 py-2 min-h-[44px] text-xs font-bold rounded-lg border-2 transition-colors ${
+                  isPlacingNote
+                    ? 'bg-amber-500 text-white border-amber-600 opacity-50'
+                    : 'bg-[#fdf6e8] text-amber-600 border-amber-300 hover:border-amber-500 hover:bg-amber-50'
+                }`}
+                title={t('notes.placeNote')}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
+                </svg>
+                <span className="hidden sm:inline">{t('notes.placeNote')}</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -918,6 +986,21 @@ function PatternViewerPage({ pattern }: Props) {
                   </svg>
                 </button>
               )}
+              <button
+                onClick={() => setIsPlacingNote(true)}
+                disabled={isPlacingNote}
+                className={`flex items-center gap-1 px-2.5 py-2 min-h-[44px] text-xs font-bold rounded-lg border-2 transition-colors ${
+                  isPlacingNote
+                    ? 'bg-amber-500 text-white border-amber-600 opacity-50'
+                    : 'bg-[#fdf6e8] text-amber-600 border-amber-300 hover:border-amber-500 hover:bg-amber-50'
+                }`}
+                title={t('notes.placeNote')}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
+                </svg>
+                <span className="hidden sm:inline">{t('notes.placeNote')}</span>
+              </button>
             </div>
           </div>
         )}
@@ -928,6 +1011,7 @@ function PatternViewerPage({ pattern }: Props) {
           subPatterns={subPatterns}
           notes={notes}
           onUpdate={handleNotesUpdate}
+          onDelete={handleNoteDelete}
         />
         </div>
       </div>

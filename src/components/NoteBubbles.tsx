@@ -5,6 +5,7 @@ interface NoteBubblesProps {
   notes: Record<string, string>;
   positions: Record<string, NotePosition>;
   onPositionChange: (key: string, pos: NotePosition) => void;
+  onDelete: (key: string) => void;
 }
 
 function parseLabel(key: string): string {
@@ -12,7 +13,7 @@ function parseLabel(key: string): string {
   return i === -1 ? key : key.slice(i + 1);
 }
 
-const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange }: NoteBubblesProps) {
+const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete }: NoteBubblesProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -75,7 +76,8 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
     setDraggingKey(null);
   }, []);
 
-  const keys = Object.keys(notes).filter((key) => positions[key]);
+  // Show ALL positioned notes (even those without text yet)
+  const keys = Object.keys(positions);
 
   if (keys.length === 0) return null;
 
@@ -83,10 +85,11 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
     <div ref={containerRef} className="absolute inset-0 pointer-events-none">
       {keys.map((key) => {
         const pos = positions[key];
-        const text = notes[key];
+        const text = notes[key] || '';
         const label = parseLabel(key);
         const isExpanded = expandedKey === key;
         const isDragging = draggingKey === key;
+        const hasText = text.trim().length > 0;
 
         return (
           <div
@@ -106,7 +109,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
               onPointerUp={handlePointerUp(key)}
               onPointerCancel={handlePointerCancel}
             >
-              <div className={`relative flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : 'bg-amber-500'}`}>
+              <div className={`relative flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : hasText ? 'bg-amber-500' : 'bg-amber-300'}`}>
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
                   <path d="M4 4v12h14.83L20 17.17V4H4z" opacity=".3"/>
@@ -122,8 +125,23 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
                 className="absolute top-8 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[120px] max-w-[200px] z-40"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="text-[10px] text-amber-500 font-medium mb-0.5">{label}단</div>
-                <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{text}</p>
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="text-[10px] text-amber-500 font-medium">{label}단</div>
+                  <button
+                    onClick={() => { setExpandedKey(null); onDelete(key); }}
+                    className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
+                    aria-label="메모 삭제"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                {hasText ? (
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{text}</p>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">메모 없음</p>
+                )}
               </div>
             )}
           </div>

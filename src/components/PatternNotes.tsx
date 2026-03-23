@@ -8,6 +8,7 @@ interface PatternNotesProps {
   subPatterns: SubPattern[];
   notes: Record<string, string>;       // key: "subId:row"
   onUpdate: (notes: Record<string, string>) => void;
+  onDelete: (key: string) => void;
 }
 
 function noteKey(subId: string, row: number) {
@@ -26,14 +27,34 @@ export default function PatternNotes({
   subPatterns,
   notes,
   onUpdate,
+  onDelete,
 }: PatternNotesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
   const currentKey = noteKey(activeSubPattern.id, currentRow);
-  const currentNote = notes[currentKey] || '';
+  const [draftNote, setDraftNote] = useState(notes[currentKey] || '');
+
+  // Sync draft when switching rows or when external notes change (e.g. clear all)
+  useEffect(() => {
+    setDraftNote(notes[currentKey] || '');
+  }, [currentKey, notes]);
+
+  const savedNote = notes[currentKey] || '';
+  const hasUnsaved = draftNote !== savedNote;
+
+  const handleSaveCurrentNote = () => {
+    const updated = { ...notes };
+    if (draftNote.trim()) {
+      updated[currentKey] = draftNote;
+    } else {
+      delete updated[currentKey];
+    }
+    onUpdate(updated);
+  };
 
   const { groupedNotes, entriesBySub, totalCount } = useMemo(() => {
     const entriesBySub = new Map<string, { key: string; row: number; text: string }[]>();
@@ -55,21 +76,15 @@ export default function PatternNotes({
     return { groupedNotes, entriesBySub, totalCount: Object.keys(notes).length };
   }, [notes, subPatterns]);
 
-  const handleChange = (key: string, value: string) => {
+  const handleSaveEditingNote = (key: string) => {
     const updated = { ...notes };
-    if (value.trim()) {
-      updated[key] = value;
+    if (editingDraft.trim()) {
+      updated[key] = editingDraft;
     } else {
       delete updated[key];
     }
     onUpdate(updated);
-  };
-
-  const handleDelete = (key: string) => {
-    const updated = { ...notes };
-    delete updated[key];
-    onUpdate(updated);
-    if (editingKey === key) setEditingKey(null);
+    setEditingKey(null);
   };
 
   useEffect(() => {
@@ -90,6 +105,7 @@ export default function PatternNotes({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           {t('notes.title')}{totalCount > 0 && <span className="text-[#b5541e]"> ({totalCount})</span>}
+          {hasUnsaved && <span className="text-[9px] text-amber-500 font-bold tracking-widest">{t('notes.unsaved')}</span>}
           <svg
             className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -141,11 +157,27 @@ export default function PatternNotes({
               <span className="text-[10px] text-[#a08060]">{currentRow}단</span>
             </div>
             <textarea
-              value={currentNote}
-              onChange={(e) => handleChange(currentKey, e.target.value)}
+              value={draftNote}
+              onChange={(e) => setDraftNote(e.target.value)}
               placeholder={t('notes.currentPlaceholder')}
               className="w-full h-16 text-sm border-2 border-[#d4b896] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
+            <div className="flex justify-end mt-1.5">
+              <button
+                onClick={handleSaveCurrentNote}
+                disabled={!hasUnsaved && !draftNote.trim()}
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border-2 transition-all ${
+                  hasUnsaved
+                    ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] hover:bg-[#9a4318] shadow-[2px_2px_0_#9a4318] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]'
+                    : 'bg-[#fdf6e8] text-[#a08060] border-[#d4b896] opacity-60'
+                }`}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {t('notes.save')}
+              </button>
+            </div>
           </div>
 
           {/* Grouped notes list */}
@@ -169,6 +201,7 @@ export default function PatternNotes({
                   <div className="space-y-0.5">
                     {entries.map(({ key, row, text }) => {
                       const isCurrent = key === currentKey;
+                      const isEditing = editingKey === key;
                       return (
                         <div
                           key={key}
@@ -185,32 +218,49 @@ export default function PatternNotes({
                             {t('notes.rowLabel', { n: row })}
                           </span>
 
-                          {editingKey === key ? (
-                            <textarea
-                              autoFocus
-                              value={text}
-                              onChange={(e) => handleChange(key, e.target.value)}
-                              onBlur={() => setEditingKey(null)}
-                              className="flex-1 h-14 text-sm border-2 border-[#d4b896] rounded-lg p-1.5 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f]"
-                            />
+                          {isEditing ? (
+                            <div className="flex-1 flex flex-col gap-1">
+                              <textarea
+                                autoFocus
+                                value={editingDraft}
+                                onChange={(e) => setEditingDraft(e.target.value)}
+                                className="w-full h-14 text-sm border-2 border-[#d4b896] rounded-lg p-1.5 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f]"
+                              />
+                              <div className="flex gap-1 justify-end">
+                                <button
+                                  onClick={() => setEditingKey(null)}
+                                  className="text-[10px] text-[#a08060] px-2 py-1"
+                                >
+                                  취소
+                                </button>
+                                <button
+                                  onClick={() => handleSaveEditingNote(key)}
+                                  className="text-[10px] font-bold text-[#b5541e] bg-[#fdf6e8] border border-[#b5541e] rounded px-2 py-1"
+                                >
+                                  {t('notes.save')}
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <p
                               className="flex-1 text-sm text-[#3d2b1f] cursor-pointer whitespace-pre-wrap break-words"
-                              onClick={() => setEditingKey(key)}
+                              onClick={() => { setEditingKey(key); setEditingDraft(text); }}
                             >
                               {text}
                             </p>
                           )}
 
-                          <button
-                            onClick={() => handleDelete(key)}
-                            className="text-[#d4b896] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1.5"
-                            aria-label="메모 삭제"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                          {!isEditing && (
+                            <button
+                              onClick={() => onDelete(key)}
+                              className="text-[#d4b896] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1.5"
+                              aria-label="메모 삭제"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       );
                     })}
