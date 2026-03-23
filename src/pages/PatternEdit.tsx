@@ -175,7 +175,11 @@ function EditForm() {
 
       const { error: updateError } = await supabase
         .from('patterns')
-        .update({ title, type, yarn, needle, file_url: fileUrl, file_type: fileType, thumbnail_url: thumbnailUrl })
+        .update({
+          title, type, yarn, needle,
+          file_url: fileUrl, file_type: fileType, thumbnail_url: thumbnailUrl,
+          ...(newFile ? { file_size: newFile.size } : {}),
+        })
         .eq('id', id!);
 
       if (updateError) throw updateError;

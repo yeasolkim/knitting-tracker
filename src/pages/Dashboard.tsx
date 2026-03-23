@@ -6,6 +6,67 @@ import AuthGuard from '@/components/AuthGuard';
 import PatternCard from '@/components/PatternCard';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
+const STORAGE_LIMIT = 500 * 1024 * 1024; // 500 MB
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function StorageIndicator({ patterns }: { patterns: PatternWithProgress[] }) {
+  const { t } = useLanguage();
+
+  const sized = patterns.filter((p) => p.file_size != null);
+  const totalBytes = sized.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
+  const pct = Math.min((totalBytes / STORAGE_LIMIT) * 100, 100);
+  const hasPartial = sized.length < patterns.length && patterns.length > 0;
+
+  const gaugeColor = pct > 80 ? '#b5541e' : pct > 60 ? '#c4872a' : '#7a9c72';
+
+  return (
+    <div className="flex flex-col items-center sm:items-end gap-1 mt-4 sm:mt-0">
+      <p className="text-[10px] font-bold tracking-widest uppercase text-[#a08060]">
+        {t('dashboard.storage')}
+      </p>
+
+      {/* Arc gauge */}
+      <svg width="80" height="44" viewBox="0 0 80 44">
+        {/* Track */}
+        <path
+          d="M 6,40 A 34,34 0 0,1 74,40"
+          stroke="#d4b896" strokeWidth="6" fill="none" strokeLinecap="round"
+        />
+        {/* Progress */}
+        <path
+          d="M 6,40 A 34,34 0 0,1 74,40"
+          stroke={gaugeColor} strokeWidth="6" fill="none" strokeLinecap="round"
+          pathLength="100"
+          strokeDasharray={`${pct} 100`}
+        />
+        {/* Center text */}
+        <text
+          x="40" y="36"
+          textAnchor="middle"
+          fontSize="10"
+          fontWeight="700"
+          fill={pct > 0 ? gaugeColor : '#c4a882'}
+        >
+          {pct > 0 ? `${Math.round(pct)}%` : '—'}
+        </text>
+      </svg>
+
+      <p className="text-[10px] text-[#a08060] leading-none">
+        <span style={{ color: gaugeColor }} className="font-semibold">{formatBytes(totalBytes)}</span>
+        <span className="text-[#c4a882]"> / 500 MB</span>
+      </p>
+      {hasPartial && (
+        <p className="text-[8px] text-[#c4a882]">* {t('dashboard.storage.partial')}</p>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   return (
     <AuthGuard>
@@ -134,27 +195,32 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         )}
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#d4b896] space-y-1.5">
-        <p>{t('footer.copyright')}</p>
-        <p className="flex items-center justify-center gap-3">
-          <a
-            href="https://www.instagram.com/kotta_knitting/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-          >
-            {t('footer.business')}
-          </a>
-          <span className="text-[#d4b896]">·</span>
-          <a
-            href="https://www.instagram.com/kotta_knitting/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-          >
-            {t('footer.bug')}
-          </a>
-        </p>
+      <footer className="border-t-2 border-[#d4b896]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-3">
+          <div className="text-center sm:text-left space-y-1.5 text-[11px] text-[#a08060]">
+            <p>{t('footer.copyright')}</p>
+            <p className="flex items-center justify-center sm:justify-start gap-3">
+              <a
+                href="https://www.instagram.com/kotta_knitting/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
+              >
+                {t('footer.business')}
+              </a>
+              <span className="text-[#d4b896]">·</span>
+              <a
+                href="https://www.instagram.com/kotta_knitting/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
+              >
+                {t('footer.bug')}
+              </a>
+            </p>
+          </div>
+          {!loading && <StorageIndicator patterns={patterns} />}
+        </div>
       </footer>
     </div>
   );

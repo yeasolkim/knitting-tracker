@@ -188,6 +188,7 @@ function UploadForm() {
           .update({
             file_url: urlData.publicUrl,
             thumbnail_url: thumbnailUrl,
+            file_size: file.size,
           })
           .eq('id', pattern.id),
         supabase.from('pattern_progress').insert({

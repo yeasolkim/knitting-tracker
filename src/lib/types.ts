@@ -12,6 +12,7 @@ export interface Pattern {
   total_rows: number;
   yarn: string;
   needle: string;
+  file_size?: number | null;
   created_at: string;
   updated_at: string;
 }

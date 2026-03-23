@@ -141,6 +141,8 @@ const ko: Translations = {
   'notes.clearAllConfirm': '모든 메모를 삭제하시겠습니까?',
   'landing.mockup.patternName': '봄 카디건',
   'landing.mockup.completedMark': '완료 표시',
+  'dashboard.storage': '저장 공간',
+  'dashboard.storage.partial': '일부 미측정 포함',
 };
 
 const en: Translations = {
@@ -267,6 +269,8 @@ const en: Translations = {
   'notes.clearAllConfirm': 'Clear all notes?',
   'landing.mockup.patternName': 'Spring Cardigan',
   'landing.mockup.completedMark': 'Completed',
+  'dashboard.storage': 'Storage',
+  'dashboard.storage.partial': 'some files not counted',
 };
 
 const ja: Translations = {
@@ -393,6 +397,8 @@ const ja: Translations = {
   'notes.clearAllConfirm': 'すべてのメモを削除しますか？',
   'landing.mockup.patternName': '春のカーディガン',
   'landing.mockup.completedMark': '完了済み',
+  'dashboard.storage': 'ストレージ',
+  'dashboard.storage.partial': '一部未計測',
 };
 
 const zh: Translations = {
@@ -519,6 +525,8 @@ const zh: Translations = {
   'notes.clearAllConfirm': '确定删除所有备注吗？',
   'landing.mockup.patternName': '春季开衫',
   'landing.mockup.completedMark': '已完成',
+  'dashboard.storage': '存储空间',
+  'dashboard.storage.partial': '部分未统计',
 };
 
 const es: Translations = {
@@ -629,6 +637,8 @@ const es: Translations = {
   'notes.clearAllConfirm': '¿Borrar todas las notas?',
   'landing.mockup.patternName': 'Cárdigan de primavera',
   'landing.mockup.completedMark': 'Completadas',
+  'dashboard.storage': 'Almacenamiento',
+  'dashboard.storage.partial': 'datos parciales',
 };
 
 const fr: Translations = {
@@ -739,6 +749,8 @@ const fr: Translations = {
   'notes.clearAllConfirm': 'Effacer toutes les notes ?',
   'landing.mockup.patternName': 'Cardigan de printemps',
   'landing.mockup.completedMark': 'Terminées',
+  'dashboard.storage': 'Stockage',
+  'dashboard.storage.partial': 'données partielles',
 };
 
 const it: Translations = {
@@ -849,6 +861,8 @@ const it: Translations = {
   'notes.clearAllConfirm': 'Cancellare tutte le note?',
   'landing.mockup.patternName': 'Cardigan primaverile',
   'landing.mockup.completedMark': 'Completate',
+  'dashboard.storage': 'Archiviazione',
+  'dashboard.storage.partial': 'dati parziali',
 };
 
 const de: Translations = {
@@ -959,6 +973,8 @@ const de: Translations = {
   'notes.clearAllConfirm': 'Alle Notizen löschen?',
   'landing.mockup.patternName': 'Frühlingsjacke',
   'landing.mockup.completedMark': 'Abgeschlossen',
+  'dashboard.storage': 'Speicher',
+  'dashboard.storage.partial': 'unvollständige Daten',
 };
 
 const pt: Translations = {
@@ -1069,6 +1085,8 @@ const pt: Translations = {
   'notes.clearAllConfirm': 'Limpar todas as notas?',
   'landing.mockup.patternName': 'Cardigan de primavera',
   'landing.mockup.completedMark': 'Concluídas',
+  'dashboard.storage': 'Armazenamento',
+  'dashboard.storage.partial': 'dados parciais',
 };
 
 const ru: Translations = {
@@ -1179,6 +1197,8 @@ const ru: Translations = {
   'notes.clearAllConfirm': 'Удалить все заметки?',
   'landing.mockup.patternName': 'Весенний кардиган',
   'landing.mockup.completedMark': 'Завершено',
+  'dashboard.storage': 'Хранилище',
+  'dashboard.storage.partial': 'неполные данные',
 };
 
 const no: Translations = {
@@ -1289,6 +1309,8 @@ const no: Translations = {
   'notes.clearAllConfirm': 'Fjerne alle notater?',
   'landing.mockup.patternName': 'Vårjakke',
   'landing.mockup.completedMark': 'Fullførte',
+  'dashboard.storage': 'Lagring',
+  'dashboard.storage.partial': 'ufullstendige data',
 };
 
 const nl: Translations = {
@@ -1399,6 +1421,8 @@ const nl: Translations = {
   'notes.clearAllConfirm': 'Alle notities wissen?',
   'landing.mockup.patternName': 'Lentevest',
   'landing.mockup.completedMark': 'Voltooid',
+  'dashboard.storage': 'Opslag',
+  'dashboard.storage.partial': 'gedeeltelijke data',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };
