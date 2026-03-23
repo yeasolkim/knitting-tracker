@@ -384,17 +384,32 @@ function PatternViewerPage({ pattern }: Props) {
     });
   }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
 
-  // Explicit "save view" — saves current zoom/pan to DB immediately
+  // Save all state immediately (used by save view button and back button)
+  const saveAll = useCallback(() => saveFn({
+    current_row: activeSub?.current_row || 0,
+    stitch_count: activeSub?.stitch_count || 0,
+    ruler_position_y: rulerY,
+    ruler_height: rulerHeight,
+    ruler_direction: rulerDirection,
+    completed_marks: completedMarks,
+    crochet_marks: crochetMarks,
+    knitting_marks: knittingMarks,
+    notes,
+    note_positions: notePositions,
+    sub_patterns: subPatterns,
+    active_sub_pattern_id: activeSubId,
+    view_scale: viewTransform.scale,
+    view_x: viewTransform.x,
+    view_y: viewTransform.y,
+  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform]);
+
+  // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
   const saveViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSaveView = useCallback(async () => {
     setSaveViewStatus('saving');
-    await saveFn({
-      view_scale: viewTransform.scale,
-      view_x: viewTransform.x,
-      view_y: viewTransform.y,
-    });
+    await saveAll();
     setSaveViewStatus('done');
     if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current);
     saveViewTimerRef.current = setTimeout(() => setSaveViewStatus('idle'), 2000);
@@ -608,11 +623,7 @@ function PatternViewerPage({ pattern }: Props) {
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={async () => {
-              await saveFn({
-                view_scale: viewTransform.scale,
-                view_x: viewTransform.x,
-                view_y: viewTransform.y,
-              });
+              await saveAll();
               navigate('/dashboard');
             }}
             className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
