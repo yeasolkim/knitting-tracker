@@ -101,14 +101,35 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
   useEffect(() => { fetchPatterns(); }, [fetchPatterns]);
 
   const handleDelete = useCallback(async (id: string) => {
+    const pattern = patterns.find((p) => p.id === id);
     setPatterns((prev) => prev.filter((p) => p.id !== id));
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
+
+    // R2 파일 삭제 (fire-and-forget, DB 삭제를 막지 않음)
+    if (pattern) {
+      const urls = [...new Set([pattern.file_url, pattern.thumbnail_url].filter(Boolean))] as string[];
+      if (urls.length > 0) {
+        fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ urls }),
+          },
+        ).catch(() => {});
+      }
+    }
+
     await Promise.all([
       supabase.from('pattern_progress').delete().eq('pattern_id', id),
       supabase.from('patterns').delete().eq('id', id),
     ]);
-  }, [supabase]);
+  }, [supabase, patterns]);
 
   const { t } = useLanguage();
 
