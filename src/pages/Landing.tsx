@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
 function KottaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
-  // ^^ stacked twice — two rows of knitting V-stitches
   const w = size;
   const h = size * 0.78;
   const mid = h / 2;
@@ -10,18 +9,11 @@ function KottaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: n
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
       <path
         d={`M0,${mid} L${w * 0.25},0 L${w * 0.5},${mid} L${w * 0.75},0 L${w},${mid}`}
-        stroke={color}
-        strokeWidth={size * 0.115}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        stroke={color} strokeWidth={size * 0.115} strokeLinecap="round" strokeLinejoin="round"
       />
       <path
         d={`M0,${h} L${w * 0.25},${mid} L${w * 0.5},${h} L${w * 0.75},${mid} L${w},${h}`}
-        stroke={color}
-        strokeOpacity={opacity2}
-        strokeWidth={size * 0.115}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        stroke={color} strokeOpacity={opacity2} strokeWidth={size * 0.115} strokeLinecap="round" strokeLinejoin="round"
       />
     </svg>
   );
@@ -35,6 +27,213 @@ function StitchDivider() {
           <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeOpacity="0.35" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
         </svg>
       ))}
+    </div>
+  );
+}
+
+const STITCH_PATH = "M0,6 L8,0 L16,6 L24,0 L32,6 L40,0 L48,6 L56,0 L64,6 L72,0 L80,6 L88,0 L96,6 L104,0 L112,6 L120,0 L128,6 L136,0 L144,6 L152,0 L160,6 L168,0 L176,6 L184,0 L190,6";
+const STITCH_PATH2 = "M0,12 L8,6 L16,12 L24,6 L32,12 L40,6 L48,12 L56,6 L64,12 L72,6 L80,12 L88,6 L96,12 L104,6 L112,12 L120,6 L128,12 L136,6 L144,12 L152,6 L160,12 L168,6 L176,12 L184,6 L190,12";
+
+function AppMockup() {
+  const currentRow = 7;
+  const totalRows = 40;
+  // Rows visible in the viewport (rows 3–11)
+  const visibleRows = Array.from({ length: 9 }, (_, i) => i + 3);
+
+  return (
+    <div className="relative mx-auto select-none" style={{ width: 228 }}>
+
+      {/* ── Callout: 진행선 ── */}
+      <div className="absolute z-10 flex items-center gap-1.5" style={{ right: -10, top: 148 }}>
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+          진행선
+        </div>
+        <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+          <path d="M16 5H2M6 1L2 5L6 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+
+      {/* ── Callout: 완료 표시 ── */}
+      <div className="absolute z-10 flex items-center gap-1.5" style={{ left: -10, top: 110 }}>
+        <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+          <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+          완료 표시
+        </div>
+      </div>
+
+      {/* ── Callout: 단수 카운터 ── */}
+      <div className="absolute z-10 flex items-center gap-1.5" style={{ left: -10, bottom: 70 }}>
+        <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+          <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+          단수 카운터
+        </div>
+      </div>
+
+      {/* ── Phone frame ── */}
+      <div
+        className="bg-[#2a1d15] rounded-[2.5rem] shadow-[0_28px_70px_rgba(61,43,31,0.35),0_8px_24px_rgba(61,43,31,0.2)]"
+        style={{ padding: 7 }}
+      >
+        <div className="bg-[#faf9f7] rounded-[2rem] overflow-hidden">
+
+          {/* Status notch */}
+          <div className="h-6 bg-[#f5edd6] flex items-center justify-center">
+            <div className="w-16 h-1 bg-[#3d2b1f] rounded-full opacity-20" />
+          </div>
+
+          {/* App header */}
+          <div className="bg-[#f5edd6] border-b-2 border-[#d4b896] px-2.5 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M7 2L3 5L7 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] font-bold text-[#3d2b1f] tracking-tight">봄 카디건</span>
+                  <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#fdf6e8] px-1 py-0.5 rounded leading-none">대바늘</span>
+                </div>
+                <p className="text-[7px] text-[#a08060]">메리노 · 4mm</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-0.5">
+              <div className="w-5 h-5 flex items-center justify-center rounded bg-[#ede5cc]">
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                  <path d="M8.5 1.5l2 2L3 11H1v-2L8.5 1.5z" stroke="#7a5c46" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="w-5 h-5 flex items-center justify-center rounded">
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 5H7a3 3 0 110 6H5M2 5L4 3M2 5L4 7" stroke="#7a5c46" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="w-5 h-5 flex items-center justify-center rounded">
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 5H7a3 3 0 100 6H5M2 5L4 3M2 5L4 7" stroke="#7a5c46" strokeOpacity="0.4" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Pattern viewer */}
+          <div className="relative bg-[#fdf6e8] overflow-hidden" style={{ height: 198 }}>
+
+            {/* Pattern rows */}
+            {visibleRows.map((row) => {
+              const isCompleted = row < currentRow;
+              const isCurrent = row === currentRow;
+              return (
+                <div
+                  key={row}
+                  className="flex items-center px-2"
+                  style={{ height: 22, background: isCurrent ? 'rgba(181,84,30,0.07)' : undefined }}
+                >
+                  <span
+                    className="text-right mr-1.5 shrink-0 tabular-nums"
+                    style={{ fontSize: 7, width: 14, color: isCompleted ? '#b5541e' : '#c4a882', opacity: isCompleted ? 0.7 : 1 }}
+                  >
+                    {row}
+                  </span>
+                  <svg width="100%" height="13" viewBox="0 0 190 13" preserveAspectRatio="none" fill="none">
+                    <path
+                      d={STITCH_PATH}
+                      stroke={isCompleted ? '#b5541e' : isCurrent ? '#b5541e' : '#c4a882'}
+                      strokeOpacity={isCompleted ? 0.35 : isCurrent ? 1 : 0.65}
+                      strokeWidth={isCurrent ? 2.2 : 1.6}
+                      strokeLinecap="round" strokeLinejoin="round"
+                    />
+                    {(isCompleted || isCurrent) && (
+                      <path
+                        d={STITCH_PATH2}
+                        stroke="#b5541e"
+                        strokeOpacity={isCompleted ? 0.18 : 0.45}
+                        strokeWidth={isCurrent ? 2.2 : 1.6}
+                        strokeLinecap="round" strokeLinejoin="round"
+                      />
+                    )}
+                  </svg>
+                  {isCompleted && (
+                    <div
+                      className="ml-1 shrink-0 rounded-full bg-[#b5541e] flex items-center justify-center"
+                      style={{ width: 12, height: 12 }}
+                    >
+                      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                        <path d="M1.5 3.5L3 5L5.5 1.5" stroke="#fdf6e8" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Ruler overlay */}
+            <div
+              className="absolute left-0 right-0 pointer-events-none"
+              style={{ top: 4 * 22, height: 22 }}
+            >
+              <div className="absolute inset-0 border-y-2 border-[#b5541e]" style={{ background: 'rgba(181,84,30,0.12)' }} />
+              {/* drag handle */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center" style={{ width: 14, height: 28 }}>
+                <div className="rounded-full bg-[#b5541e]" style={{ width: 4, height: 22 }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Sub-pattern tabs */}
+          <div className="bg-[#f5edd6] border-t-2 border-[#d4b896] flex gap-1 px-2 py-1.5">
+            <div className="bg-[#b5541e] text-[#fdf6e8] rounded px-2 py-1 leading-none">
+              <p className="font-bold" style={{ fontSize: 8 }}>도안 1</p>
+              <p style={{ fontSize: 7, opacity: 0.85 }}>7/40단</p>
+            </div>
+            <div className="bg-[#ede5cc] text-[#7a5c46] rounded px-2 py-1 leading-none">
+              <p className="font-bold" style={{ fontSize: 8 }}>도안 2</p>
+              <p style={{ fontSize: 7 }}>0/25단</p>
+            </div>
+          </div>
+
+          {/* Row counter */}
+          <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] px-3 pt-2 pb-1.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#d4b896] bg-[#f5edd6]">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M6.5 2L3.5 5L6.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="text-center leading-none">
+                <span className="font-bold text-[#3d2b1f]" style={{ fontSize: 26 }}>7</span>
+                <span className="text-[#a08060] ml-0.5" style={{ fontSize: 10 }}>/ 40단</span>
+              </div>
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#d4b896] bg-[#f5edd6]">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M3.5 2L6.5 5L3.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            {/* progress bar */}
+            <div className="h-1 bg-[#d4b896] rounded-full overflow-hidden">
+              <div className="h-full bg-[#b5541e] rounded-full" style={{ width: `${(currentRow / totalRows) * 100}%` }} />
+            </div>
+          </div>
+
+          {/* Complete button */}
+          <div className="px-2 pb-2.5 bg-[#fdf6e8]">
+            <div
+              className="w-full bg-[#b5541e] text-[#fdf6e8] rounded-lg flex items-center justify-center font-bold border-2 border-[#9a4318]"
+              style={{ height: 32, fontSize: 9, letterSpacing: '0.05em', boxShadow: '2px 2px 0 #9a4318' }}
+            >
+              완료 (다음 단으로)
+            </div>
+          </div>
+
+          {/* Home indicator */}
+          <div className="h-5 bg-[#fdf6e8] flex items-center justify-center">
+            <div className="w-20 h-1 bg-[#3d2b1f] rounded-full opacity-20" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -62,8 +261,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-5 text-center -mt-4">
+      <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
         {/* Hero icon */}
         <div className="mb-6">
           <KottaIcon size={64} color="#b5541e" opacity2={0.35} />
@@ -105,6 +303,13 @@ export default function Landing() {
           </svg>
           {t('landing.cta')}
         </Link>
+
+        <StitchDivider />
+
+        {/* App mockup */}
+        <div className="mb-2 px-16">
+          <AppMockup />
+        </div>
 
         <StitchDivider />
 
