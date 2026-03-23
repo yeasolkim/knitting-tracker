@@ -353,6 +353,15 @@ export default function Landing() {
             {t('footer.bug')}
           </a>
         </p>
+        <p className="flex items-center justify-center gap-3 text-[10px] text-[#c4a882]">
+          <Link to="/terms" className="hover:text-[#a08060] transition-colors underline underline-offset-2">
+            이용약관
+          </Link>
+          <span className="text-[#d4b896]">·</span>
+          <Link to="/privacy" className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold">
+            개인정보처리방침
+          </Link>
+        </p>
       </footer>
     </div>
   );
