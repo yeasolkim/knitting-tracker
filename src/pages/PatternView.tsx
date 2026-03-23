@@ -756,7 +756,7 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom">
+      <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom overflow-y-auto max-h-[52vh] sm:max-h-[45vh]">
         <div className="flex items-center gap-2 sm:gap-3">
           <SubPatternSelector
             subPatterns={subPatterns}

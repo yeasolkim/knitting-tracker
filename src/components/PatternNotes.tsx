@@ -148,7 +148,7 @@ export default function PatternNotes({
 
           {/* Grouped notes list */}
           {groupedNotes.length > 0 && (
-            <div ref={scrollRef} className="max-h-36 sm:max-h-48 overflow-y-auto border-t-2 border-[#d4b896] pt-2 space-y-3">
+            <div ref={scrollRef} className="max-h-28 sm:max-h-48 overflow-y-auto border-t-2 border-[#d4b896] pt-2 space-y-3">
               {groupedNotes.map(({ sub, entries }) => (
                 <div key={sub.id}>
                   <div className="flex items-center gap-1.5 mb-1 px-1">
