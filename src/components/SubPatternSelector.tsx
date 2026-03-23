@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { SubPattern } from '@/lib/types';
 
 interface SubPatternSelectorProps {
@@ -9,6 +9,32 @@ interface SubPatternSelectorProps {
   onAdd: () => void;
   onUpdate: (id: string, updates: Partial<SubPattern>) => void;
   onDelete: (id: string) => void;
+}
+
+function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const display = draft !== null ? draft : String(value);
+
+  return (
+    <input
+      ref={inputRef}
+      type="number"
+      min={1}
+      value={display}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        const parsed = parseInt(draft ?? '');
+        onChange(isNaN(parsed) || parsed < 1 ? 1 : parsed);
+        setDraft(null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') inputRef.current?.blur();
+      }}
+      className="w-16 text-xs border-2 border-[#d4b896] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
+      onClick={(e) => e.stopPropagation()}
+    />
+  );
 }
 
 export default function SubPatternSelector({
@@ -128,16 +154,9 @@ export default function SubPatternSelector({
               {sub.id === activeId && editingId !== sub.id && (
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[10px] text-[#a08060] tracking-wide">총 단수</span>
-                  <input
-                    type="number"
+                  <TotalRowsInput
                     value={sub.total_rows}
-                    onChange={(e) => {
-                      const val = Math.max(1, parseInt(e.target.value) || 1);
-                      onUpdate(sub.id, { total_rows: val });
-                    }}
-                    min={1}
-                    className="w-16 text-xs border-2 border-[#d4b896] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
-                    onClick={(e) => e.stopPropagation()}
+                    onChange={(val) => onUpdate(sub.id, { total_rows: val })}
                   />
                 </div>
               )}
