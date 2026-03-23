@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { SubPattern } from '@/lib/types';
+import type { NotePosition, SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PatternNotesProps {
@@ -7,8 +7,10 @@ interface PatternNotesProps {
   activeSubPattern: SubPattern;
   subPatterns: SubPattern[];
   notes: Record<string, string>;       // key: "subId:row"
+  notePositions: Record<string, NotePosition>;
   onUpdate: (notes: Record<string, string>) => void;
   onDelete: (key: string) => void;
+  onPlaceNote: (key: string) => void;
 }
 
 function noteKey(subId: string, row: number) {
@@ -26,8 +28,10 @@ export default function PatternNotes({
   activeSubPattern,
   subPatterns,
   notes,
+  notePositions,
   onUpdate,
   onDelete,
+  onPlaceNote,
 }: PatternNotesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -162,7 +166,21 @@ export default function PatternNotes({
               placeholder={t('notes.currentPlaceholder')}
               className="w-full h-16 text-sm border-2 border-[#d4b896] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
-            <div className="flex justify-end mt-1.5">
+            <div className="flex items-center justify-between mt-1.5">
+              <button
+                onClick={() => onPlaceNote(currentKey)}
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded-lg border-2 transition-colors ${
+                  notePositions[currentKey]
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
+                }`}
+                title={t('notes.placeNote')}
+              >
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
+                </svg>
+                {t('notes.placeNote')}
+              </button>
               <button
                 onClick={handleSaveCurrentNote}
                 disabled={!hasUnsaved && !draftNote.trim()}
@@ -251,15 +269,30 @@ export default function PatternNotes({
                           )}
 
                           {!isEditing && (
-                            <button
-                              onClick={() => onDelete(key)}
-                              className="text-[#d4b896] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all shrink-0 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1.5"
-                              aria-label="메모 삭제"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center shrink-0 -mr-1.5">
+                              <button
+                                onClick={() => onPlaceNote(key)}
+                                className={`p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors ${
+                                  notePositions[key]
+                                    ? 'text-amber-500 hover:text-amber-600'
+                                    : 'text-[#d4b896] hover:text-amber-400 sm:opacity-0 sm:group-hover:opacity-100'
+                                }`}
+                                title={t('notes.placeNote')}
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => onDelete(key)}
+                                className="text-[#d4b896] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label="메모 삭제"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
                           )}
                         </div>
                       );

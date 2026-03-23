@@ -312,7 +312,7 @@ function PatternViewerPage({ pattern }: Props) {
   );
   const [isPlacingKnittingMarker, setIsPlacingKnittingMarker] = useState(false);
 
-  const [isPlacingNote, setIsPlacingNote] = useState(false);
+  const [placingNoteKey, setPlacingNoteKey] = useState<string | null>(null);
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
@@ -483,12 +483,12 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Place a note bubble at a tapped screen position (screen %)
   const handlePlaceNote = useCallback((screenX: number, screenY: number) => {
+    if (!placingNoteKey) return;
     const pos = screenToContent(screenX, screenY);
-    const key = `${activeSubId}:${activeSub?.current_row || 0}`;
-    setNotePositions((prev) => ({ ...prev, [key]: pos }));
-    setNotes((prev) => (key in prev ? prev : { ...prev, [key]: '' }));
-    setIsPlacingNote(false);
-  }, [activeSubId, activeSub, screenToContent]);
+    setNotePositions((prev) => ({ ...prev, [placingNoteKey]: pos }));
+    setNotes((prev) => (placingNoteKey in prev ? prev : { ...prev, [placingNoteKey]: '' }));
+    setPlacingNoteKey(null);
+  }, [placingNoteKey, screenToContent]);
 
   const handlePlaceMarker = useCallback((screenX: number, screenY: number) => {
     captureHistory();
@@ -792,7 +792,7 @@ function PatternViewerPage({ pattern }: Props) {
           )}
 
           {/* Note placement overlay */}
-          {isPlacingNote && (
+          {placingNoteKey !== null && (
             <div
               className="absolute inset-0 z-[60] cursor-crosshair"
               onPointerDown={(e) => {
@@ -812,7 +812,7 @@ function PatternViewerPage({ pattern }: Props) {
               <button
                 className="absolute top-3 right-3 pointer-events-auto bg-white/80 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center hover:bg-white shadow"
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setIsPlacingNote(false)}
+                onClick={() => setPlacingNoteKey(null)}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -937,21 +937,6 @@ function PatternViewerPage({ pattern }: Props) {
                   </svg>
                 </button>
               )}
-              <button
-                onClick={() => setIsPlacingNote(true)}
-                disabled={isPlacingNote}
-                className={`flex items-center gap-1 px-2.5 py-2 min-h-[44px] text-xs font-bold rounded-lg border-2 transition-colors ${
-                  isPlacingNote
-                    ? 'bg-amber-500 text-white border-amber-600 opacity-50'
-                    : 'bg-[#fdf6e8] text-amber-600 border-amber-300 hover:border-amber-500 hover:bg-amber-50'
-                }`}
-                title={t('notes.placeNote')}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
-                </svg>
-                <span className="hidden sm:inline">{t('notes.placeNote')}</span>
-              </button>
             </div>
           </div>
         ) : (
@@ -986,21 +971,6 @@ function PatternViewerPage({ pattern }: Props) {
                   </svg>
                 </button>
               )}
-              <button
-                onClick={() => setIsPlacingNote(true)}
-                disabled={isPlacingNote}
-                className={`flex items-center gap-1 px-2.5 py-2 min-h-[44px] text-xs font-bold rounded-lg border-2 transition-colors ${
-                  isPlacingNote
-                    ? 'bg-amber-500 text-white border-amber-600 opacity-50'
-                    : 'bg-[#fdf6e8] text-amber-600 border-amber-300 hover:border-amber-500 hover:bg-amber-50'
-                }`}
-                title={t('notes.placeNote')}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
-                </svg>
-                <span className="hidden sm:inline">{t('notes.placeNote')}</span>
-              </button>
             </div>
           </div>
         )}
@@ -1010,8 +980,10 @@ function PatternViewerPage({ pattern }: Props) {
           activeSubPattern={activeSub || subPatterns[0]}
           subPatterns={subPatterns}
           notes={notes}
+          notePositions={notePositions}
           onUpdate={handleNotesUpdate}
           onDelete={handleNoteDelete}
+          onPlaceNote={setPlacingNoteKey}
         />
         </div>
       </div>
