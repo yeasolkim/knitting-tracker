@@ -148,7 +148,7 @@ function PatternViewerPage({ pattern }: Props) {
   const [imgH, setImgH] = useState(0);
   const [imgW, setImgW] = useState(0);
 
-  // Scroll to ruler once: after image is loaded (imgH > 0)
+  // Scroll to ruler once: after image is loaded (h > 0), same as clicking "진행선으로 이동"
   const initialScrollDoneRef = useRef(false);
 
   const handleImageSize = useCallback((w: number, h: number) => {
@@ -156,9 +156,11 @@ function PatternViewerPage({ pattern }: Props) {
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
       initialScrollDoneRef.current = true;
-      const { rulerY: ry, rulerHeight: rh } = latestRef.current;
+      // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
-        viewerRef.current?.scrollToContentY(ry + rh / 2);
+        requestAnimationFrame(() => {
+          viewerRef.current?.goToRuler();
+        });
       });
     }
   }, []);
