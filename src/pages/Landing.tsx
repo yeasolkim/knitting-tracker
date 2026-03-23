@@ -49,6 +49,7 @@ export default function Landing() {
         <div className="flex items-center gap-2">
           <KottaIcon size={22} color="#b5541e" opacity2={0.4} />
           <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
+          <span className="text-[9px] font-bold tracking-wider text-[#b5541e] border border-[#b5541e]/40 rounded px-1 py-0.5 leading-none">beta</span>
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />

@@ -25,6 +25,7 @@ export default function Login() {
             <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
           <span className="font-bold text-[#3d2b1f] tracking-tight">{t('app.name')}</span>
+          <span className="text-[9px] font-bold tracking-wider text-[#b5541e] border border-[#b5541e]/40 rounded px-1 py-0.5 leading-none">beta</span>
         </div>
       </nav>
 
