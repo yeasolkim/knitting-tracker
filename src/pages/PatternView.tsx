@@ -98,6 +98,7 @@ const MAX_HISTORY = 20;
 function PatternViewerPage({ pattern }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const viewerRef = useRef<PatternViewerHandle>(null);
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
@@ -605,11 +606,21 @@ function PatternViewerPage({ pattern }: Props) {
       {/* Top bar */}
       <div className="bg-[#f5edd6] border-b-2 border-[#d4b896] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Link to="/dashboard" className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors">
+          <button
+            onClick={async () => {
+              await saveFn({
+                view_scale: viewTransform.scale,
+                view_x: viewTransform.x,
+                view_y: viewTransform.y,
+              });
+              navigate('/dashboard');
+            }}
+            className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </Link>
+          </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
