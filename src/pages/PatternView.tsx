@@ -145,10 +145,21 @@ function PatternViewerPage({ pattern }: Props) {
   const [imgH, setImgH] = useState(0);
   const [imgW, setImgW] = useState(0);
 
+  // Scroll to ruler on first image load if ruler position was saved
+  const initialScrollDoneRef = useRef(false);
+  const hasSavedRulerPosition = pattern.progress?.ruler_position_y != null;
+
   const handleImageSize = useCallback((w: number, h: number) => {
     setImgW(w);
     setImgH(h);
-  }, []);
+    if (!initialScrollDoneRef.current && h > 0 && hasSavedRulerPosition) {
+      initialScrollDoneRef.current = true;
+      const { rulerY: ry, rulerHeight: rh } = latestRef.current;
+      requestAnimationFrame(() => {
+        viewerRef.current?.scrollToContentY(ry + rh / 2);
+      });
+    }
+  }, [hasSavedRulerPosition]);
 
   // Ref for stable callbacks that need latest transform/ruler values
   const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
