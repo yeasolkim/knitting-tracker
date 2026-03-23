@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 import PatternCard from '@/components/PatternCard';
+import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
 const STORAGE_LIMIT = 500 * 1024 * 1024; // 500 MB
@@ -188,7 +189,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-6 h-6 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
+            <YarnLoader />
           </div>
         ) : patterns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -216,31 +217,36 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         )}
       </main>
 
-      <footer className="border-t-2 border-[#d4b896]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-3">
-          <div className="text-center sm:text-left space-y-1.5 text-[11px] text-[#a08060]">
-            <p>{t('footer.copyright')}</p>
-            <p className="flex items-center justify-center sm:justify-start gap-3">
-              <a
-                href="https://www.instagram.com/kotta_knitting/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-              >
-                {t('footer.business')}
-              </a>
-              <span className="text-[#d4b896]">·</span>
-              <a
-                href="https://www.instagram.com/kotta_knitting/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-              >
-                {t('footer.bug')}
-              </a>
-            </p>
+      {!loading && (
+        <div className="border-t-2 border-[#d4b896] bg-[#faf9f7]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-center gap-2">
+            <StorageIndicator patterns={patterns} />
           </div>
-          {!loading && <StorageIndicator patterns={patterns} />}
+        </div>
+      )}
+
+      <footer className="border-t-2 border-[#d4b896]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center gap-1.5 text-center text-[11px] text-[#a08060]">
+          <p>{t('footer.copyright')}</p>
+          <p className="flex items-center gap-3">
+            <a
+              href="https://www.instagram.com/kotta_knitting/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
+            >
+              {t('footer.business')}
+            </a>
+            <span className="text-[#d4b896]">·</span>
+            <a
+              href="https://www.instagram.com/kotta_knitting/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
+            >
+              {t('footer.bug')}
+            </a>
+          </p>
         </div>
       </footer>
     </div>

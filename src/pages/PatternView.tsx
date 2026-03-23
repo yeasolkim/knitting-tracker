@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
+import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
@@ -68,8 +69,8 @@ export default function PatternView() {
 
   if (loading || !pattern) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#faf9f7]">
+        <YarnLoader />
       </div>
     );
   }

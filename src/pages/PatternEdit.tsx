@@ -5,6 +5,7 @@ import type { PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
+import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
@@ -215,7 +216,15 @@ function EditForm() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
+        <YarnLoader />
+      </div>
+    );
+  }
+
+  if (saving) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <YarnLoader text={t('form.saving')} />
       </div>
     );
   }

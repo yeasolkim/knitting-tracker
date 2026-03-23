@@ -5,6 +5,7 @@ import type { PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
+import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
@@ -219,6 +220,14 @@ function UploadForm() {
       setUploading(false);
     }
   };
+
+  if (uploading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <YarnLoader text={t('form.uploading')} />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
