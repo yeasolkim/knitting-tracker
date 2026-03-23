@@ -148,7 +148,16 @@ function PatternViewerPage({ pattern }: Props) {
   const [imgH, setImgH] = useState(0);
   const [imgW, setImgW] = useState(0);
 
-  // Scroll to ruler once: after image is loaded (h > 0), same as clicking "진행선으로 이동"
+  // Saved view transform from DB (null = not saved yet → fall back to goToRuler)
+  const savedViewScale = pattern.progress?.view_scale as number | null ?? null;
+  const savedViewX     = pattern.progress?.view_x     as number | null ?? null;
+  const savedViewY     = pattern.progress?.view_y     as number | null ?? null;
+  const hasSavedView   = savedViewScale != null && savedViewX != null && savedViewY != null;
+
+  // Gate: don't save viewTransform until after the initial restore is done
+  const viewRestoredRef = useRef(false);
+
+  // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
 
   const handleImageSize = useCallback((w: number, h: number) => {
@@ -156,14 +165,20 @@ function PatternViewerPage({ pattern }: Props) {
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
       initialScrollDoneRef.current = true;
-      // Double RAF: ensures browser has fully laid out the image before scrolling
+      // Double RAF: ensures browser has fully laid out the image before restoring
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          viewerRef.current?.goToRuler();
+          if (hasSavedView) {
+            viewerRef.current?.restoreTransform(savedViewScale!, savedViewX!, savedViewY!);
+          } else {
+            viewerRef.current?.goToRuler();
+          }
+          viewRestoredRef.current = true;
         });
       });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSavedView, savedViewScale, savedViewX, savedViewY]);
 
   // Ref for stable callbacks that need latest transform/ruler values
   const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
@@ -369,8 +384,14 @@ function PatternViewerPage({ pattern }: Props) {
       note_positions: notePositions,
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
+      // Only save view transform after initial restore to avoid overwriting saved state
+      ...(viewRestoredRef.current ? {
+        view_scale: viewTransform.scale,
+        view_x: viewTransform.x,
+        view_y: viewTransform.y,
+      } : {}),
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, save]);
 
   const handleRowChange = (row: number) => {
     captureHistory();

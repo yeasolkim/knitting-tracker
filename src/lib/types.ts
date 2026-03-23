@@ -67,6 +67,9 @@ export interface PatternProgress {
   active_sub_pattern_id: string;
   crochet_marks: CrochetMark[];
   knitting_marks: KnittingMark[];
+  view_scale?: number | null;
+  view_x?: number | null;
+  view_y?: number | null;
   updated_at: string;
 }
 

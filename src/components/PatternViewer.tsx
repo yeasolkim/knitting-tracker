@@ -23,6 +23,7 @@ export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
   scrollToContentY: (contentYPercent: number) => void;
   goToRuler: () => void;
+  restoreTransform: (scale: number, x: number, y: number) => void;
 }
 
 interface PatternViewerProps {
@@ -140,7 +141,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       goToRuler() {
         goToRuler();
       },
-    }), [transform, setXY, imageToContentY, goToRuler]);
+      restoreTransform(scale: number, x: number, y: number) {
+        setFullTransform({ scale, x, y });
+      },
+    }), [transform, setXY, imageToContentY, goToRuler, setFullTransform]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
