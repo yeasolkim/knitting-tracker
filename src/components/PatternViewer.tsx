@@ -282,9 +282,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Fixed overlays (ruler) */}
         {children}
 
-        {/* Vertical scrollbar */}
+        {/* Vertical scrollbar — stops above zoom buttons (bottom ~112px) */}
         {showScrollbars && (
-          <div ref={vTrackRef} className="absolute right-1 top-2 bottom-14 w-3 z-25">
+          <div ref={vTrackRef} className="absolute right-1 top-2 bottom-28 w-3 z-25">
             <div className="relative w-full h-full">
               <div
                 className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/20"
@@ -303,9 +303,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           </div>
         )}
 
-        {/* Horizontal scrollbar */}
+        {/* Horizontal scrollbar — right edge avoids zoom buttons (right ~80px) */}
         {showScrollbars && (
-          <div ref={hTrackRef} className="absolute bottom-1 left-2 right-14 h-3 z-25">
+          <div ref={hTrackRef} className="absolute bottom-1 left-20 right-20 h-3 z-25">
             <div className="relative w-full h-full">
               <div
                 className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/20"
@@ -324,28 +324,26 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           </div>
         )}
 
-        {/* Fixed controls — always visible */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-1.5 z-20 w-16">
-          {/* Zoom buttons */}
+        {/* Zoom controls — bottom-right */}
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-14">
           <button
             onClick={zoomIn}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl rounded-b border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="확대"
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl rounded-t border-2 border-t-0 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#d4b896] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="축소"
           >
             −
           </button>
+        </div>
 
-          {/* Divider */}
-          <div className="h-px bg-[#d4b896]/60 mx-0.5 mt-0.5" />
-
-          {/* 진행선으로 이동 */}
+        {/* Ruler navigation — bottom-left */}
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1.5 z-20 w-16">
           <button
             onClick={goToRuler}
             className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#d4b896] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
