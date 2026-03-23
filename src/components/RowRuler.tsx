@@ -175,16 +175,25 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleDirection(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
+          className="flex flex-col items-center justify-center gap-0.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
           title={direction === 'up' ? '진행 방향: 위로' : '진행 방향: 아래로'}
         >
-          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             {direction === 'up' ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              <>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l7-7 7 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 17l7-7 7 7" opacity="0.45" />
+              </>
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              <>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 12l-7 7-7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-7 7-7-7" opacity="0.45" />
+              </>
             )}
           </svg>
+          <span className="text-[7px] sm:text-[8px] font-semibold leading-none tracking-tight">진행방향</span>
         </button>
 
         <button
