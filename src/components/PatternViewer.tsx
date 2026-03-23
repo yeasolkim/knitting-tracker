@@ -2,11 +2,14 @@ import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, 
 import { useGestures } from '@/hooks/useGestures';
 
 let pdfVersion = '';
+const pdfVersionListeners: Array<(v: string) => void> = [];
 
 const PdfDocument = lazy(() =>
   import('react-pdf').then((mod) => {
     pdfVersion = mod.pdfjs.version;
-    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
+    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
+    pdfVersionListeners.forEach((fn) => fn(pdfVersion));
+    pdfVersionListeners.length = 0;
     return { default: mod.Document };
   })
 );
@@ -35,10 +38,20 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const [pdfPages, setPdfPages] = useState(1);
+    const [pdfVer, setPdfVer] = useState(pdfVersion);
+    useEffect(() => {
+      if (pdfVersion) { setPdfVer(pdfVersion); return; }
+      const fn = (v: string) => setPdfVer(v);
+      pdfVersionListeners.push(fn);
+      return () => {
+        const idx = pdfVersionListeners.indexOf(fn);
+        if (idx !== -1) pdfVersionListeners.splice(idx, 1);
+      };
+    }, []);
     const pdfOptions = useMemo(() => ({
-      cMapUrl: `//unpkg.com/pdfjs-dist@${pdfVersion}/cmaps/`,
+      cMapUrl: pdfVer ? `//unpkg.com/pdfjs-dist@${pdfVer}/cmaps/` : undefined,
       cMapPacked: true,
-    }), []);
+    }), [pdfVer]);
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
@@ -266,7 +279,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                         width={containerWidth * 0.9}
                         scale={devicePixelRatio}
                         renderTextLayer={false}
-                        renderAnnotationLayer={false}
+                        renderAnnotationLayer={true}
                         onRenderSuccess={reportImageSize}
                       />
                     ))}
