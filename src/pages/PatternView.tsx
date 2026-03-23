@@ -769,8 +769,9 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] px-3 sm:px-4 py-2 sm:py-3 space-y-2 sm:space-y-3 shrink-0 safe-bottom overflow-y-auto max-h-[52vh] sm:max-h-[45vh]">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <div className="bg-[#fdf6e8] border-t-2 border-[#d4b896] shrink-0 safe-bottom">
+        {/* SubPattern selector is outside overflow container so its dropdown isn't clipped */}
+        <div className="px-3 sm:px-4 pt-2 sm:pt-3 flex items-center gap-2 sm:gap-3">
           <SubPatternSelector
             subPatterns={subPatterns}
             activeId={activeSubId}
@@ -784,6 +785,7 @@ function PatternViewerPage({ pattern }: Props) {
             <ProgressBar current={activeSub?.current_row || 0} total={activeSub?.total_rows || 1} />
           </div>
         </div>
+        <div className="px-3 sm:px-4 pb-2 sm:pb-3 mt-2 sm:mt-3 space-y-2 sm:space-y-3 overflow-y-auto max-h-[42vh] sm:max-h-[36vh]">
 
         {isCrochet ? (
           <div className="flex items-center justify-between gap-2 sm:gap-3">
@@ -876,6 +878,7 @@ function PatternViewerPage({ pattern }: Props) {
           notes={notes}
           onUpdate={handleNotesUpdate}
         />
+        </div>
       </div>
     </div>
   );
