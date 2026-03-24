@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
-import MonkeyKnitting from '@/components/MonkeyKnitting';
+import monkeyImg from '@/assets/monkey-knitting.png';
 
 function KnittingTangIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
   const w = size;
@@ -265,7 +265,7 @@ export default function Landing() {
       <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
         {/* Hero illustration */}
         <div className="mb-4">
-          <img src="/monkey-knitting.png" alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
+          <img src={monkeyImg} alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
         </div>
 
         {/* Badge */}
