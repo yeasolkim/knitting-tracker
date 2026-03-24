@@ -23,7 +23,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제1조 (개요)</h2>
             <p>
-              니팅인더배스(이하 "서비스")는 이용자의 개인정보를 중요하게 생각합니다. 이 개인정보처리방침은 서비스가 어떤 정보를 수집하고, 어떻게 사용하며, 어떻게 보호하는지 안내합니다. 본 방침은 「개인정보 보호법」 및 관련 법령을 준수합니다.
+              니팅인더사우나(이하 "서비스")는 이용자의 개인정보를 중요하게 생각합니다. 이 개인정보처리방침은 서비스가 어떤 정보를 수집하고, 어떻게 사용하며, 어떻게 보호하는지 안내합니다. 본 방침은 「개인정보 보호법」 및 관련 법령을 준수합니다.
             </p>
           </section>
 
@@ -155,7 +155,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제8조 (개인정보 보호책임자)</h2>
             <div className="bg-[#fdf6e8] border-2 border-[#d4b896] rounded-xl p-4 space-y-1">
-              <p><span className="font-semibold">서비스명:</span> 니팅인더배스 (Knitting in the Bath)</p>
+              <p><span className="font-semibold">서비스명:</span> 니팅인더사우나 (Knitting in the Sauna)</p>
               <p><span className="font-semibold">문의 채널:</span>{' '}
                 <a
                   href="https://www.instagram.com/knitting_in_the_bath"

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import monkeyImg from '@/assets/monkey-knitting.png';
 
-function KnittingInTheBathIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
+function KnittingInTheSaunaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
   const w = size;
   const h = size * 0.78;
   const mid = h / 2;
@@ -247,7 +247,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#d4b896] bg-[#f5edd6]">
         <div className="flex items-center gap-2">
-          <KnittingInTheBathIcon size={22} color="#b5541e" opacity2={0.4} />
+          <KnittingInTheSaunaIcon size={22} color="#b5541e" opacity2={0.4} />
           <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
           <span className="text-[9px] font-bold tracking-wider text-[#b5541e] border border-[#b5541e]/40 rounded px-1 py-0.5 leading-none">beta</span>
         </div>

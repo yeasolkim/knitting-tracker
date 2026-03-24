@@ -19,7 +19,7 @@ type Translations = Record<string, string>;
 
 const ko: Translations = {
   // app
-  'app.name': '니팅인더배스',
+  'app.name': '니팅인더사우나',
   // nav
   'nav.login': '로그인',
   'nav.logout': '로그아웃',
@@ -28,7 +28,7 @@ const ko: Translations = {
   'landing.hero1': '뜨다 멈춰도',
   'landing.hero2': '괜찮아요.',
   'landing.sub1': '어디까지 떴는지 까먹어도',
-  'landing.sub2': '니팅인더배스가 기억하고 있을게요.',
+  'landing.sub2': '니팅인더사우나가 기억하고 있을게요.',
   'landing.cta': 'Google로 시작하기',
   'landing.feat.imagePdf': '이미지 & PDF',
   'landing.feat.imagePdfDesc': '도안 파일 업로드',
@@ -39,11 +39,11 @@ const ko: Translations = {
   'landing.feat.save': '자동 저장',
   'landing.feat.saveDesc': '끄고 켜도 그대로',
   // login
-  'login.welcome': '니팅인더배스에 오신 걸 환영해요',
+  'login.welcome': '니팅인더사우나에 오신 걸 환영해요',
   'login.subtitle': '로그인하고 도안을 관리해보세요',
   'login.google': 'Google로 로그인',
   // footer
-  'footer.copyright': '© 2026 니팅인더배스 · All rights reserved.',
+  'footer.copyright': '© 2026 니팅인더사우나 · All rights reserved.',
   'footer.business': '비즈니스 문의',
   'footer.bug': '오류 문의',
   // dashboard
@@ -153,7 +153,7 @@ const ko: Translations = {
 
 const en: Translations = {
   // app
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   // nav
   'nav.login': 'Log in',
   'nav.logout': 'Log out',
@@ -162,7 +162,7 @@ const en: Translations = {
   'landing.hero1': 'Pick up where',
   'landing.hero2': 'you left off.',
   'landing.sub1': 'Never lose your place again.',
-  'landing.sub2': 'Knitting in the Bath remembers it for you.',
+  'landing.sub2': 'Knitting in the Sauna remembers it for you.',
   'landing.cta': 'Continue with Google',
   'landing.feat.imagePdf': 'Image & PDF',
   'landing.feat.imagePdfDesc': 'Upload pattern files',
@@ -173,11 +173,11 @@ const en: Translations = {
   'landing.feat.save': 'Auto Save',
   'landing.feat.saveDesc': 'Always picks up where you left',
   // login
-  'login.welcome': 'Welcome to Knitting in the Bath',
+  'login.welcome': 'Welcome to Knitting in the Sauna',
   'login.subtitle': 'Sign in to manage your patterns',
   'login.google': 'Sign in with Google',
   // footer
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Business Inquiry',
   'footer.bug': 'Report an Issue',
   // dashboard
@@ -421,7 +421,7 @@ const ja: Translations = {
 
 const zh: Translations = {
   // app
-  'app.name': '니팅인더배스',
+  'app.name': '니팅인더사우나',
   // nav
   'nav.login': '登录',
   'nav.logout': '退出',
@@ -430,7 +430,7 @@ const zh: Translations = {
   'landing.hero1': '编到一半停下来',
   'landing.hero2': '也没关系。',
   'landing.sub1': '就算忘了编到哪一行，',
-  'landing.sub2': '니팅인더배스会帮你记住。',
+  'landing.sub2': '니팅인더사우나会帮你记住。',
   'landing.cta': '用 Google 开始',
   'landing.feat.imagePdf': '图片 & PDF',
   'landing.feat.imagePdfDesc': '上传编织图文件',
@@ -441,11 +441,11 @@ const zh: Translations = {
   'landing.feat.save': '自动保存',
   'landing.feat.saveDesc': '随时关闭随时继续',
   // login
-  'login.welcome': '欢迎来到니팅인더배스',
+  'login.welcome': '欢迎来到니팅인더사우나',
   'login.subtitle': '登录后管理你的编织图',
   'login.google': '用 Google 登录',
   // footer
-  'footer.copyright': '© 2026 니팅인더배스 · All rights reserved.',
+  'footer.copyright': '© 2026 니팅인더사우나 · All rights reserved.',
   'footer.business': '商务合作',
   'footer.bug': '反馈问题',
   // dashboard
@@ -554,14 +554,14 @@ const zh: Translations = {
 };
 
 const es: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Iniciar sesión',
   'nav.logout': 'Cerrar sesión',
   'nav.start': 'Empezar →',
   'landing.hero1': 'Aunque lo dejes',
   'landing.hero2': 'a medias.',
   'landing.sub1': 'Aunque olvides hasta dónde llegaste,',
-  'landing.sub2': 'Knitting in the Bath lo recuerda por ti.',
+  'landing.sub2': 'Knitting in the Sauna lo recuerda por ti.',
   'landing.cta': 'Continuar con Google',
   'landing.feat.imagePdf': 'Imagen & PDF',
   'landing.feat.imagePdfDesc': 'Sube tus patrones',
@@ -571,10 +571,10 @@ const es: Translations = {
   'landing.feat.counterDesc': 'Toca para contar',
   'landing.feat.save': 'Guardado auto.',
   'landing.feat.saveDesc': 'Siempre donde lo dejaste',
-  'login.welcome': 'Bienvenido a Knitting in the Bath',
+  'login.welcome': 'Bienvenido a Knitting in the Sauna',
   'login.subtitle': 'Inicia sesión para gestionar tus patrones',
   'login.google': 'Iniciar sesión con Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Contacto comercial',
   'footer.bug': 'Reportar un error',
   'dashboard.title': 'Mis patrones',
@@ -672,14 +672,14 @@ const es: Translations = {
 };
 
 const fr: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Connexion',
   'nav.logout': 'Déconnexion',
   'nav.start': 'Commencer →',
   'landing.hero1': 'Même si vous vous',
   'landing.hero2': 'arrêtez en chemin.',
   'landing.sub1': 'Même si vous oubliez où vous en étiez,',
-  'landing.sub2': 'Knitting in the Bath s\'en souvient pour vous.',
+  'landing.sub2': 'Knitting in the Sauna s\'en souvient pour vous.',
   'landing.cta': 'Continuer avec Google',
   'landing.feat.imagePdf': 'Image & PDF',
   'landing.feat.imagePdfDesc': 'Importez vos patrons',
@@ -689,10 +689,10 @@ const fr: Translations = {
   'landing.feat.counterDesc': 'Appuyez pour compter',
   'landing.feat.save': 'Sauvegarde auto.',
   'landing.feat.saveDesc': 'Reprenez où vous étiez',
-  'login.welcome': 'Bienvenue sur Knitting in the Bath',
+  'login.welcome': 'Bienvenue sur Knitting in the Sauna',
   'login.subtitle': 'Connectez-vous pour gérer vos patrons',
   'login.google': 'Se connecter avec Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Contact professionnel',
   'footer.bug': 'Signaler un problème',
   'dashboard.title': 'Mes patrons',
@@ -790,14 +790,14 @@ const fr: Translations = {
 };
 
 const it: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Accedi',
   'nav.logout': 'Esci',
   'nav.start': 'Inizia →',
   'landing.hero1': 'Anche se ti fermi',
   'landing.hero2': 'a metà.',
   'landing.sub1': 'Anche se dimentichi a che punto eri,',
-  'landing.sub2': 'Knitting in the Bath lo ricorda per te.',
+  'landing.sub2': 'Knitting in the Sauna lo ricorda per te.',
   'landing.cta': 'Continua con Google',
   'landing.feat.imagePdf': 'Immagine & PDF',
   'landing.feat.imagePdfDesc': 'Carica i tuoi schemi',
@@ -807,10 +807,10 @@ const it: Translations = {
   'landing.feat.counterDesc': 'Tocca per contare',
   'landing.feat.save': 'Salvataggio auto.',
   'landing.feat.saveDesc': 'Riprendi sempre da dove eri',
-  'login.welcome': 'Benvenuto su Knitting in the Bath',
+  'login.welcome': 'Benvenuto su Knitting in the Sauna',
   'login.subtitle': 'Accedi per gestire i tuoi schemi',
   'login.google': 'Accedi con Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Contatto commerciale',
   'footer.bug': 'Segnala un problema',
   'dashboard.title': 'I miei schemi',
@@ -908,14 +908,14 @@ const it: Translations = {
 };
 
 const de: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Anmelden',
   'nav.logout': 'Abmelden',
   'nav.start': 'Loslegen →',
   'landing.hero1': 'Auch wenn du mittendrin',
   'landing.hero2': 'aufhörst.',
   'landing.sub1': 'Auch wenn du vergisst, wo du warst –',
-  'landing.sub2': 'Knitting in the Bath erinnert sich für dich.',
+  'landing.sub2': 'Knitting in the Sauna erinnert sich für dich.',
   'landing.cta': 'Mit Google starten',
   'landing.feat.imagePdf': 'Bild & PDF',
   'landing.feat.imagePdfDesc': 'Strickmuster hochladen',
@@ -925,10 +925,10 @@ const de: Translations = {
   'landing.feat.counterDesc': 'Tippen zum Zählen',
   'landing.feat.save': 'Auto-Speichern',
   'landing.feat.saveDesc': 'Immer da weitermachen',
-  'login.welcome': 'Willkommen bei Knitting in the Bath',
+  'login.welcome': 'Willkommen bei Knitting in the Sauna',
   'login.subtitle': 'Melde dich an, um deine Muster zu verwalten',
   'login.google': 'Mit Google anmelden',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Geschäftliche Anfragen',
   'footer.bug': 'Fehler melden',
   'dashboard.title': 'Meine Muster',
@@ -1026,14 +1026,14 @@ const de: Translations = {
 };
 
 const pt: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Entrar',
   'nav.logout': 'Sair',
   'nav.start': 'Começar →',
   'landing.hero1': 'Mesmo que você pare',
   'landing.hero2': 'no meio.',
   'landing.sub1': 'Mesmo que esqueça onde estava,',
-  'landing.sub2': 'o Knitting in the Bath lembra por você.',
+  'landing.sub2': 'o Knitting in the Sauna lembra por você.',
   'landing.cta': 'Continuar com o Google',
   'landing.feat.imagePdf': 'Imagem & PDF',
   'landing.feat.imagePdfDesc': 'Envie seus gráficos',
@@ -1043,10 +1043,10 @@ const pt: Translations = {
   'landing.feat.counterDesc': 'Toque para contar',
   'landing.feat.save': 'Salvamento auto.',
   'landing.feat.saveDesc': 'Continue de onde parou',
-  'login.welcome': 'Bem-vindo ao Knitting in the Bath',
+  'login.welcome': 'Bem-vindo ao Knitting in the Sauna',
   'login.subtitle': 'Entre para gerenciar seus gráficos',
   'login.google': 'Entrar com o Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Contato comercial',
   'footer.bug': 'Reportar um problema',
   'dashboard.title': 'Meus gráficos',
@@ -1144,14 +1144,14 @@ const pt: Translations = {
 };
 
 const ru: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Войти',
   'nav.logout': 'Выйти',
   'nav.start': 'Начать →',
   'landing.hero1': 'Даже если остановиться',
   'landing.hero2': 'на полпути.',
   'landing.sub1': 'Даже если забудете, где остановились,',
-  'landing.sub2': 'Knitting in the Bath запомнит за вас.',
+  'landing.sub2': 'Knitting in the Sauna запомнит за вас.',
   'landing.cta': 'Войти через Google',
   'landing.feat.imagePdf': 'Фото и PDF',
   'landing.feat.imagePdfDesc': 'Загружайте схемы',
@@ -1161,10 +1161,10 @@ const ru: Translations = {
   'landing.feat.counterDesc': 'Нажмите для счёта',
   'landing.feat.save': 'Автосохранение',
   'landing.feat.saveDesc': 'Продолжайте с места остановки',
-  'login.welcome': 'Добро пожаловать в Knitting in the Bath',
+  'login.welcome': 'Добро пожаловать в Knitting in the Sauna',
   'login.subtitle': 'Войдите, чтобы управлять схемами',
   'login.google': 'Войти через Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Деловые запросы',
   'footer.bug': 'Сообщить об ошибке',
   'dashboard.title': 'Мои схемы',
@@ -1262,14 +1262,14 @@ const ru: Translations = {
 };
 
 const no: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Logg inn',
   'nav.logout': 'Logg ut',
   'nav.start': 'Kom i gang →',
   'landing.hero1': 'Selv om du stopper',
   'landing.hero2': 'underveis.',
   'landing.sub1': 'Selv om du glemmer hvor du var,',
-  'landing.sub2': 'husker Knitting in the Bath det for deg.',
+  'landing.sub2': 'husker Knitting in the Sauna det for deg.',
   'landing.cta': 'Fortsett med Google',
   'landing.feat.imagePdf': 'Bilde & PDF',
   'landing.feat.imagePdfDesc': 'Last opp strikkemønstre',
@@ -1279,10 +1279,10 @@ const no: Translations = {
   'landing.feat.counterDesc': 'Trykk for å telle',
   'landing.feat.save': 'Autolagring',
   'landing.feat.saveDesc': 'Fortsett alltid der du slapp',
-  'login.welcome': 'Velkommen til Knitting in the Bath',
+  'login.welcome': 'Velkommen til Knitting in the Sauna',
   'login.subtitle': 'Logg inn for å administrere mønstre',
   'login.google': 'Logg inn med Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Forretningshenvendelser',
   'footer.bug': 'Rapporter en feil',
   'dashboard.title': 'Mine mønstre',
@@ -1380,14 +1380,14 @@ const no: Translations = {
 };
 
 const nl: Translations = {
-  'app.name': 'Knitting in the Bath',
+  'app.name': 'Knitting in the Sauna',
   'nav.login': 'Inloggen',
   'nav.logout': 'Uitloggen',
   'nav.start': 'Beginnen →',
   'landing.hero1': 'Ook als je halverwege',
   'landing.hero2': 'stopt.',
   'landing.sub1': 'Ook als je vergeet waar je was,',
-  'landing.sub2': 'onthoudt Knitting in the Bath het voor jou.',
+  'landing.sub2': 'onthoudt Knitting in the Sauna het voor jou.',
   'landing.cta': 'Doorgaan met Google',
   'landing.feat.imagePdf': 'Afbeelding & PDF',
   'landing.feat.imagePdfDesc': 'Upload patronen',
@@ -1397,10 +1397,10 @@ const nl: Translations = {
   'landing.feat.counterDesc': 'Tik om te tellen',
   'landing.feat.save': 'Automatisch opsl.',
   'landing.feat.saveDesc': 'Ga altijd verder waar je was',
-  'login.welcome': 'Welkom bij Knitting in the Bath',
+  'login.welcome': 'Welkom bij Knitting in the Sauna',
   'login.subtitle': 'Log in om je patronen te beheren',
   'login.google': 'Inloggen met Google',
-  'footer.copyright': '© 2026 Knitting in the Bath · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'Zakelijk contact',
   'footer.bug': 'Fout melden',
   'dashboard.title': 'Mijn patronen',

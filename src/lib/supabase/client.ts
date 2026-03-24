@@ -12,7 +12,7 @@ export function createClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: 'knitting-in-the-bath-auth',
+        storageKey: 'knitting-in-the-sauna-auth',
       },
     });
   }
