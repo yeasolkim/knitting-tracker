@@ -86,7 +86,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="bg-[#f5edd6] border-b-2 border-[#d4b896] sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -112,7 +112,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-7 sm:mb-9">
           <div>
