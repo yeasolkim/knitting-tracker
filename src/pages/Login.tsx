@@ -10,7 +10,7 @@ export default function Login() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${siteUrl}/#/auth/callback`,
+        redirectTo: siteUrl,
       },
     });
   };
