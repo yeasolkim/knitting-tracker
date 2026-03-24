@@ -25,10 +25,10 @@ const ko: Translations = {
   'nav.logout': '로그아웃',
   'nav.start': '시작하기 →',
   // landing
-  'landing.hero1': '뜨다 멈춰도',
-  'landing.hero2': '괜찮아요.',
+  'landing.hero1': '뜨개,',
+  'landing.hero2': '이어서.',
   'landing.sub1': '어디까지 떴는지 까먹어도',
-  'landing.sub2': '니팅인더사우나가 기억하고 있을게요.',
+  'landing.sub2': '니팅인더사우나에 있어요.',
   'landing.cta': 'Google로 시작하기',
   'landing.feat.imagePdf': '이미지 & PDF',
   'landing.feat.imagePdfDesc': '도안 파일 업로드',

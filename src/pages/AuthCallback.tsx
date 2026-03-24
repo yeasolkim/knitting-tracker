@@ -8,6 +8,21 @@ export default function AuthCallback() {
   useEffect(() => {
     const supabase = createClient();
 
+    // HashRouter에서는 code가 hash fragment 안에 담겨옴
+    // e.g. window.location.hash = "#/auth/callback?code=xxx&state=yyy"
+    const hash = window.location.hash;
+    const queryPart = hash.includes('?') ? hash.split('?')[1] : '';
+    const params = new URLSearchParams(queryPart);
+    const code = params.get('code');
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) navigate('/dashboard');
+        else navigate('/login');
+      });
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
         navigate('/dashboard');
