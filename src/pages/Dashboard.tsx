@@ -7,66 +7,7 @@ import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
-const STORAGE_LIMIT = 500 * 1024 * 1024; // 500 MB
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function StorageIndicator({ patterns }: { patterns: PatternWithProgress[] }) {
-  const { t } = useLanguage();
-
-  const sized = patterns.filter((p) => p.file_size != null);
-  const totalBytes = sized.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
-  const pct = Math.min((totalBytes / STORAGE_LIMIT) * 100, 100);
-  const hasPartial = sized.length < patterns.length && patterns.length > 0;
-
-  const gaugeColor = pct > 80 ? '#b5541e' : pct > 60 ? '#c4872a' : '#7a9c72';
-
-  return (
-    <div className="flex flex-col items-center sm:items-end gap-1 mt-4 sm:mt-0">
-      <p className="text-[10px] font-bold tracking-widest uppercase text-[#a08060]">
-        {t('dashboard.storage')}
-      </p>
-
-      {/* Arc gauge */}
-      <svg width="80" height="44" viewBox="0 0 80 44">
-        {/* Track */}
-        <path
-          d="M 6,40 A 34,34 0 0,1 74,40"
-          stroke="#d4b896" strokeWidth="6" fill="none" strokeLinecap="round"
-        />
-        {/* Progress */}
-        <path
-          d="M 6,40 A 34,34 0 0,1 74,40"
-          stroke={gaugeColor} strokeWidth="6" fill="none" strokeLinecap="round"
-          pathLength="100"
-          strokeDasharray={`${pct} 100`}
-        />
-        {/* Center text */}
-        <text
-          x="40" y="36"
-          textAnchor="middle"
-          fontSize="10"
-          fontWeight="700"
-          fill={pct > 0 ? gaugeColor : '#c4a882'}
-        >
-          {pct > 0 ? `${Math.round(pct)}%` : '—'}
-        </text>
-      </svg>
-
-      <p className="text-[10px] text-[#a08060] leading-none">
-        <span style={{ color: gaugeColor }} className="font-semibold">{formatBytes(totalBytes)}</span>
-        <span className="text-[#c4a882]"> / 500 MB</span>
-      </p>
-      {hasPartial && (
-        <p className="text-[8px] text-[#c4a882]">* {t('dashboard.storage.partial')}</p>
-      )}
-    </div>
-  );
-}
+const PATTERN_LIMIT = 2;
 
 export default function Dashboard() {
   return (
@@ -180,15 +121,21 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
               <p className="text-xs text-[#a08060] mt-1 tracking-wide">{t('dashboard.count', { n: patterns.length })}</p>
             )}
           </div>
-          <Link
-            to="/patterns/new"
+          <button
+            onClick={() => {
+              if (patterns.length >= PATTERN_LIMIT) {
+                alert('현재 베타서비스 이므로 한 계정당 도안은 최대 2개만 올릴 수 있습니다. 새로운 도안을 올리려면 기존 도안을 삭제해주세요.');
+                return;
+              }
+              navigate('/patterns/new');
+            }}
             className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             {t('dashboard.addBtn')}
-          </Link>
+          </button>
         </div>
 
         {/* Content */}
@@ -221,14 +168,6 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
           </div>
         )}
       </main>
-
-      {!loading && (
-        <div className="border-t-2 border-[#d4b896] bg-[#faf9f7]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-center gap-2">
-            <StorageIndicator patterns={patterns} />
-          </div>
-        </div>
-      )}
 
       <footer className="border-t-2 border-[#d4b896]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center gap-1.5 text-center text-[11px] text-[#a08060]">
