@@ -23,7 +23,7 @@ body {
 /* Safe area for mobile */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem);
   }
 }
 
