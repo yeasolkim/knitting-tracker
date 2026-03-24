@@ -265,7 +265,7 @@ export default function Landing() {
       <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
         {/* Hero illustration */}
         <div className="mb-4">
-          <MonkeyKnitting className="w-44 h-auto sm:w-52 drop-shadow-sm" />
+          <img src="/monkey-knitting.png" alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
         </div>
 
         {/* Badge */}
