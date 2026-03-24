@@ -19,10 +19,13 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const toPercentX = useCallback((clientX: number) => {
-    if (!containerRef.current) return 50;
+  const toPercent = useCallback((clientX: number, clientY: number) => {
+    if (!containerRef.current) return { x: 50, y: 50 };
     const rect = containerRef.current.getBoundingClientRect();
-    return Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    return {
+      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+    };
   }, []);
 
   const handlePointerDown = useCallback(
@@ -44,12 +47,10 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
     (key: string) => (e: React.PointerEvent) => {
       if (draggingKey !== key) return;
       e.stopPropagation();
-      const pos = positions[key];
-      if (pos) {
-        onPositionChange(key, { ...pos, x: toPercentX(e.clientX) });
-      }
+      const { x, y } = toPercent(e.clientX, e.clientY);
+      onPositionChange(key, { x, y });
     },
-    [draggingKey, positions, onPositionChange, toPercentX]
+    [draggingKey, onPositionChange, toPercent]
   );
 
   const handlePointerUp = useCallback(

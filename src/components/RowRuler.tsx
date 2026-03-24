@@ -33,6 +33,8 @@ const RowRuler = memo(function RowRuler({
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLongPress, setIsLongPress] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartRef = useRef<{ clientY: number; startY: number } | null>(null);
   const { t } = useLanguage();
 
@@ -50,6 +52,7 @@ const RowRuler = memo(function RowRuler({
       setIsDragging(true);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartRef.current = { clientY: e.clientY, startY: positionY };
+      longPressTimerRef.current = setTimeout(() => setIsLongPress(true), 300);
     },
     [positionY, onDragStart]
   );
@@ -70,6 +73,11 @@ const RowRuler = memo(function RowRuler({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
     setIsDragging(false);
+    setIsLongPress(false);
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     dragStartRef.current = null;
   }, []);
 
@@ -150,10 +158,12 @@ const RowRuler = memo(function RowRuler({
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
           onPointerDown={handleBodyPointerDown}
         >
+          {/* Fill — visible on long press */}
+          <div className={`absolute inset-0 transition-colors duration-150 ${isLongPress ? 'bg-rose-400/25' : ''}`} />
           {/* Top edge */}
-          <div className={`absolute top-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
+          <div className={`absolute top-0 inset-x-0 transition-all duration-150 ${isLongPress ? 'h-1 bg-rose-500' : isDragging ? 'h-px bg-rose-500/80' : 'h-px bg-rose-400/70'}`} />
           {/* Bottom edge */}
-          <div className={`absolute bottom-0 inset-x-0 h-px transition-colors ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
+          <div className={`absolute bottom-0 inset-x-0 transition-all duration-150 ${isLongPress ? 'h-1 bg-rose-500' : isDragging ? 'h-px bg-rose-500/80' : 'h-px bg-rose-400/70'}`} />
         </div>
       </div>
 

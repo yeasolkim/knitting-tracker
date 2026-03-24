@@ -166,21 +166,7 @@ export default function PatternNotes({
               placeholder={t('notes.currentPlaceholder')}
               className="w-full h-16 text-sm border-2 border-[#d4b896] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
-            <div className="flex items-center justify-between mt-1.5">
-              <button
-                onClick={() => onPlaceNote(currentKey)}
-                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded-lg border-2 transition-colors ${
-                  notePositions[currentKey]
-                    ? 'bg-amber-500 text-white border-amber-600'
-                    : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
-                }`}
-                title={t('notes.placeNote')}
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
-                </svg>
-                {t('notes.placeNote')}
-              </button>
+            <div className="flex items-center justify-end gap-1.5 mt-1.5">
               <button
                 onClick={handleSaveCurrentNote}
                 disabled={!hasUnsaved && !draftNote.trim()}
@@ -194,6 +180,23 @@ export default function PatternNotes({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 {t('notes.save')}
+              </button>
+              <button
+                onClick={() => onPlaceNote(currentKey)}
+                disabled={hasUnsaved}
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded-lg border-2 transition-colors ${
+                  hasUnsaved
+                    ? 'bg-[#fdf6e8] text-[#c4a882] border-[#d4b896] opacity-40 cursor-not-allowed'
+                    : notePositions[currentKey]
+                      ? 'bg-amber-500 text-white border-amber-600'
+                      : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
+                }`}
+                title={t('notes.placeNote')}
+              >
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
+                </svg>
+                {t('notes.placeNote')}
               </button>
             </div>
           </div>
