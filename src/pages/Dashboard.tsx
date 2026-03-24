@@ -235,7 +235,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
           <p>{t('footer.copyright')}</p>
           <p className="flex items-center gap-3">
             <a
-              href="https://www.instagram.com/kotta_knitting/"
+              href="https://www.instagram.com/knitting_tang_official"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
@@ -244,7 +244,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             </a>
             <span className="text-[#d4b896]">·</span>
             <a
-              href="https://www.instagram.com/kotta_knitting/"
+              href="https://www.instagram.com/knitting_tang_official"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#b5541e] transition-colors underline underline-offset-2"

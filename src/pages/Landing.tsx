@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
+import MonkeyKnitting from '@/components/MonkeyKnitting';
 
-function KottaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
+function KnittingTangIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
   const w = size;
   const h = size * 0.78;
   const mid = h / 2;
@@ -246,7 +247,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#d4b896] bg-[#f5edd6]">
         <div className="flex items-center gap-2">
-          <KottaIcon size={22} color="#b5541e" opacity2={0.4} />
+          <KnittingTangIcon size={22} color="#b5541e" opacity2={0.4} />
           <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
           <span className="text-[9px] font-bold tracking-wider text-[#b5541e] border border-[#b5541e]/40 rounded px-1 py-0.5 leading-none">beta</span>
         </div>
@@ -262,9 +263,9 @@ export default function Landing() {
       </nav>
 
       <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
-        {/* Hero icon */}
-        <div className="mb-6">
-          <KottaIcon size={64} color="#b5541e" opacity2={0.35} />
+        {/* Hero illustration */}
+        <div className="mb-4">
+          <MonkeyKnitting className="w-44 h-auto sm:w-52 drop-shadow-sm" />
         </div>
 
         {/* Badge */}
@@ -336,7 +337,7 @@ export default function Landing() {
         <p>{t('footer.copyright')}</p>
         <p className="flex items-center justify-center gap-3">
           <a
-            href="https://www.instagram.com/kotta_knitting/"
+            href="https://www.instagram.com/knitting_tang_official"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
@@ -345,7 +346,7 @@ export default function Landing() {
           </a>
           <span className="text-[#d4b896]">·</span>
           <a
-            href="https://www.instagram.com/kotta_knitting/"
+            href="https://www.instagram.com/knitting_tang_official"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[#b5541e] transition-colors underline underline-offset-2"

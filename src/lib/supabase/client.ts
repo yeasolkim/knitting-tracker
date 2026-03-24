@@ -12,7 +12,7 @@ export function createClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: 'kotta-auth',
+        storageKey: 'knitting-tang-auth',
       },
     });
   }
