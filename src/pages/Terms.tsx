@@ -108,12 +108,12 @@ export default function Terms() {
             <p className="text-[#7a5c46]">
               약관에 관한 문의는 Instagram{' '}
               <a
-                href="https://www.instagram.com/knitting_in_the_bath"
+                href="https://www.instagram.com/knitting_in_the_sauna"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#b5541e] underline underline-offset-2 hover:text-[#9a4318]"
               >
-                @knitting_in_the_bath
+                @knitting_in_the_sauna
               </a>
               으로 연락해 주세요.
             </p>

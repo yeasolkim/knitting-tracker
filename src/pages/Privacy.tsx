@@ -158,12 +158,12 @@ export default function Privacy() {
               <p><span className="font-semibold">서비스명:</span> 니팅인더사우나 (Knitting in the Sauna)</p>
               <p><span className="font-semibold">문의 채널:</span>{' '}
                 <a
-                  href="https://www.instagram.com/knitting_in_the_bath"
+                  href="https://www.instagram.com/knitting_in_the_sauna"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#b5541e] underline underline-offset-2 hover:text-[#9a4318]"
                 >
-                  Instagram @knitting_in_the_bath
+                  Instagram @knitting_in_the_sauna
                 </a>
               </p>
               <p className="text-xs text-[#a08060] mt-1">개인정보 관련 문의, 열람·삭제 요청은 위 채널로 연락해 주세요.</p>
