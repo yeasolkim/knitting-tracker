@@ -13,7 +13,7 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
   };
 
   return (
-    <nav className="border-b-2 border-[#d4b896] bg-[#f5edd6] sticky top-0 z-50">
+    <nav className="border-b-2 border-[#78b0a8] bg-[#cce6e1] sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link to={userEmail ? '/dashboard' : '/'} className="flex items-center gap-2.5 min-h-[44px]">
           <svg width="18" height="12" viewBox="0 0 18 12" fill="none">

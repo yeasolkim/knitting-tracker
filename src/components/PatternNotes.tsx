@@ -153,9 +153,9 @@ export default function PatternNotes({
       {isOpen && (
         <div className="mt-1.5 space-y-2">
           {/* Current row input */}
-          <div className="bg-[#f5edd6] border-2 border-[#d4b896] rounded-lg p-2.5">
+          <div className="bg-[#cce6e1] border-2 border-[#78b0a8] rounded-lg p-2.5">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] bg-[#fdf6e8] border border-[#d4b896] px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] bg-[#eef8f5] border border-[#78b0a8] px-1.5 py-0.5 rounded">
                 {activeSubPattern.name}
               </span>
               <span className="text-[10px] text-[#a08060]">{currentRow}단</span>
@@ -164,7 +164,7 @@ export default function PatternNotes({
               value={draftNote}
               onChange={(e) => setDraftNote(e.target.value)}
               placeholder={t('notes.currentPlaceholder')}
-              className="w-full h-16 text-sm border-2 border-[#d4b896] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
+              className="w-full h-16 text-sm border-2 border-[#78b0a8] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#eef8f5] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
             <div className="flex items-center justify-end gap-1.5 mt-1.5">
               <button
@@ -172,8 +172,8 @@ export default function PatternNotes({
                 disabled={!hasUnsaved && !draftNote.trim()}
                 className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border-2 transition-all ${
                   hasUnsaved
-                    ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] hover:bg-[#9a4318] shadow-[2px_2px_0_#9a4318] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]'
-                    : 'bg-[#fdf6e8] text-[#a08060] border-[#d4b896] opacity-60'
+                    ? 'bg-[#b5541e] text-[#eef8f5] border-[#9a4318] hover:bg-[#9a4318] shadow-[2px_2px_0_#9a4318] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]'
+                    : 'bg-[#eef8f5] text-[#a08060] border-[#78b0a8] opacity-60'
                 }`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -186,10 +186,10 @@ export default function PatternNotes({
                 disabled={hasUnsaved}
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded-lg border-2 transition-colors ${
                   hasUnsaved
-                    ? 'bg-[#fdf6e8] text-[#c4a882] border-[#d4b896] opacity-40 cursor-not-allowed'
+                    ? 'bg-[#eef8f5] text-[#c4a882] border-[#78b0a8] opacity-40 cursor-not-allowed'
                     : notePositions[currentKey]
                       ? 'bg-amber-500 text-white border-amber-600'
-                      : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
+                      : 'bg-[#eef8f5] text-amber-500 border-amber-300 hover:border-amber-500'
                 }`}
                 title={t('notes.placeNote')}
               >
@@ -203,15 +203,15 @@ export default function PatternNotes({
 
           {/* Grouped notes list */}
           {groupedNotes.length > 0 && (
-            <div ref={scrollRef} className="max-h-28 sm:max-h-48 overflow-y-auto border-t-2 border-[#d4b896] pt-2 space-y-3">
+            <div ref={scrollRef} className="max-h-28 sm:max-h-48 overflow-y-auto border-t-2 border-[#78b0a8] pt-2 space-y-3">
               {groupedNotes.map(({ sub, entries }) => (
                 <div key={sub.id}>
                   <div className="flex items-center gap-1.5 mb-1 px-1">
                     <span
                       className={`text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded border ${
                         sub.id === activeSubPattern.id
-                          ? 'text-[#b5541e] bg-[#fdf6e8] border-[#b5541e]'
-                          : 'text-[#7a5c46] bg-[#f5edd6] border-[#d4b896]'
+                          ? 'text-[#b5541e] bg-[#eef8f5] border-[#b5541e]'
+                          : 'text-[#7a5c46] bg-[#cce6e1] border-[#78b0a8]'
                       }`}
                     >
                       {sub.name}
@@ -228,7 +228,7 @@ export default function PatternNotes({
                           key={key}
                           data-key={key}
                           className={`flex gap-2 items-start group rounded-lg px-2 py-1.5 transition-colors ${
-                            isCurrent ? 'bg-[#f5edd6]' : 'hover:bg-[#f5edd6]'
+                            isCurrent ? 'bg-[#cce6e1]' : 'hover:bg-[#cce6e1]'
                           }`}
                         >
                           <span
@@ -245,7 +245,7 @@ export default function PatternNotes({
                                 autoFocus
                                 value={editingDraft}
                                 onChange={(e) => setEditingDraft(e.target.value)}
-                                className="w-full h-14 text-sm border-2 border-[#d4b896] rounded-lg p-1.5 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f]"
+                                className="w-full h-14 text-sm border-2 border-[#78b0a8] rounded-lg p-1.5 resize-none focus:outline-none focus:border-[#b5541e] bg-[#eef8f5] text-[#3d2b1f]"
                               />
                               <div className="flex gap-1 justify-end">
                                 <button
@@ -256,7 +256,7 @@ export default function PatternNotes({
                                 </button>
                                 <button
                                   onClick={() => handleSaveEditingNote(key)}
-                                  className="text-[10px] font-bold text-[#b5541e] bg-[#fdf6e8] border border-[#b5541e] rounded px-2 py-1"
+                                  className="text-[10px] font-bold text-[#b5541e] bg-[#eef8f5] border border-[#b5541e] rounded px-2 py-1"
                                 >
                                   {t('notes.save')}
                                 </button>
@@ -278,7 +278,7 @@ export default function PatternNotes({
                                 className={`p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors ${
                                   notePositions[key]
                                     ? 'text-amber-500 hover:text-amber-600'
-                                    : 'text-[#d4b896] hover:text-amber-400 sm:opacity-0 sm:group-hover:opacity-100'
+                                    : 'text-[#78b0a8] hover:text-amber-400 sm:opacity-0 sm:group-hover:opacity-100'
                                 }`}
                                 title={t('notes.placeNote')}
                               >
@@ -288,7 +288,7 @@ export default function PatternNotes({
                               </button>
                               <button
                                 onClick={() => onDelete(key)}
-                                className="text-[#d4b896] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                className="text-[#78b0a8] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                 aria-label="메모 삭제"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

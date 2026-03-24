@@ -254,14 +254,14 @@ function EditForm() {
         </label>
         {newFile ? (
           <div className="space-y-2.5">
-            <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#d4b896]">
+            <div className="bg-[#eef8f5] rounded-xl p-4 border-2 border-[#78b0a8]">
               {newPreview ? (
                 <img src={newPreview} alt="미리보기" className="max-h-52 mx-auto rounded-lg object-contain" />
               ) : (
                 <div className="flex items-center justify-center h-28 gap-3">
                   <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
-                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
                   <p className="text-sm text-[#a08060] truncate max-w-[200px]">{newFile.name}</p>
                 </div>
@@ -278,14 +278,14 @@ function EditForm() {
         ) : (
           <div className="space-y-2.5">
             {/* Current file preview */}
-            <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#d4b896]">
+            <div className="bg-[#eef8f5] rounded-xl p-4 border-2 border-[#78b0a8]">
               {displayThumb ? (
                 <img src={displayThumb} alt="현재 파일" className="max-h-52 mx-auto rounded-lg object-contain" />
               ) : (
                 <div className="flex items-center justify-center h-28 gap-3">
                   <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
-                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#d4b896" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
                   <p className="text-sm text-[#a08060]">{currentFileType === 'pdf' ? t('form.filePdf') : t('form.fileImage')}</p>
                 </div>
@@ -309,7 +309,7 @@ function EditForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#78b0a8] bg-[#eef8f5] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.namePlaceholder')}
         />
       </div>
@@ -330,8 +330,8 @@ function EditForm() {
               onClick={() => setType(option.value)}
               className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold tracking-wide transition-all ${
                 type === option.value
-                  ? 'border-[#b5541e] bg-[#b5541e] text-[#fdf6e8]'
-                  : 'border-[#d4b896] bg-[#fdf6e8] text-[#7a5c46] hover:border-[#b5541e]'
+                  ? 'border-[#b5541e] bg-[#b5541e] text-[#eef8f5]'
+                  : 'border-[#78b0a8] bg-[#eef8f5] text-[#7a5c46] hover:border-[#b5541e]'
               }`}
             >
               {option.label}
@@ -349,7 +349,7 @@ function EditForm() {
           type="text"
           value={yarn}
           onChange={(e) => setYarn(e.target.value)}
-          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#78b0a8] bg-[#eef8f5] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.yarnPlaceholder')}
         />
       </div>
@@ -363,7 +363,7 @@ function EditForm() {
           type="text"
           value={needle}
           onChange={(e) => setNeedle(e.target.value)}
-          className="w-full border-2 border-[#d4b896] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#78b0a8] bg-[#eef8f5] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.needlePlaceholder')}
         />
       </div>
@@ -373,7 +373,7 @@ function EditForm() {
       <button
         type="submit"
         disabled={!title || saving}
-        className="w-full bg-[#b5541e] text-[#fdf6e8] py-3 min-h-[48px] rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#9a4318] disabled:opacity-40 disabled:cursor-not-allowed transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+        className="w-full bg-[#b5541e] text-[#eef8f5] py-3 min-h-[48px] rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#9a4318] disabled:opacity-40 disabled:cursor-not-allowed transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
       >
         {saving ? t('form.saving') : t('form.save')}
       </button>

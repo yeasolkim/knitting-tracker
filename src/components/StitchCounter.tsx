@@ -30,7 +30,7 @@ export default function StitchCounter({ count, onChange }: StitchCounterProps) {
       <button
         onClick={() => onChange(count - 1)}
         disabled={count <= 0}
-        className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 transition-colors"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#78b0a8] bg-[#cce6e1] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 transition-colors"
         aria-label="코 감소"
       >
         −
@@ -59,7 +59,7 @@ export default function StitchCounter({ count, onChange }: StitchCounterProps) {
       )}
       <button
         onClick={() => onChange(count + 1)}
-        className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#d4b896] bg-[#f5edd6] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] transition-colors"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#78b0a8] bg-[#cce6e1] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] transition-colors"
         aria-label="코 증가"
       >
         +

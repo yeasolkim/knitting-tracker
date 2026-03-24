@@ -62,8 +62,8 @@ export default function FileDropZone({
         className={`
           border-2 border-dashed rounded-xl p-8 sm:p-12 text-center cursor-pointer transition-all min-h-[140px] flex flex-col items-center justify-center
           ${isDragOver
-            ? 'border-[#b5541e] bg-[#fdf6e8]'
-            : 'border-[#d4b896] bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6]'
+            ? 'border-[#b5541e] bg-[#eef8f5]'
+            : 'border-[#78b0a8] bg-[#eef8f5] hover:border-[#b5541e] hover:bg-[#cce6e1]'
           }
         `}
         onDragOver={(e) => {
@@ -77,8 +77,8 @@ export default function FileDropZone({
         {/* Knit icon */}
         <div className="mb-4">
           <svg width="36" height="24" viewBox="0 0 36 24" fill="none">
-            <path d="M0,12 L9,0 L18,12 L27,0 L36,12" stroke={isDragOver ? '#b5541e' : '#d4b896'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M0,24 L9,12 L18,24 L27,12 L36,24" stroke={isDragOver ? '#b5541e' : '#d4b896'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M0,12 L9,0 L18,12 L27,0 L36,12" stroke={isDragOver ? '#b5541e' : '#78b0a8'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M0,24 L9,12 L18,24 L27,12 L36,24" stroke={isDragOver ? '#b5541e' : '#78b0a8'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
         </div>
         <p className="text-sm font-semibold text-[#3d2b1f] mb-1 tracking-wide">

@@ -21,14 +21,14 @@ export default function Privacy() {
         <div className="space-y-8 text-sm text-[#3d2b1f] leading-relaxed">
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제1조 (개요)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제1조 (개요)</h2>
             <p>
               니팅인더사우나(이하 "서비스")는 이용자의 개인정보를 중요하게 생각합니다. 이 개인정보처리방침은 서비스가 어떤 정보를 수집하고, 어떻게 사용하며, 어떻게 보호하는지 안내합니다. 본 방침은 「개인정보 보호법」 및 관련 법령을 준수합니다.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제2조 (수집하는 개인정보 항목)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제2조 (수집하는 개인정보 항목)</h2>
             <div className="space-y-3">
               <div>
                 <p className="font-semibold mb-1.5">① 회원가입 시 수집 항목</p>
@@ -54,36 +54,36 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제3조 (개인정보 수집 및 이용 목적)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제3조 (개인정보 수집 및 이용 목적)</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#f5edd6]">
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">수집 항목</th>
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">이용 목적</th>
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">보유 기간</th>
+                  <tr className="bg-[#cce6e1]">
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">수집 항목</th>
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">이용 목적</th>
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">보유 기간</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-[#d4b896] px-3 py-2">이메일 주소</td>
-                    <td className="border border-[#d4b896] px-3 py-2">계정 인증, 로그인, 서비스 공지</td>
-                    <td className="border border-[#d4b896] px-3 py-2">회원 탈퇴 시까지</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">이메일 주소</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">계정 인증, 로그인, 서비스 공지</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">회원 탈퇴 시까지</td>
                   </tr>
-                  <tr className="bg-[#fdf6e8]">
-                    <td className="border border-[#d4b896] px-3 py-2">도안 파일</td>
-                    <td className="border border-[#d4b896] px-3 py-2">서비스 제공 (도안 표시)</td>
-                    <td className="border border-[#d4b896] px-3 py-2">이용자 삭제 또는 탈퇴 시까지</td>
+                  <tr className="bg-[#eef8f5]">
+                    <td className="border border-[#78b0a8] px-3 py-2">도안 파일</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">서비스 제공 (도안 표시)</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">이용자 삭제 또는 탈퇴 시까지</td>
                   </tr>
                   <tr>
-                    <td className="border border-[#d4b896] px-3 py-2">진행 데이터</td>
-                    <td className="border border-[#d4b896] px-3 py-2">뜨개 진행 현황 저장 및 복원</td>
-                    <td className="border border-[#d4b896] px-3 py-2">이용자 삭제 또는 탈퇴 시까지</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">진행 데이터</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">뜨개 진행 현황 저장 및 복원</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">이용자 삭제 또는 탈퇴 시까지</td>
                   </tr>
-                  <tr className="bg-[#fdf6e8]">
-                    <td className="border border-[#d4b896] px-3 py-2">접속 로그</td>
-                    <td className="border border-[#d4b896] px-3 py-2">서비스 안정성 확인, 부정 이용 방지</td>
-                    <td className="border border-[#d4b896] px-3 py-2">3개월</td>
+                  <tr className="bg-[#eef8f5]">
+                    <td className="border border-[#78b0a8] px-3 py-2">접속 로그</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">서비스 안정성 확인, 부정 이용 방지</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">3개월</td>
                   </tr>
                 </tbody>
               </table>
@@ -91,30 +91,30 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제4조 (개인정보의 제3자 제공 및 국외 이전)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제4조 (개인정보의 제3자 제공 및 국외 이전)</h2>
             <p className="mb-3">서비스는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 단, 아래의 경우 서비스 운영을 위해 개인정보가 국외 서버에 저장됩니다.</p>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#f5edd6]">
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">수탁업체</th>
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">이전 국가</th>
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">이전 항목</th>
-                    <th className="border border-[#d4b896] px-3 py-2 text-left font-bold">목적</th>
+                  <tr className="bg-[#cce6e1]">
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">수탁업체</th>
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">이전 국가</th>
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">이전 항목</th>
+                    <th className="border border-[#78b0a8] px-3 py-2 text-left font-bold">목적</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-[#d4b896] px-3 py-2">Supabase Inc.</td>
-                    <td className="border border-[#d4b896] px-3 py-2">미국</td>
-                    <td className="border border-[#d4b896] px-3 py-2">이메일, 진행 데이터</td>
-                    <td className="border border-[#d4b896] px-3 py-2">데이터베이스 및 인증 서비스</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">Supabase Inc.</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">미국</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">이메일, 진행 데이터</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">데이터베이스 및 인증 서비스</td>
                   </tr>
-                  <tr className="bg-[#fdf6e8]">
-                    <td className="border border-[#d4b896] px-3 py-2">Cloudflare Inc.</td>
-                    <td className="border border-[#d4b896] px-3 py-2">미국</td>
-                    <td className="border border-[#d4b896] px-3 py-2">도안 파일</td>
-                    <td className="border border-[#d4b896] px-3 py-2">파일 저장 서비스 (R2)</td>
+                  <tr className="bg-[#eef8f5]">
+                    <td className="border border-[#78b0a8] px-3 py-2">Cloudflare Inc.</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">미국</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">도안 파일</td>
+                    <td className="border border-[#78b0a8] px-3 py-2">파일 저장 서비스 (R2)</td>
                   </tr>
                 </tbody>
               </table>
@@ -123,7 +123,7 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제5조 (개인정보의 파기)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제5조 (개인정보의 파기)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 이용자가 계정을 삭제하면 이메일을 포함한 계정 정보 및 업로드한 도안 파일, 진행 데이터가 즉시 삭제됩니다.</li>
               <li>② 법령에 의해 보존이 필요한 경우 해당 기간 동안 별도 보관 후 파기합니다.</li>
@@ -132,7 +132,7 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제6조 (이용자의 권리)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제6조 (이용자의 권리)</h2>
             <p className="mb-2">이용자는 언제든지 다음의 권리를 행사할 수 있습니다.</p>
             <ul className="list-disc list-inside text-[#5a3e2e] space-y-1 pl-2">
               <li>개인정보 열람 요청</li>
@@ -144,7 +144,7 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제7조 (쿠키 및 세션)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제7조 (쿠키 및 세션)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 서비스는 로그인 상태 유지를 위해 브라우저 로컬스토리지에 인증 토큰을 저장합니다.</li>
               <li>② 별도의 광고 목적 쿠키는 사용하지 않습니다.</li>
@@ -153,8 +153,8 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제8조 (개인정보 보호책임자)</h2>
-            <div className="bg-[#fdf6e8] border-2 border-[#d4b896] rounded-xl p-4 space-y-1">
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제8조 (개인정보 보호책임자)</h2>
+            <div className="bg-[#eef8f5] border-2 border-[#78b0a8] rounded-xl p-4 space-y-1">
               <p><span className="font-semibold">서비스명:</span> 니팅인더사우나 (Knitting in the Sauna)</p>
               <p><span className="font-semibold">문의 채널:</span>{' '}
                 <a
@@ -171,7 +171,7 @@ export default function Privacy() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제9조 (방침 변경)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#78b0a8]">제9조 (방침 변경)</h2>
             <p>
               이 개인정보처리방침은 법령 또는 서비스 정책 변경 시 개정될 수 있습니다. 변경 시 서비스 내 공지를 통해 안내하며, 중요한 변경사항은 시행일 7일 전에 사전 공지합니다.
             </p>
