@@ -890,7 +890,7 @@ function PatternViewerPage({ pattern }: Props) {
             <ProgressBar current={activeSub?.current_row || 0} total={activeSub?.total_rows || 1} />
           </div>
         </div>
-        <div className="px-3 sm:px-4 pb-3 sm:pb-3 mt-2 sm:mt-3 space-y-2 sm:space-y-3 overflow-y-auto max-h-[52vh] sm:max-h-[36vh]">
+        <div className="px-3 sm:px-4 pb-8 sm:pb-3 mt-2 sm:mt-3 space-y-2 sm:space-y-3 overflow-y-auto max-h-[46vh] sm:max-h-[36vh]">
 
         {isCrochet ? (
           <div className="flex items-center justify-between gap-2 sm:gap-3">
