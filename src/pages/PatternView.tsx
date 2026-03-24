@@ -626,7 +626,7 @@ function PatternViewerPage({ pattern }: Props) {
   });
 
   return (
-    <div className="flex flex-col h-screen bg-[#f5edd6]">
+    <div className="flex flex-col h-[100dvh] bg-[#f5edd6]">
       {/* Top bar */}
       <div className="bg-[#f5edd6] border-b-2 border-[#d4b896] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
