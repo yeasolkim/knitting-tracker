@@ -23,14 +23,14 @@ export default function Terms() {
           <section>
             <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제1조 (목적)</h2>
             <p>
-              이 약관은 니팅탕(이하 "서비스")가 제공하는 뜨개질 도안 진행 추적 서비스의 이용 조건 및 절차, 서비스 제공자와 이용자의 권리·의무·책임 사항을 규정함을 목적으로 합니다.
+              이 약관은 니팅인더배스(이하 "서비스")가 제공하는 뜨개질 도안 진행 추적 서비스의 이용 조건 및 절차, 서비스 제공자와 이용자의 권리·의무·책임 사항을 규정함을 목적으로 합니다.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#d4b896]">제2조 (정의)</h2>
             <ul className="space-y-1.5 list-none">
-              <li><span className="font-semibold">① "서비스"</span>란 니팅탕이 제공하는 웹 애플리케이션 및 관련 서비스 일체를 말합니다.</li>
+              <li><span className="font-semibold">① "서비스"</span>란 니팅인더배스가 제공하는 웹 애플리케이션 및 관련 서비스 일체를 말합니다.</li>
               <li><span className="font-semibold">② "이용자"</span>란 이 약관에 동의하고 서비스를 이용하는 자를 말합니다.</li>
               <li><span className="font-semibold">③ "계정"</span>이란 이용자가 서비스 이용을 위해 등록한 이메일 및 인증 정보를 말합니다.</li>
               <li><span className="font-semibold">④ "콘텐츠"</span>란 이용자가 서비스에 업로드하는 도안 파일, 메모, 진행 정보 등 일체의 데이터를 말합니다.</li>

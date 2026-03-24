@@ -22,7 +22,7 @@ const LanguageContext = createContext<LanguageContextValue>({
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
-    const stored = localStorage.getItem('knitting_tang_lang') as Lang | null;
+    const stored = localStorage.getItem('knitting_in_the_bath_lang') as Lang | null;
     return isValidLang(stored) ? stored : 'ko';
   });
 
@@ -33,7 +33,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const metaLang = session?.user?.user_metadata?.language;
       if (isValidLang(metaLang)) {
         setLangState(metaLang);
-        localStorage.setItem('knitting_tang_lang', metaLang);
+        localStorage.setItem('knitting_in_the_bath_lang', metaLang);
       }
     });
 
@@ -41,7 +41,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const metaLang = session?.user?.user_metadata?.language;
       if (isValidLang(metaLang)) {
         setLangState(metaLang);
-        localStorage.setItem('knitting_tang_lang', metaLang);
+        localStorage.setItem('knitting_in_the_bath_lang', metaLang);
       }
     });
 
@@ -50,7 +50,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
-    localStorage.setItem('knitting_tang_lang', newLang);
+    localStorage.setItem('knitting_in_the_bath_lang', newLang);
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         supabase.auth.updateUser({ data: { language: newLang } });
