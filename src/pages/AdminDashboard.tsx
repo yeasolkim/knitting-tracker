@@ -50,10 +50,16 @@ export default function AdminDashboard() {
       if (patternsRes.data) setPatterns(ps);
       setLoading(false);
 
-      // 썸네일 크기 HEAD 요청으로 측정
-      const thumbUrls = ps.map(p => p.thumbnail_url).filter(Boolean) as string[];
+      // file_size 없는 원본 + 모든 썸네일 → HEAD 요청으로 크기 측정
+      const headTargets = ps.flatMap(p => {
+        const targets: string[] = [];
+        if (!p.file_size && p.file_url) targets.push(p.file_url);
+        if (p.thumbnail_url) targets.push(p.thumbnail_url);
+        return targets;
+      }).filter(Boolean) as string[];
+
       Promise.all(
-        thumbUrls.map(url =>
+        headTargets.map(url =>
           fetch(url, { method: 'HEAD' })
             .then(r => parseInt(r.headers.get('content-length') ?? '0', 10))
             .catch(() => 0)
@@ -67,25 +73,32 @@ export default function AdminDashboard() {
     navigate('/admin');
   };
 
+  const deleteR2Files = async (urls: string[]) => {
+    if (urls.length === 0) return true;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}` },
+          body: JSON.stringify({ urls }),
+        },
+      );
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const handleDeletePattern = async (pattern: Pattern) => {
     if (!confirm(`"${pattern.title || '(제목 없음)'}" 도안을 삭제할까요?`)) return;
 
     const client = createAdminClient();
 
-    // R2 파일 삭제
     const urls = [...new Set([pattern.file_url, pattern.thumbnail_url].filter(Boolean))] as string[];
-    if (urls.length > 0) {
-      fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
-          },
-          body: JSON.stringify({ urls }),
-        },
-      ).catch(() => {});
+    const r2ok = await deleteR2Files(urls);
+    if (!r2ok) {
+      if (!confirm('R2 파일 삭제에 실패했어요. DB 기록만 삭제할까요?')) return;
     }
 
     await Promise.all([
@@ -111,15 +124,12 @@ export default function AdminDashboard() {
     const urls = [...new Set(
       userPatterns.flatMap(p => [p.file_url, p.thumbnail_url]).filter(Boolean)
     )] as string[];
-    if (urls.length > 0) {
-      fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}` },
-          body: JSON.stringify({ urls }),
-        },
-      ).catch(() => {});
+    const r2ok = await deleteR2Files(urls);
+    if (!r2ok && urls.length > 0) {
+      if (!confirm('R2 파일 삭제에 실패했어요. DB 기록만 삭제할까요?')) {
+        setDeleting(false);
+        return;
+      }
     }
 
     // DB 삭제 (pattern_progress → patterns → user)
@@ -161,6 +171,7 @@ export default function AdminDashboard() {
         {/* Stats */}
         {(() => {
           const fileBytes = patterns.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
+          // thumbnailTotalBytes에는 썸네일 + file_size null 원본 파일 크기가 포함됨
           const totalBytes = fileBytes + (thumbnailTotalBytes ?? 0);
           const formatSize = (bytes: number) => {
             if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
@@ -186,7 +197,7 @@ export default function AdminDashboard() {
                 </p>
                 {thumbnailTotalBytes !== null && (
                   <p className="text-[10px] text-[#a08060] mt-1">
-                    파일 {formatSize(fileBytes)} + 썸네일 {formatSize(thumbnailTotalBytes)}
+                    DB기록 {formatSize(fileBytes)} + 실측 {formatSize(thumbnailTotalBytes)}
                   </p>
                 )}
               </div>

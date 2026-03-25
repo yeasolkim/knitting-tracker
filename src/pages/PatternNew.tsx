@@ -105,6 +105,10 @@ function UploadForm() {
       const user = session.user;
       accessToken = session.access_token;
 
+      // 패턴 개수 한도 체크
+      const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
+      if ((count ?? 0) >= 8) throw new Error('베타 서비스 기간에는 최대 8개까지만 등록할 수 있어요.');
+
       const isPdf = file.type === 'application/pdf';
 
       const thumbPromise = isPdf ? generatePdfThumbnail(file).catch(() => null) : null;
