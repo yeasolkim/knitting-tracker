@@ -177,7 +177,8 @@ export default function AdminDashboard() {
         {(() => {
           const fileBytes = patterns.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
           // thumbnailTotalBytes에는 썸네일 + file_size null 원본 파일 크기가 포함됨
-          const totalBytes = fileBytes + (thumbnailTotalBytes ?? 0);
+          const rawBytes = fileBytes + (thumbnailTotalBytes ?? 0);
+          const totalBytes = rawBytes * 1.7;
           const formatSize = (bytes: number) => {
             if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
             if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
@@ -202,7 +203,7 @@ export default function AdminDashboard() {
                 </p>
                 {thumbnailTotalBytes !== null && (
                   <p className="text-[10px] text-[#a08060] mt-1">
-                    DB기록 {formatSize(fileBytes)} + 실측 {formatSize(thumbnailTotalBytes)}
+                    실측 {formatSize(rawBytes)} × 1.7
                   </p>
                 )}
               </div>
