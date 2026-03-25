@@ -148,12 +148,6 @@ function PatternViewerPage({ pattern }: Props) {
   const [imgH, setImgH] = useState(0);
   const [imgW, setImgW] = useState(0);
 
-  // Saved view transform from DB (null = not saved yet → fall back to goToRuler)
-  const savedViewScale = pattern.progress?.view_scale as number | null ?? null;
-  const savedViewX     = pattern.progress?.view_x     as number | null ?? null;
-  const savedViewY     = pattern.progress?.view_y     as number | null ?? null;
-  const hasSavedView   = savedViewScale != null && savedViewX != null && savedViewY != null;
-
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
 
@@ -162,19 +156,14 @@ function PatternViewerPage({ pattern }: Props) {
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
       initialScrollDoneRef.current = true;
-      // Double RAF: ensures browser has fully laid out the image before restoring
+      // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (hasSavedView) {
-            viewerRef.current?.restoreTransform(savedViewScale!, savedViewX!, savedViewY!);
-          } else {
-            viewerRef.current?.goToRuler();
-          }
+          viewerRef.current?.goToRuler();
         });
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSavedView, savedViewScale, savedViewX, savedViewY]);
+  }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
   const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
