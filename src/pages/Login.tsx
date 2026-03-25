@@ -44,44 +44,6 @@ export default function Login() {
     setGuestLoading(false);
   };
 
-  const siteLoginUrl = 'https://kis.marihoworld.com/#/login';
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  const handleOpenBrowser = () => {
-    if (isIOS) {
-      alert('화면 하단 메뉴(···)를 탭한 후\n"Safari에서 열기"를 선택해주세요.');
-    } else {
-      // Android: intent:// forces Chrome — use base domain to avoid # conflict
-      window.location.href = 'intent://kis.marihoworld.com#Intent;scheme=https;package=com.android.chrome;end';
-    }
-  };
-
-  const handleCopyUrl = () => {
-    const copy = () => {
-      try {
-        const el = document.createElement('textarea');
-        el.value = siteLoginUrl;
-        el.style.position = 'fixed';
-        el.style.opacity = '0';
-        document.body.appendChild(el);
-        el.focus();
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂');
-      } catch {
-        alert(`주소를 직접 입력해주세요:\n${siteLoginUrl}`);
-      }
-    };
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(siteLoginUrl)
-        .then(() => alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂'))
-        .catch(copy);
-    } else {
-      copy();
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -122,28 +84,28 @@ export default function Login() {
 
           {inApp ? (
             <div className="flex flex-col gap-3">
-              <div className="bg-amber-50 border-2 border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800 text-center leading-relaxed">
-                <p className="font-bold mb-1">앱 내 브라우저에서는 Google 로그인이 제한돼요</p>
-                <p className="text-xs text-amber-700">인스타그램, 카카오톡 등의 앱에서 열면 구글이 로그인을 차단해요. {isIOS ? 'Safari' : 'Chrome'} 브라우저에서 열어주세요.</p>
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-lg px-4 py-4 text-sm text-amber-800 text-center leading-relaxed">
+                <p className="font-bold mb-2">앱 내 브라우저에서는 로그인이 제한돼요</p>
+                <p className="text-xs text-amber-700">인스타그램, 카카오톡 등 앱에서 열면 Google 로그인이 차단돼요.<br/>Chrome 또는 Safari 브라우저에서 접속해주세요.</p>
+                <p className="text-xs text-amber-600 mt-2 font-medium">kis.marihoworld.com</p>
               </div>
               <button
-                onClick={handleOpenBrowser}
-                className="w-full flex items-center justify-center gap-2 bg-[#b5541e] text-[#fdf6e8] border-2 border-[#9a4318] rounded-lg px-4 py-3 min-h-[48px] text-sm font-semibold tracking-wide hover:bg-[#9a4318] transition-all shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                onClick={handleGuestLogin}
+                disabled={guestLoading}
+                className="w-full flex items-center justify-center gap-2 bg-[#fdf6e8] text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-4 py-3 min-h-[48px] text-sm font-medium tracking-wide hover:bg-[#f5edd6] transition-all disabled:opacity-50"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                {isIOS ? 'Safari에서 여는 법 보기' : 'Chrome으로 열기'}
+                {guestLoading ? (
+                  <div className="w-4 h-4 border-2 border-[#b07840] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                )}
+                비회원으로 시작하기
               </button>
-              <button
-                onClick={handleCopyUrl}
-                className="w-full flex items-center justify-center gap-2 bg-[#fdf6e8] text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-4 py-2.5 min-h-[44px] text-xs font-medium tracking-wide hover:bg-[#f5edd6] transition-all"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                주소 복사하기 (Chrome에 붙여넣기)
-              </button>
+              <p className="text-[10px] text-[#a08060] text-center leading-relaxed">
+                비회원은 이 기기에서만 데이터가 저장돼요.<br/>브라우저 데이터 삭제 시 내용이 사라질 수 있어요.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
