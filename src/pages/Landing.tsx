@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import monkeyImg from '@/assets/monkey-knitting.png';
 
@@ -241,6 +242,20 @@ function AppMockup() {
 
 export default function Landing() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMonkeyTap = () => {
+    tapCount.current += 1;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (tapCount.current >= 10) {
+      tapCount.current = 0;
+      navigate('/admin');
+      return;
+    }
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -263,8 +278,8 @@ export default function Landing() {
       </nav>
 
       <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
-        {/* Hero illustration */}
-        <div className="mb-4">
+        {/* Hero illustration — 10번 탭하면 관리자 로그인 */}
+        <div className="mb-4 cursor-pointer select-none" onClick={handleMonkeyTap}>
           <img src={monkeyImg} alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
         </div>
 

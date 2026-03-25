@@ -9,6 +9,8 @@ import PatternEdit from './pages/PatternEdit';
 import PatternView from './pages/PatternView';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { createClient } from './lib/supabase/client';
@@ -68,6 +70,8 @@ export default function App() {
         <Route path="/patterns/:id" element={<PatternView />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Routes>
     </HashRouter>
     </LanguageProvider>
