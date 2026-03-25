@@ -45,17 +45,42 @@ export default function Login() {
   };
 
   const siteLoginUrl = 'https://kis.marihoworld.com/#/login';
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const handleOpenBrowser = () => {
-    // Android: intent:// scheme forces Chrome to open
-    const intentUrl = `intent://${siteLoginUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
-    window.location.href = intentUrl;
+    if (isIOS) {
+      alert('화면 하단 메뉴(···)를 탭한 후\n"Safari에서 열기"를 선택해주세요.');
+    } else {
+      // Android: intent:// forces Chrome — use base domain to avoid # conflict
+      window.location.href = 'intent://kis.marihoworld.com#Intent;scheme=https;package=com.android.chrome;end';
+    }
   };
 
   const handleCopyUrl = () => {
-    navigator.clipboard.writeText(siteLoginUrl).then(() => {
-      alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂');
-    });
+    const copy = () => {
+      try {
+        const el = document.createElement('textarea');
+        el.value = siteLoginUrl;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂');
+      } catch {
+        alert(`주소를 직접 입력해주세요:\n${siteLoginUrl}`);
+      }
+    };
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(siteLoginUrl)
+        .then(() => alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂'))
+        .catch(copy);
+    } else {
+      copy();
+    }
   };
 
   return (
@@ -99,7 +124,7 @@ export default function Login() {
             <div className="flex flex-col gap-3">
               <div className="bg-amber-50 border-2 border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800 text-center leading-relaxed">
                 <p className="font-bold mb-1">앱 내 브라우저에서는 Google 로그인이 제한돼요</p>
-                <p className="text-xs text-amber-700">인스타그램, 카카오톡 등의 앱에서 열면 구글이 로그인을 차단해요. Chrome 브라우저에서 열어주세요.</p>
+                <p className="text-xs text-amber-700">인스타그램, 카카오톡 등의 앱에서 열면 구글이 로그인을 차단해요. {isIOS ? 'Safari' : 'Chrome'} 브라우저에서 열어주세요.</p>
               </div>
               <button
                 onClick={handleOpenBrowser}
@@ -108,7 +133,7 @@ export default function Login() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Chrome으로 열기
+                {isIOS ? 'Safari에서 여는 법 보기' : 'Chrome으로 열기'}
               </button>
               <button
                 onClick={handleCopyUrl}
