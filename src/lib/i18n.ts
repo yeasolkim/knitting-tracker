@@ -287,7 +287,7 @@ const en: Translations = {
 
 const ja: Translations = {
   // app
-  'app.name': 'コッタ',
+  'app.name': 'Knitting in the Sauna',
   // nav
   'nav.login': 'ログイン',
   'nav.logout': 'ログアウト',
@@ -296,7 +296,7 @@ const ja: Translations = {
   'landing.hero1': '途中で止まっても',
   'landing.hero2': '大丈夫。',
   'landing.sub1': 'どこまで編んだか忘れても、',
-  'landing.sub2': 'コッタが覚えています。',
+  'landing.sub2': 'Knitting in the Saunaが覚えています。',
   'landing.cta': 'Googleではじめる',
   'landing.feat.imagePdf': '画像 & PDF',
   'landing.feat.imagePdfDesc': '編み図をアップロード',
@@ -307,11 +307,11 @@ const ja: Translations = {
   'landing.feat.save': '自動保存',
   'landing.feat.saveDesc': '閉じても続きから',
   // login
-  'login.welcome': 'コッタへようこそ',
+  'login.welcome': 'Knitting in the Saunaへようこそ',
   'login.subtitle': 'ログインして編み図を管理しよう',
   'login.google': 'Googleでログイン',
   // footer
-  'footer.copyright': '© 2026 コッタ · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': 'ビジネスのお問い合わせ',
   'footer.bug': 'バグを報告',
   // dashboard
@@ -421,7 +421,7 @@ const ja: Translations = {
 
 const zh: Translations = {
   // app
-  'app.name': '니팅인더사우나',
+  'app.name': 'Knitting in the Sauna',
   // nav
   'nav.login': '登录',
   'nav.logout': '退出',
@@ -430,7 +430,7 @@ const zh: Translations = {
   'landing.hero1': '编到一半停下来',
   'landing.hero2': '也没关系。',
   'landing.sub1': '就算忘了编到哪一行，',
-  'landing.sub2': '니팅인더사우나会帮你记住。',
+  'landing.sub2': 'Knitting in the Sauna会帮你记住。',
   'landing.cta': '用 Google 开始',
   'landing.feat.imagePdf': '图片 & PDF',
   'landing.feat.imagePdfDesc': '上传编织图文件',
@@ -441,11 +441,11 @@ const zh: Translations = {
   'landing.feat.save': '自动保存',
   'landing.feat.saveDesc': '随时关闭随时继续',
   // login
-  'login.welcome': '欢迎来到니팅인더사우나',
+  'login.welcome': '欢迎来到 Knitting in the Sauna',
   'login.subtitle': '登录后管理你的编织图',
   'login.google': '用 Google 登录',
   // footer
-  'footer.copyright': '© 2026 니팅인더사우나 · All rights reserved.',
+  'footer.copyright': '© 2026 Knitting in the Sauna · All rights reserved.',
   'footer.business': '商务合作',
   'footer.bug': '反馈问题',
   // dashboard
