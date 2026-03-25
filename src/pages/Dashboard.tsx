@@ -146,6 +146,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
           모바일에서 도안파일이 잘 열리지 않는 경우, 아이패드나 노트북에서 확인 가능해요.
         </p>
+        {isAnonymous && (
+          <p className="text-[11px] text-[#a08060] text-center mb-4">
+            제작자의 사비로 운영되는 사이트라, 비회원 화면의 도면 파일은 불시에 삭제될 수 있어요.ㅠㅜ
+          </p>
+        )}
         {patterns.length === 0 ? (
           /* 빈 상태: 전체 중앙 정렬 */
           <div className="flex flex-col items-center justify-center py-16 text-center">
