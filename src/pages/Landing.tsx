@@ -279,7 +279,7 @@ export default function Landing() {
 
       <main className="flex-1 flex flex-col items-center px-5 text-center py-12 sm:py-16">
         {/* Hero illustration — 10번 탭하면 관리자 로그인 */}
-        <div className="mb-4 cursor-pointer select-none" onClick={handleMonkeyTap}>
+        <div className="mb-4 cursor-default select-none" onClick={handleMonkeyTap}>
           <img src={monkeyImg} alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
         </div>
 
