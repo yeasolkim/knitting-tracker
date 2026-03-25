@@ -15,6 +15,35 @@ export default function Login() {
   const navigate = useNavigate();
   const inApp = isInAppBrowser();
   const [guestLoading, setGuestLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const siteUrl = 'https://kis.marihoworld.com';
+
+  const handleCopyUrl = () => {
+    const copy = () => {
+      try {
+        const el = document.createElement('textarea');
+        el.value = siteUrl;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        alert(`주소를 직접 입력해주세요:\n${siteUrl}`);
+      }
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(siteUrl)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+        .catch(copy);
+    } else {
+      copy();
+    }
+  };
 
   const handleGoogleLogin = async () => {
     const siteUrl = window.location.origin;
@@ -82,6 +111,15 @@ export default function Login() {
                 <p className="text-xs text-amber-700">인스타그램, 카카오톡 등 앱에서 열면 Google 로그인이 차단돼요.<br/>Chrome 또는 Safari 브라우저에서 접속해주세요.</p>
                 <p className="text-xs text-amber-600 mt-2 font-medium">kis.marihoworld.com</p>
               </div>
+              <button
+                onClick={handleCopyUrl}
+                className="w-full flex items-center justify-center gap-2 bg-[#fdf6e8] text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-4 py-3 min-h-[48px] text-sm font-medium tracking-wide hover:bg-[#f5edd6] transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                {copied ? '복사됐어요!' : '주소 복사하기'}
+              </button>
               <button
                 onClick={handleGuestLogin}
                 disabled={guestLoading}
