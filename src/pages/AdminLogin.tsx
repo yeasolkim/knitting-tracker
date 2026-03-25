@@ -45,6 +45,20 @@ export default function AdminLogin() {
             로그인
           </button>
         </form>
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-[#b07840]/30">
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full py-2.5 text-sm text-[#7a5c46] hover:text-[#3d2b1f] border-2 border-[#b07840] rounded-lg hover:bg-[#f5edd6] transition-colors"
+          >
+            회원으로 로그인하기
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-2 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors"
+          >
+            홈화면으로 돌아가기
+          </button>
+        </div>
       </div>
     </div>
   );
