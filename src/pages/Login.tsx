@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -71,14 +71,14 @@ export default function Login() {
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="px-5 sm:px-8 h-14 flex items-center border-b-2 border-[#b07840]">
-        <div className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5">
           <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
             <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
           <span className="font-bold text-[#3d2b1f] tracking-tight">{t('app.name')}</span>
           <span className="text-[9px] font-bold tracking-wider text-[#b5541e] border border-[#b5541e]/40 rounded px-1 py-0.5 leading-none">beta</span>
-        </div>
+        </Link>
       </nav>
 
       <main className="flex-1 flex items-center justify-center px-4">
