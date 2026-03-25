@@ -122,15 +122,15 @@ export function LanguageToggle() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-[#eef8f5] border-2 border-[#78b0a8] rounded-xl shadow-[3px_3px_0_#78b0a8] z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 w-36 bg-[#fdf6e8] border-2 border-[#c4a07a] rounded-xl shadow-[3px_3px_0_#c4a07a] z-50 overflow-hidden">
           {LANGUAGES.map((l) => (
             <button
               key={l.code}
               onClick={() => { setLang(l.code); setOpen(false); }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-wide transition-colors ${
                 lang === l.code
-                  ? 'bg-[#cce6e1] text-[#b5541e] font-bold'
-                  : 'text-[#7a5c46] hover:bg-[#cce6e1] hover:text-[#3d2b1f] font-medium'
+                  ? 'bg-[#f5edd6] text-[#b5541e] font-bold'
+                  : 'text-[#7a5c46] hover:bg-[#f5edd6] hover:text-[#3d2b1f] font-medium'
               }`}
             >
               <span>{l.native}</span>

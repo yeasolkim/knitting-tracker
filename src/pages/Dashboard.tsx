@@ -88,7 +88,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="bg-[#cce6e1] border-b-2 border-[#78b0a8] sticky top-0 z-50">
+      <nav className="bg-[#f5edd6] border-b-2 border-[#c4a07a] sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
@@ -129,7 +129,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
               }
               navigate('/patterns/new');
             }}
-            className="inline-flex items-center gap-2 bg-[#b5541e] text-[#eef8f5] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
+            className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -145,7 +145,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
           </div>
         ) : patterns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-xl bg-[#eef8f5] border-2 border-[#78b0a8] flex items-center justify-center mb-5 shadow-[3px_3px_0_#78b0a8]">
+            <div className="w-16 h-16 rounded-xl bg-[#fdf6e8] border-2 border-[#c4a07a] flex items-center justify-center mb-5 shadow-[3px_3px_0_#c4a07a]">
               <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
                 <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -169,7 +169,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         )}
       </main>
 
-      <footer className="border-t-2 border-[#78b0a8]">
+      <footer className="border-t-2 border-[#c4a07a]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center gap-1.5 text-center text-[11px] text-[#a08060]">
           <p>{t('footer.copyright')}</p>
           <p className="flex items-center gap-3">
@@ -181,7 +181,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             >
               {t('footer.business')}
             </a>
-            <span className="text-[#78b0a8]">·</span>
+            <span className="text-[#c4a07a]">·</span>
             <a
               href="https://www.instagram.com/knitting_in_the_sauna"
               target="_blank"
@@ -198,7 +198,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
             >
               이용약관
             </Link>
-            <span className="text-[#78b0a8]">·</span>
+            <span className="text-[#c4a07a]">·</span>
             <Link
               to="/privacy"
               className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold"

@@ -351,14 +351,14 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-14">
           <button
             onClick={zoomIn}
-            className="h-11 bg-[#eef8f5]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#78b0a8] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#cce6e1] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#c4a07a] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="확대"
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="h-11 bg-[#eef8f5]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#78b0a8] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#cce6e1] transition-colors"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#c4a07a] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label="축소"
           >
             −
@@ -369,7 +369,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1.5 z-20 w-16">
           <button
             onClick={goToRuler}
-            className="h-12 bg-[#eef8f5]/90 backdrop-blur-sm rounded-xl border-2 border-[#78b0a8] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#cce6e1] transition-colors"
+            className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#c4a07a] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label={t('viewer.goToRuler')}
           >
             <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
@@ -378,7 +378,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           {onResetRuler && (
             <button
               onClick={onResetRuler}
-              className="h-12 bg-[#eef8f5]/90 backdrop-blur-sm rounded-xl border-2 border-[#78b0a8] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#cce6e1] transition-colors"
+              className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#c4a07a] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
               aria-label={t('viewer.bringRuler')}
             >
               <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>

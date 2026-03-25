@@ -46,7 +46,7 @@ function AppMockup() {
 
       {/* ── Callout: 진행선 ── */}
       <div className="absolute z-10 flex items-center gap-1.5" style={{ right: -10, top: 148 }}>
-        <div className="bg-[#b5541e] text-[#eef8f5] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
           {t('landing.feat.ruler')}
         </div>
         <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
@@ -59,7 +59,7 @@ function AppMockup() {
         <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
           <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <div className="bg-[#b5541e] text-[#eef8f5] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
           {t('landing.mockup.completedMark')}
         </div>
       </div>
@@ -69,7 +69,7 @@ function AppMockup() {
         <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
           <path d="M2 5H16M12 1L16 5L12 9" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <div className="bg-[#b5541e] text-[#eef8f5] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[9px] font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
           {t('landing.feat.counter')}
         </div>
       </div>
@@ -82,12 +82,12 @@ function AppMockup() {
         <div className="bg-[#faf9f7] rounded-[2rem] overflow-hidden">
 
           {/* Status notch */}
-          <div className="h-6 bg-[#cce6e1] flex items-center justify-center">
+          <div className="h-6 bg-[#f5edd6] flex items-center justify-center">
             <div className="w-16 h-1 bg-[#3d2b1f] rounded-full opacity-20" />
           </div>
 
           {/* App header */}
-          <div className="bg-[#cce6e1] border-b-2 border-[#78b0a8] px-2.5 py-2 flex items-center justify-between">
+          <div className="bg-[#f5edd6] border-b-2 border-[#c4a07a] px-2.5 py-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M7 2L3 5L7 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -95,7 +95,7 @@ function AppMockup() {
               <div>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] font-bold text-[#3d2b1f] tracking-tight">{t('landing.mockup.patternName')}</span>
-                  <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#eef8f5] px-1 py-0.5 rounded leading-none">{t('card.type.knitting')}</span>
+                  <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#fdf6e8] px-1 py-0.5 rounded leading-none">{t('card.type.knitting')}</span>
                 </div>
                 <p className="text-[7px] text-[#a08060]">메리노 · 4mm</p>
               </div>
@@ -120,7 +120,7 @@ function AppMockup() {
           </div>
 
           {/* Pattern viewer */}
-          <div className="relative bg-[#eef8f5] overflow-hidden" style={{ height: 198 }}>
+          <div className="relative bg-[#fdf6e8] overflow-hidden" style={{ height: 198 }}>
 
             {/* Pattern rows */}
             {visibleRows.map((row) => {
@@ -162,7 +162,7 @@ function AppMockup() {
                       style={{ width: 12, height: 12 }}
                     >
                       <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
-                        <path d="M1.5 3.5L3 5L5.5 1.5" stroke="#eef8f5" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1.5 3.5L3 5L5.5 1.5" stroke="#fdf6e8" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
                   )}
@@ -184,8 +184,8 @@ function AppMockup() {
           </div>
 
           {/* Sub-pattern tabs */}
-          <div className="bg-[#cce6e1] border-t-2 border-[#78b0a8] flex gap-1 px-2 py-1.5">
-            <div className="bg-[#b5541e] text-[#eef8f5] rounded px-2 py-1 leading-none">
+          <div className="bg-[#f5edd6] border-t-2 border-[#c4a07a] flex gap-1 px-2 py-1.5">
+            <div className="bg-[#b5541e] text-[#fdf6e8] rounded px-2 py-1 leading-none">
               <p className="font-bold" style={{ fontSize: 8 }}>{t('sub.defaultPrefix')} 1</p>
               <p style={{ fontSize: 7, opacity: 0.85 }}>{t('sub.rowDisplay', { current: 7, total: 40 })}</p>
             </div>
@@ -196,9 +196,9 @@ function AppMockup() {
           </div>
 
           {/* Row counter */}
-          <div className="bg-[#eef8f5] border-t-2 border-[#78b0a8] px-3 pt-2 pb-1.5">
+          <div className="bg-[#fdf6e8] border-t-2 border-[#c4a07a] px-3 pt-2 pb-1.5">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#78b0a8] bg-[#cce6e1]">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M6.5 2L3.5 5L6.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -207,22 +207,22 @@ function AppMockup() {
                 <span className="font-bold text-[#3d2b1f]" style={{ fontSize: 26 }}>7</span>
                 <span className="text-[#a08060] ml-0.5" style={{ fontSize: 10 }}>{t('counter.rowOf', { total: totalRows })}</span>
               </div>
-              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#78b0a8] bg-[#cce6e1]">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M3.5 2L6.5 5L3.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
             {/* progress bar */}
-            <div className="h-1 bg-[#78b0a8] rounded-full overflow-hidden">
+            <div className="h-1 bg-[#c4a07a] rounded-full overflow-hidden">
               <div className="h-full bg-[#b5541e] rounded-full" style={{ width: `${(currentRow / totalRows) * 100}%` }} />
             </div>
           </div>
 
           {/* Complete button */}
-          <div className="px-2 pb-2.5 bg-[#eef8f5]">
+          <div className="px-2 pb-2.5 bg-[#fdf6e8]">
             <div
-              className="w-full bg-[#b5541e] text-[#eef8f5] rounded-lg flex items-center justify-center font-bold border-2 border-[#9a4318]"
+              className="w-full bg-[#b5541e] text-[#fdf6e8] rounded-lg flex items-center justify-center font-bold border-2 border-[#9a4318]"
               style={{ height: 32, fontSize: 9, letterSpacing: '0.05em', boxShadow: '2px 2px 0 #9a4318' }}
             >
               {t('ruler.complete')}
@@ -230,7 +230,7 @@ function AppMockup() {
           </div>
 
           {/* Home indicator */}
-          <div className="h-5 bg-[#eef8f5] flex items-center justify-center">
+          <div className="h-5 bg-[#fdf6e8] flex items-center justify-center">
             <div className="w-20 h-1 bg-[#3d2b1f] rounded-full opacity-20" />
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#78b0a8] bg-[#cce6e1]">
+      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#c4a07a] bg-[#f5edd6]">
         <div className="flex items-center gap-2">
           <KnittingInTheSaunaIcon size={22} color="#b5541e" opacity2={0.4} />
           <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
@@ -269,7 +269,7 @@ export default function Landing() {
         </div>
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 border-2 border-[#78b0a8] rounded-full px-4 py-1.5 mb-8">
+        <div className="inline-flex items-center gap-2 border-2 border-[#c4a07a] rounded-full px-4 py-1.5 mb-8">
           <svg width="12" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
@@ -294,7 +294,7 @@ export default function Landing() {
         {/* CTA */}
         <Link
           to="/login"
-          className="inline-flex items-center gap-2.5 bg-[#b5541e] text-[#eef8f5] px-7 py-3.5 rounded-lg text-sm font-semibold tracking-wide hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318]"
+          className="inline-flex items-center gap-2.5 bg-[#b5541e] text-[#fdf6e8] px-7 py-3.5 rounded-lg text-sm font-semibold tracking-wide hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318]"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -324,7 +324,7 @@ export default function Landing() {
           ].map((f) => (
             <div
               key={f.label}
-              className="bg-[#eef8f5] border-2 border-[#78b0a8] rounded-lg px-3 py-2.5 text-left"
+              className="bg-[#fdf6e8] border-2 border-[#c4a07a] rounded-lg px-3 py-2.5 text-left"
             >
               <p className="text-[11px] font-bold tracking-wide text-[#3d2b1f] uppercase">{f.label}</p>
               <p className="text-[10px] text-[#a08060] mt-0.5">{f.desc}</p>
@@ -333,7 +333,7 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#78b0a8] space-y-1.5">
+      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#c4a07a] space-y-1.5">
         <p>{t('footer.copyright')}</p>
         <p className="flex items-center justify-center gap-3">
           <a
@@ -344,7 +344,7 @@ export default function Landing() {
           >
             {t('footer.business')}
           </a>
-          <span className="text-[#78b0a8]">·</span>
+          <span className="text-[#c4a07a]">·</span>
           <a
             href="https://www.instagram.com/knitting_in_the_sauna"
             target="_blank"
@@ -358,7 +358,7 @@ export default function Landing() {
           <Link to="/terms" className="hover:text-[#a08060] transition-colors underline underline-offset-2">
             이용약관
           </Link>
-          <span className="text-[#78b0a8]">·</span>
+          <span className="text-[#c4a07a]">·</span>
           <Link to="/privacy" className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold">
             개인정보처리방침
           </Link>

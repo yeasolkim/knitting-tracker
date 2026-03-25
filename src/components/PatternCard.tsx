@@ -24,10 +24,10 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
   const typeLabel = pattern.type === 'crochet' ? t('card.type.crochet') : t('card.type.knitting');
 
   return (
-    <div className="bg-[#eef8f5] rounded-xl border-2 border-[#78b0a8] overflow-hidden hover:shadow-[4px_4px_0_#78b0a8] transition-all group relative">
+    <div className="bg-[#fdf6e8] rounded-xl border-2 border-[#c4a07a] overflow-hidden hover:shadow-[4px_4px_0_#c4a07a] transition-all group relative">
       {/* Thumbnail */}
       <Link to={`/patterns/${pattern.id}`}>
-        <div className="aspect-[4/3] bg-[#cce6e1] relative overflow-hidden border-b-2 border-[#78b0a8]">
+        <div className="aspect-[4/3] bg-[#f5edd6] relative overflow-hidden border-b-2 border-[#c4a07a]">
           {pattern.thumbnail_url || pattern.file_type === 'image' ? (
             <img
               src={pattern.thumbnail_url || pattern.file_url}
@@ -37,13 +37,13 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <svg width="32" height="22" viewBox="0 0 28 18" fill="none">
-                <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#78b0a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#c4a07a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#c4a07a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             </div>
           )}
           {/* Type badge */}
-          <span className="absolute top-2 left-2 text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#eef8f5] px-2 py-0.5 rounded">
+          <span className="absolute top-2 left-2 text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded">
             {typeLabel}
           </span>
         </div>
@@ -68,7 +68,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => onDelete(pattern.id)}
-                className="text-[10px] text-[#eef8f5] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors"
+                className="text-[10px] text-[#fdf6e8] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors"
               >
                 {t('card.delete')}
               </button>
@@ -84,7 +84,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
               <Link
                 to={`/patterns/${pattern.id}/edit`}
                 onClick={(e) => e.stopPropagation()}
-                className="text-[#78b0a8] hover:text-[#7a5c46] transition-colors p-1"
+                className="text-[#c4a07a] hover:text-[#7a5c46] transition-colors p-1"
                 aria-label="수정"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -93,7 +93,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
               </Link>
               <button
                 onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
-                className="text-[#78b0a8] hover:text-[#b5541e] transition-colors p-1"
+                className="text-[#c4a07a] hover:text-[#b5541e] transition-colors p-1"
                 aria-label="삭제"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -110,7 +110,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
             <span className="text-[10px] text-[#7a5c46] font-semibold tracking-wide">{t('card.rowCurrent', { n: currentRows })}</span>
             <span className="text-[10px] text-[#a08060] tracking-wide">{t('card.rowTotal', { n: totalRows })}</span>
           </div>
-          <div className="h-1.5 bg-[#cce6e1] border border-[#78b0a8] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#f5edd6] border border-[#c4a07a] rounded-full overflow-hidden">
             <div
               className="h-full bg-[#b5541e] rounded-full transition-all"
               style={{ width: `${progress}%` }}

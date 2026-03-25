@@ -32,7 +32,7 @@ function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: numb
       onKeyDown={(e) => {
         if (e.key === 'Enter') inputRef.current?.blur();
       }}
-      className="w-16 text-xs border-2 border-[#78b0a8] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#eef8f5] focus:outline-none focus:border-[#b5541e] text-center"
+      className="w-16 text-xs border-2 border-[#c4a07a] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
       onClick={(e) => e.stopPropagation()}
     />
   );
@@ -73,7 +73,7 @@ export default function SubPatternSelector({
       {/* Active sub-pattern tab */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#cce6e1] border-2 border-[#78b0a8] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
+        className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#c4a07a] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
       >
         <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
         <svg
@@ -86,11 +86,11 @@ export default function SubPatternSelector({
 
       {/* Dropdown */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#eef8f5] rounded-xl border-2 border-[#78b0a8] shadow-[3px_3px_0_#78b0a8] py-1 min-w-[220px] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
+        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#c4a07a] shadow-[3px_3px_0_#c4a07a] py-1 min-w-[220px] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
           {subPatterns.map((sub) => (
             <div
               key={sub.id}
-              className={`px-3 py-2.5 sm:py-2 hover:bg-[#cce6e1] ${sub.id === activeId ? 'bg-[#cce6e1]' : ''}`}
+              className={`px-3 py-2.5 sm:py-2 hover:bg-[#f5edd6] ${sub.id === activeId ? 'bg-[#f5edd6]' : ''}`}
             >
               {editingId === sub.id ? (
                 <input
@@ -102,7 +102,7 @@ export default function SubPatternSelector({
                     if (e.key === 'Enter') commitRename();
                     if (e.key === 'Escape') setEditingId(null);
                   }}
-                  className="w-full text-sm border-2 border-[#78b0a8] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#eef8f5] focus:outline-none focus:border-[#b5541e]"
+                  className="w-full text-sm border-2 border-[#c4a07a] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
                 />
               ) : (
                 <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function SubPatternSelector({
                         e.stopPropagation();
                         startRename(sub);
                       }}
-                      className="text-[#78b0a8] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      className="text-[#c4a07a] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title={t('sub.rename')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -140,7 +140,7 @@ export default function SubPatternSelector({
                             onDelete(sub.id);
                           }
                         }}
-                        className="text-[#78b0a8] hover:text-[#b5541e] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        className="text-[#c4a07a] hover:text-[#b5541e] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         title="삭제"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -166,7 +166,7 @@ export default function SubPatternSelector({
           ))}
 
           {/* Add button */}
-          <div className="border-t-2 border-[#78b0a8] mt-1 pt-1 px-3 py-1">
+          <div className="border-t-2 border-[#c4a07a] mt-1 pt-1 px-3 py-1">
             <button
               onClick={() => {
                 onAdd();
