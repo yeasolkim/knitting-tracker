@@ -121,34 +121,10 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
       </nav>
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-7 sm:mb-9">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
-            {!loading && patterns.length > 0 && (
-              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{t('dashboard.count', { n: patterns.length })}</p>
-            )}
-          </div>
-          <button
-            onClick={() => {
-              if (patterns.length >= PATTERN_LIMIT) {
-                alert('😭 베타 서비스 기간에는 최대 도안 파일 개수를 제한하고 있어요.\n\n문어도 다리가 8갠데, 사람인 우리가 이렇게 많이 동시에 뜨개질 할 수 있나요?\n\n최대 도안 파일은 8개까지예요.');
-                return;
-              }
-              navigate('/patterns/new');
-            }}
-            className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            {t('dashboard.addBtn')}
-          </button>
-        </div>
-
-        {/* Content */}
         {patterns.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
+          /* 빈 상태: 전체 중앙 정렬 */
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight mb-8">{t('dashboard.title')}</h1>
             <div className="w-16 h-16 rounded-xl bg-[#fdf6e8] border-2 border-[#b07840] flex items-center justify-center mb-5 shadow-[3px_3px_0_#b07840]">
               <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
                 <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b5541e" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -156,20 +132,47 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
               </svg>
             </div>
             <p className="text-[#3d2b1f] font-semibold mb-1.5">{t('dashboard.empty.title')}</p>
-            <p className="text-sm text-[#7a5c46] mb-7">{t('dashboard.empty.sub')}</p>
-            <Link
-              to="/patterns/new"
-              className="text-sm font-semibold text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors border-b-2 border-[#b5541e] pb-0.5"
+            <p className="text-sm text-[#7a5c46] mb-8">{t('dashboard.empty.sub')}</p>
+            <button
+              onClick={() => navigate('/patterns/new')}
+              className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-5 py-3 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
             >
-              {t('dashboard.empty.link')}
-            </Link>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              {t('dashboard.addBtn')}
+            </button>
           </div>
         ) : (
+          <>
+          {/* 도안 있을 때: 기존 헤더 + 그리드 */}
+          <div className="flex items-center justify-between mb-7 sm:mb-9">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
+              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{t('dashboard.count', { n: patterns.length })}</p>
+            </div>
+            <button
+              onClick={() => {
+                if (patterns.length >= PATTERN_LIMIT) {
+                  alert('😭 베타 서비스 기간에는 최대 도안 파일 개수를 제한하고 있어요.\n\n문어도 다리가 8갠데, 사람인 우리가 이렇게 많이 동시에 뜨개질 할 수 있나요?\n\n최대 도안 파일은 8개까지예요.');
+                  return;
+                }
+                navigate('/patterns/new');
+              }}
+              className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              {t('dashboard.addBtn')}
+            </button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
             {patterns.map((pattern) => (
               <PatternCard key={pattern.id} pattern={pattern} onDelete={handleDelete} />
             ))}
           </div>
+          </>
         )}
       </main>
 
