@@ -21,12 +21,16 @@ async function generatePdfThumbnail(file: File): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas context unavailable');
 
   await page.render({ canvasContext: ctx, viewport, canvas } as never).promise;
 
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error('Thumbnail blob generation failed'));
+      else resolve(blob);
+    }, 'image/jpeg', 0.8);
   });
 }
 

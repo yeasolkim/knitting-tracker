@@ -62,6 +62,8 @@ export default function PatternView() {
         progress: queryResult.data.progress?.[0] || null,
       } as PatternWithProgress);
       setLoading(false);
+    }).catch(() => {
+      navigate('/dashboard');
     });
   }, [id, navigate]);
 
@@ -403,6 +405,7 @@ function PatternViewerPage({ pattern }: Props) {
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
   const saveViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current); }, []);
 
   const handleSaveView = useCallback(async () => {
     setSaveViewStatus('saving');
