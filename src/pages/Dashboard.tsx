@@ -7,7 +7,7 @@ import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
-const PATTERN_LIMIT = 2;
+const PATTERN_LIMIT = 8;
 
 export default function Dashboard() {
   return (
@@ -124,7 +124,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
           <button
             onClick={() => {
               if (patterns.length >= PATTERN_LIMIT) {
-                alert('현재 베타서비스 이므로 한 계정당 도안은 최대 2개만 올릴 수 있습니다. 새로운 도안을 올리려면 기존 도안을 삭제해주세요.');
+                alert('😭 베타 서비스 기간에는 최대 도안 파일 개수를 제한하고 있어요.\n\n문어도 다리가 8갠데, 사람인 우리가 이렇게 많이 동시에 뜨개질 할 수 있나요?\n\n최대 도안 파일은 8개까지예요.');
                 return;
               }
               navigate('/patterns/new');
