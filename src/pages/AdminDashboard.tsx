@@ -41,11 +41,25 @@ export default function AdminDashboard() {
 
     const client = createAdminClient();
 
+    // listUsers는 최대 1000명씩 페이지네이션 필요
+    const fetchAllUsers = async () => {
+      const allUsers: AdminUser[] = [];
+      let page = 1;
+      while (true) {
+        const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error || !data?.users?.length) break;
+        allUsers.push(...(data.users as AdminUser[]));
+        if (data.users.length < 1000) break;
+        page++;
+      }
+      return allUsers;
+    };
+
     Promise.all([
-      client.auth.admin.listUsers(),
+      fetchAllUsers(),
       client.from('patterns').select('*').order('created_at', { ascending: false }),
-    ]).then(([usersRes, patternsRes]) => {
-      if (usersRes.data) setUsers(usersRes.data.users as AdminUser[]);
+    ]).then(([allUsers, patternsRes]) => {
+      setUsers(allUsers);
       const ps = (patternsRes.data ?? []) as Pattern[];
       if (patternsRes.data) setPatterns(ps);
       setLoading(false);
