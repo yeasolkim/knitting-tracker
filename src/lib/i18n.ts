@@ -45,7 +45,7 @@ const ko: Translations = {
   // footer
   'footer.copyright': '© 2026 니팅인더사우나 · All rights reserved.',
   'footer.business': '비즈니스 문의',
-  'footer.bug': '오류 문의',
+  'footer.bug': '문의 & 기능추가 요청하기',
   // dashboard
   'dashboard.title': '내 도안',
   'dashboard.count': '{n}개 보관 중',
