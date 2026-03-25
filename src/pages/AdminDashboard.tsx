@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/adminClient';
 interface AdminUser {
   id: string;
   email: string;
+  is_anonymous: boolean;
   created_at: string;
   last_sign_in_at: string | null;
 }
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'users' | 'patterns'>('users');
+  const [filterAnonymous, setFilterAnonymous] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
@@ -47,6 +49,35 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     sessionStorage.removeItem('admin_auth');
     navigate('/admin');
+  };
+
+  const handleDeletePattern = async (pattern: Pattern) => {
+    if (!confirm(`"${pattern.title || '(제목 없음)'}" 도안을 삭제할까요?`)) return;
+
+    const client = createAdminClient();
+
+    // R2 파일 삭제
+    const urls = [...new Set([pattern.file_url, pattern.thumbnail_url].filter(Boolean))] as string[];
+    if (urls.length > 0) {
+      fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({ urls }),
+        },
+      ).catch(() => {});
+    }
+
+    await Promise.all([
+      client.from('pattern_progress').delete().eq('pattern_id', pattern.id),
+      client.from('patterns').delete().eq('id', pattern.id),
+    ]);
+
+    setPatterns(prev => prev.filter(p => p.id !== pattern.id));
   };
 
   if (loading) {
@@ -122,42 +153,76 @@ export default function AdminDashboard() {
 
         {/* Patterns */}
         {tab === 'patterns' && (
-          <div className="flex flex-col gap-2">
-            {patterns.map(p => {
-              const owner = users.find(u => u.id === p.user_id);
-              return (
-                <div key={p.id} className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#3d2b1f] truncate">{p.title || '(제목 없음)'}</p>
-                      <p className="text-[11px] text-[#a08060] mt-0.5">
-                        {owner?.email ?? p.user_id.slice(0, 8) + '…'}
-                        <span className="mx-1.5">·</span>
-                        {new Date(p.created_at).toLocaleDateString('ko-KR')}
-                      </p>
+          <>
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={() => setFilterAnonymous(f => !f)}
+                className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${
+                  filterAnonymous
+                    ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                    : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840]'
+                }`}
+              >
+                비회원 도안만 보기
+              </button>
+              <span className="text-[11px] text-[#a08060]">
+                {filterAnonymous
+                  ? `${patterns.filter(p => users.find(u => u.id === p.user_id)?.is_anonymous).length}개`
+                  : `${patterns.length}개`}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {patterns
+                .filter(p => !filterAnonymous || users.find(u => u.id === p.user_id)?.is_anonymous)
+                .map(p => {
+                  const owner = users.find(u => u.id === p.user_id);
+                  return (
+                    <div key={p.id} className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-[#3d2b1f] truncate">{p.title || '(제목 없음)'}</p>
+                            {owner?.is_anonymous && (
+                              <span className="shrink-0 text-[10px] font-bold text-[#a08060] border border-[#b07840] rounded px-1">비회원</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#a08060] mt-0.5">
+                            {owner?.email ?? p.user_id.slice(0, 8) + '…'}
+                            <span className="mx-1.5">·</span>
+                            {new Date(p.created_at).toLocaleDateString('ko-KR')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {p.file_url && (
+                            <a
+                              href={p.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-bold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-3 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all"
+                            >
+                              열기
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDeletePattern(p)}
+                            className="text-xs font-bold text-[#fdf6e8] bg-red-500 border-2 border-red-600 rounded-lg px-3 py-1.5 hover:bg-red-600 transition-all"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                      {p.thumbnail_url && (
+                        <img
+                          src={p.thumbnail_url}
+                          alt={p.title}
+                          className="mt-2 h-16 rounded-lg object-cover border border-[#b07840]"
+                        />
+                      )}
                     </div>
-                    {p.file_url && (
-                      <a
-                        href={p.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 text-xs font-bold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-3 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all"
-                      >
-                        열기
-                      </a>
-                    )}
-                  </div>
-                  {p.thumbnail_url && (
-                    <img
-                      src={p.thumbnail_url}
-                      alt={p.title}
-                      className="mt-2 h-16 rounded-lg object-cover border border-[#b07840]"
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+            </div>
+          </>
         )}
       </main>
     </div>
