@@ -81,6 +81,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const { t } = useLanguage();
 
   const handleLogout = async () => {
+    if (!confirm(t('nav.logoutConfirm'))) return;
     await supabase.auth.signOut();
     navigate('/');
   };

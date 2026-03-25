@@ -23,6 +23,7 @@ const ko: Translations = {
   // nav
   'nav.login': '로그인',
   'nav.logout': '로그아웃',
+  'nav.logoutConfirm': '로그아웃 하시겠습니까?',
   'nav.start': '시작하기 →',
   // landing
   'landing.hero1': '뜨다 멈춰도',
@@ -175,6 +176,7 @@ const en: Translations = {
   // nav
   'nav.login': 'Log in',
   'nav.logout': 'Log out',
+  'nav.logoutConfirm': 'Are you sure you want to log out?',
   'nav.start': 'Get started →',
   // landing
   'landing.hero1': 'Pick up where',
@@ -327,6 +329,7 @@ const ja: Translations = {
   // nav
   'nav.login': 'ログイン',
   'nav.logout': 'ログアウト',
+  'nav.logoutConfirm': 'ログアウトしますか？',
   'nav.start': 'はじめる →',
   // landing
   'landing.hero1': '途中で止まっても',
@@ -479,6 +482,7 @@ const zh: Translations = {
   // nav
   'nav.login': '登录',
   'nav.logout': '退出',
+  'nav.logoutConfirm': '确定要退出登录吗？',
   'nav.start': '立即开始 →',
   // landing
   'landing.hero1': '编到一半停下来',
@@ -629,6 +633,7 @@ const es: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Iniciar sesión',
   'nav.logout': 'Cerrar sesión',
+  'nav.logoutConfirm': '¿Cerrar sesión?',
   'nav.start': 'Empezar →',
   'landing.hero1': 'Aunque lo dejes',
   'landing.hero2': 'a medias.',
@@ -765,6 +770,7 @@ const fr: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Connexion',
   'nav.logout': 'Déconnexion',
+  'nav.logoutConfirm': 'Se déconnecter ?',
   'nav.start': 'Commencer →',
   'landing.hero1': 'Même si vous vous',
   'landing.hero2': 'arrêtez en chemin.',
@@ -901,6 +907,7 @@ const it: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Accedi',
   'nav.logout': 'Esci',
+  'nav.logoutConfirm': 'Vuoi uscire?',
   'nav.start': 'Inizia →',
   'landing.hero1': 'Anche se ti fermi',
   'landing.hero2': 'a metà.',
@@ -1037,6 +1044,7 @@ const de: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Anmelden',
   'nav.logout': 'Abmelden',
+  'nav.logoutConfirm': 'Wirklich abmelden?',
   'nav.start': 'Loslegen →',
   'landing.hero1': 'Auch wenn du mittendrin',
   'landing.hero2': 'aufhörst.',
@@ -1173,6 +1181,7 @@ const pt: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Entrar',
   'nav.logout': 'Sair',
+  'nav.logoutConfirm': 'Tem a certeza que quer sair?',
   'nav.start': 'Começar →',
   'landing.hero1': 'Mesmo que você pare',
   'landing.hero2': 'no meio.',
@@ -1309,6 +1318,7 @@ const ru: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Войти',
   'nav.logout': 'Выйти',
+  'nav.logoutConfirm': 'Выйти из аккаунта?',
   'nav.start': 'Начать →',
   'landing.hero1': 'Даже если остановиться',
   'landing.hero2': 'на полпути.',
@@ -1445,6 +1455,7 @@ const no: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Logg inn',
   'nav.logout': 'Logg ut',
+  'nav.logoutConfirm': 'Vil du logge ut?',
   'nav.start': 'Kom i gang →',
   'landing.hero1': 'Selv om du stopper',
   'landing.hero2': 'underveis.',
@@ -1581,6 +1592,7 @@ const nl: Translations = {
   'app.name': 'Knitting in the Sauna',
   'nav.login': 'Inloggen',
   'nav.logout': 'Uitloggen',
+  'nav.logoutConfirm': 'Wil je uitloggen?',
   'nav.start': 'Beginnen →',
   'landing.hero1': 'Ook als je halverwege',
   'landing.hero2': 'stopt.',
