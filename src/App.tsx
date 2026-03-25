@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
@@ -54,11 +54,11 @@ function OAuthHandler() {
   return null;
 }
 
-export default function App() {
+// Passes current path as resetKey so ErrorBoundary resets on navigation
+function AppRoutes() {
+  const location = useLocation();
   return (
-    <ErrorBoundary>
-    <LanguageProvider>
-    <HashRouter>
+    <ErrorBoundary resetKey={location.pathname}>
       <OAuthHandler />
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -72,9 +72,19 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        {/* 미매칭 경로(광고 팝업 등으로 hash 변조 시) → 홈으로 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </HashRouter>
-    </LanguageProvider>
     </ErrorBoundary>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
+    </LanguageProvider>
   );
 }
