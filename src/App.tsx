@@ -13,22 +13,40 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { createClient } from './lib/supabase/client';
 
-// Handles PKCE OAuth callback: Supabase sends ?code= to the root URL
-// because HashRouter can't use a hash path as redirectTo
+// Handles OAuth callback for HashRouter:
+// - PKCE flow: Supabase sends ?code= as query param to root URL
+// - Implicit flow: Supabase sends #access_token= as hash to root URL
 function OAuthHandler() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (!code) return;
-
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      window.history.replaceState({}, '', window.location.pathname);
-      if (!error) navigate('/dashboard', { replace: true });
-      else navigate('/login', { replace: true });
-    });
+
+    // PKCE: ?code= in query string
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get('code');
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        window.history.replaceState({}, '', window.location.pathname);
+        if (!error) navigate('/dashboard', { replace: true });
+        else navigate('/login', { replace: true });
+      });
+      return;
+    }
+
+    // Implicit: #access_token= in hash (hash starts with access_token, not a route)
+    const rawHash = window.location.hash.replace(/^#/, '');
+    const hashParams = new URLSearchParams(rawHash);
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    if (accessToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken ?? '' })
+        .then(({ error }) => {
+          window.history.replaceState({}, '', window.location.pathname);
+          if (!error) navigate('/dashboard', { replace: true });
+          else navigate('/login', { replace: true });
+        });
+    }
   }, [navigate]);
 
   return null;
