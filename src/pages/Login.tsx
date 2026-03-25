@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 function isInAppBrowser() {
   const ua = navigator.userAgent;
-  return /KAKAOTALK|Instagram|FBAN|FBAV|Line|Twitter|Snapchat|Musical\.ly|TikTok|LinkedInApp|Bytedance/i.test(ua)
+  return /KAKAOTALK|Instagram|Threads|Barcelona|FBAN|FBAV|Line|Twitter|Snapchat|Musical\.ly|TikTok|LinkedInApp|Bytedance/i.test(ua)
     || (/Android/.test(ua) && !/Chrome\/[.0-9]*/.test(ua) && /Version\//.test(ua));
 }
 
