@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { CompletedMark } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompletedOverlayProps {
   marks: CompletedMark[];
@@ -13,6 +14,7 @@ interface CompletedOverlayProps {
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
 const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart }: CompletedOverlayProps) {
+  const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
                     onPointerDown={(e) => e.stopPropagation()}
                     className="px-2 py-0.5 text-[10px] font-medium bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
                   >
-                    삭제
+                    {t('card.delete')}
                   </button>
                 </div>
               </>

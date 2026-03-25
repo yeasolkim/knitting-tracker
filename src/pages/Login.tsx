@@ -33,7 +33,7 @@ export default function Login() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        alert(`주소를 직접 입력해주세요:\n${siteUrl}`);
+        alert(t('login.copyError', { url: siteUrl }));
       }
     };
     if (navigator.clipboard) {
@@ -61,7 +61,7 @@ export default function Login() {
     if (!error) {
       navigate('/dashboard', { replace: true });
     } else {
-      alert('비회원 로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
+      alert(t('login.guestFailed'));
     }
     setGuestLoading(false);
   };
@@ -107,8 +107,8 @@ export default function Login() {
           {inApp ? (
             <div className="flex flex-col gap-3">
               <div className="bg-amber-50 border-2 border-amber-300 rounded-lg px-4 py-4 text-sm text-amber-800 text-center leading-relaxed">
-                <p className="font-bold mb-2">앱 내 브라우저에서는 로그인이 제한돼요</p>
-                <p className="text-xs text-amber-700">인스타그램, 카카오톡 등 앱에서 열면 Google 로그인이 차단돼요.<br/>Chrome 또는 Safari 브라우저에서 접속해주세요.</p>
+                <p className="font-bold mb-2">{t('login.inAppBrowserTitle')}</p>
+                <p className="text-xs text-amber-700" style={{ whiteSpace: 'pre-line' }}>{t('login.inAppBrowserDesc')}</p>
                 <p className="text-xs text-amber-600 mt-2 font-medium">kis.marihoworld.com</p>
               </div>
               <button
@@ -118,7 +118,7 @@ export default function Login() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                {copied ? '복사됐어요!' : '주소 복사하기'}
+                {copied ? t('login.copied') : t('login.copyUrl')}
               </button>
               <button
                 onClick={handleGuestLogin}
@@ -132,11 +132,9 @@ export default function Login() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
-                비회원으로 시작하기
+                {t('login.guestStart')}
               </button>
-              <p className="text-[10px] text-[#a08060] text-center leading-relaxed">
-                비회원은 이 기기에서만 데이터가 저장돼요.<br/>브라우저 데이터 삭제 시 내용이 사라질 수 있어요.
-              </p>
+              <p className="text-[10px] text-[#a08060] text-center leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{t('login.guestDataWarning')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -155,7 +153,7 @@ export default function Login() {
 
               <div className="flex items-center gap-2 my-1">
                 <div className="flex-1 h-px bg-[#d4b896]" />
-                <span className="text-[11px] text-[#a08060]">또는</span>
+                <span className="text-[11px] text-[#a08060]">{t('login.or')}</span>
                 <div className="flex-1 h-px bg-[#d4b896]" />
               </div>
 
@@ -171,11 +169,9 @@ export default function Login() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 )}
-                비회원으로 이용하기
+                {t('login.guestUse')}
               </button>
-              <p className="text-[10px] text-[#a08060] text-center leading-relaxed">
-                비회원은 이 기기에서만 데이터가 저장돼요.<br/>브라우저 데이터 삭제 시 내용이 사라질 수 있어요.
-              </p>
+              <p className="text-[10px] text-[#a08060] text-center leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{t('login.guestDataWarning')}</p>
             </div>
           )}
         </div>

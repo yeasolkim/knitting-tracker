@@ -31,7 +31,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
         onClick={() => onChange(current - 1)}
         disabled={current <= 0}
         className="w-11 h-11 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-xl font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        aria-label="단 감소"
+        aria-label={t('aria.rowDecrease')}
       >
         −
       </button>
@@ -60,7 +60,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
       <button
         onClick={() => onChange(current + 1)}
         className="w-11 h-11 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-xl font-bold flex items-center justify-center hover:bg-[#9a4318] active:bg-[#7a3510] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-[2px_2px_0_#9a4318]"
-        aria-label="단 증가"
+        aria-label={t('aria.rowIncrease')}
       >
         +
       </button>

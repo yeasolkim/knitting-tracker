@@ -260,7 +260,7 @@ function EditForm() {
           <div className="space-y-2.5">
             <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#b07840]">
               {newPreview ? (
-                <img src={newPreview} alt="미리보기" className="max-h-52 mx-auto rounded-lg object-contain" />
+                <img src={newPreview} alt={t('form.previewAlt')} className="max-h-52 mx-auto rounded-lg object-contain" />
               ) : (
                 <div className="flex items-center justify-center h-28 gap-3">
                   <svg width="28" height="18" viewBox="0 0 28 18" fill="none">

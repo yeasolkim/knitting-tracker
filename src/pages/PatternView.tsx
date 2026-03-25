@@ -114,7 +114,7 @@ function PatternViewerPage({ pattern }: Props) {
     }
     return [{
       id: generateId(),
-      name: '도안 1',
+      name: `${t('sub.defaultPrefix')} 1`,
       total_rows: pattern.total_rows || 1,
       current_row: pattern.progress?.current_row || 0,
     }];
