@@ -16,27 +16,15 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { createClient } from './lib/supabase/client';
 
 // Handles OAuth callback for HashRouter:
-// - PKCE flow: Supabase sends ?code= as query param to root URL
-// - Implicit flow: Supabase sends #access_token= as hash to root URL
+// - PKCE flow: detectSessionInUrl:true 가 자동으로 code 교환 → SIGNED_IN 이벤트 수신
+// - Implicit flow: #access_token= 을 수동으로 처리 (HashRouter 충돌 방지)
 function OAuthHandler() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const supabase = createClient();
 
-    // PKCE: ?code= in query string
-    const searchParams = new URLSearchParams(window.location.search);
-    const code = searchParams.get('code');
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        window.history.replaceState({}, '', window.location.pathname);
-        if (!error) navigate('/dashboard', { replace: true });
-        else navigate('/login', { replace: true });
-      });
-      return;
-    }
-
-    // Implicit: #access_token= in hash (hash starts with access_token, not a route)
+    // Implicit: #access_token= in hash
     const rawHash = window.location.hash.replace(/^#/, '');
     const hashParams = new URLSearchParams(rawHash);
     const accessToken = hashParams.get('access_token');
@@ -48,7 +36,36 @@ function OAuthHandler() {
           if (!error) navigate('/dashboard', { replace: true });
           else navigate('/login', { replace: true });
         });
+      return;
     }
+
+    // PKCE: ?code= in query string
+    // Supabase(detectSessionInUrl:true)가 자동으로 교환 처리하므로
+    // SIGNED_IN 이벤트만 수신해서 대시보드로 이동
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get('code');
+    if (!code) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        window.history.replaceState({}, '', window.location.pathname);
+        navigate('/dashboard', { replace: true });
+      }
+    });
+
+    // 10초 내 SIGNED_IN 없으면 현재 세션 확인 후 처리
+    const timeout = setTimeout(async () => {
+      subscription.unsubscribe();
+      const { data } = await supabase.auth.getSession();
+      window.history.replaceState({}, '', window.location.pathname);
+      if (data.session) navigate('/dashboard', { replace: true });
+      else navigate('/login', { replace: true });
+    }, 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [navigate]);
 
   return null;
