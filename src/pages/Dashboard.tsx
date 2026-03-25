@@ -85,6 +85,14 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
     navigate('/');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5edd6]">
+        <YarnLoader />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -139,11 +147,7 @@ function DashboardPage({ userEmail }: { userEmail?: string }) {
         </div>
 
         {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <YarnLoader />
-          </div>
-        ) : patterns.length === 0 ? (
+        {patterns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-xl bg-[#fdf6e8] border-2 border-[#b07840] flex items-center justify-center mb-5 shadow-[3px_3px_0_#b07840]">
               <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
