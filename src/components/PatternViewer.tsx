@@ -76,12 +76,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const reportImageSize = useCallback(() => {
       const el = contentItemRef.current;
       if (!el || !onImageSizeRef.current) return;
-      // PDF: use single page height (total / pages) so ruler % matches image behavior
-      const h = fileType === 'pdf' && pdfPages > 0
-        ? el.offsetHeight / pdfPages
-        : el.offsetHeight;
-      onImageSizeRef.current(el.offsetWidth, h);
-    }, [fileType, pdfPages]);
+      onImageSizeRef.current(el.offsetWidth, el.offsetHeight);
+    }, []);
 
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
