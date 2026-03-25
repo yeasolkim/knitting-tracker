@@ -143,6 +143,9 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       </nav>
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
+          모바일에서 도안파일이 잘 열리지 않는 경우, 아이패드나 노트북에서 확인 가능해요.
+        </p>
         {patterns.length === 0 ? (
           /* 빈 상태: 전체 중앙 정렬 */
           <div className="flex flex-col items-center justify-center py-16 text-center">
