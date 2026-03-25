@@ -6,6 +6,7 @@ interface NoteBubblesProps {
   positions: Record<string, NotePosition>;
   onPositionChange: (key: string, pos: NotePosition) => void;
   onDelete: (key: string) => void;
+  scale?: number;
 }
 
 function parseLabel(key: string): string {
@@ -13,7 +14,7 @@ function parseLabel(key: string): string {
   return i === -1 ? key : key.slice(i + 1);
 }
 
-const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete }: NoteBubblesProps) {
+const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete, scale = 1 }: NoteBubblesProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -99,12 +100,12 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
             style={{
               left: `${pos.x}%`,
               top: `${pos.y}%`,
-              transform: 'translate(-50%, -50%)',
+              transform: `translate(-50%, -50%) scale(${(isDragging ? 1.25 : 1) / scale})`,
               zIndex: isExpanded || isDragging ? 30 : 20,
             }}
           >
             <div
-              className={`touch-none select-none transition-transform ${isDragging ? 'scale-125 cursor-grabbing' : 'cursor-pointer'}`}
+              className={`touch-none select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
               onPointerDown={handlePointerDown(key)}
               onPointerMove={handlePointerMove(key)}
               onPointerUp={handlePointerUp(key)}
