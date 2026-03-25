@@ -57,7 +57,10 @@ const CrochetMarkers = memo(function CrochetMarkers({
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [longPressingId, setLongPressingId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartRef = useRef<{ x: number; y: number; markX: number; markY: number } | null>(null);
+  const captureRef = useRef<{ el: HTMLElement; pointerId: number; startX: number; startY: number } | null>(null);
 
   const toContentPercent = useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return { x: 50, y: 50 };
@@ -84,32 +87,64 @@ const CrochetMarkers = memo(function CrochetMarkers({
     (mark: CrochetMark) => (e: React.PointerEvent) => {
       e.stopPropagation();
       if (isPlacing) return;
-      onDragStart?.();
+
+      const el = e.currentTarget as HTMLElement;
+      el.setPointerCapture(e.pointerId);
+
       setSelectedId(mark.id);
-      setDraggingId(mark.id);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      dragStartRef.current = { x: e.clientX, y: e.clientY, markX: mark.x, markY: mark.y };
+      setLongPressingId(mark.id);
+      captureRef.current = { el, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY };
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const markX = mark.x;
+      const markY = mark.y;
+
+      longPressTimerRef.current = setTimeout(() => {
+        onDragStart?.();
+        setDraggingId(mark.id);
+        setLongPressingId(null);
+        dragStartRef.current = { x: startX, y: startY, markX, markY };
+        longPressTimerRef.current = null;
+      }, 400);
     },
     [isPlacing, onDragStart]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!draggingId || !dragStartRef.current || !containerRef.current) return;
-      e.stopPropagation();
-      const rect = containerRef.current.getBoundingClientRect();
-      const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
-      const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-      const newX = dragStartRef.current.markX + dx;
-      const newY = dragStartRef.current.markY + dy;
-      onMove(draggingId, newX, newY);
+      if (draggingId && dragStartRef.current && containerRef.current) {
+        e.stopPropagation();
+        const rect = containerRef.current.getBoundingClientRect();
+        const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
+        const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
+        onMove(draggingId, dragStartRef.current.markX + dx, dragStartRef.current.markY + dy);
+        return;
+      }
+      // 롱프레스 중 8px 이상 이동하면 취소 → 도안 스크롤 허용
+      if (longPressTimerRef.current && captureRef.current) {
+        const dist = Math.hypot(e.clientX - captureRef.current.startX, e.clientY - captureRef.current.startY);
+        if (dist > 8) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+          setLongPressingId(null);
+          try { captureRef.current.el.releasePointerCapture(captureRef.current.pointerId); } catch {}
+          captureRef.current = null;
+        }
+      }
     },
     [draggingId, onMove]
   );
 
   const handlePointerUp = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setLongPressingId(null);
     setDraggingId(null);
     dragStartRef.current = null;
+    captureRef.current = null;
   }, []);
 
   return (
@@ -140,6 +175,8 @@ const CrochetMarkers = memo(function CrochetMarkers({
       {marks.map((mark) => {
         const isSelected = selectedId === mark.id;
         const isDragging = draggingId === mark.id;
+        const isLongPressing = longPressingId === mark.id;
+        const scale = isDragging ? 1.2 : isLongPressing ? 1.1 : 1;
 
         return (
           <div
@@ -148,21 +185,21 @@ const CrochetMarkers = memo(function CrochetMarkers({
             style={{
               left: `${mark.x}%`,
               top: `${mark.y}%`,
-              transform: `translate(-50%, -100%) scale(${isDragging ? 1.2 : 1})`,
+              transform: `translate(-50%, -100%) scale(${scale})`,
               transformOrigin: '50% 100%',
               zIndex: isSelected || isDragging ? 25 : 20,
-              transition: isDragging ? 'none' : 'transform 0.1s',
+              transition: isDragging ? 'none' : 'transform 0.15s',
             }}
           >
             <div
-              className="touch-none select-none cursor-grab active:cursor-grabbing"
+              className={`touch-none select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
               onPointerDown={handleMarkerPointerDown(mark)}
               onClick={(e) => e.stopPropagation()}
             >
               <PinIcon label={mark.label} selected={isSelected} dragging={isDragging} />
             </div>
 
-            {isSelected && !isDragging && (
+            {isSelected && !isDragging && !isLongPressing && (
               <div className="absolute -top-1 -right-1 z-30">
                 <button
                   onClick={(e) => {
