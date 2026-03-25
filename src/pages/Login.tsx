@@ -26,16 +26,6 @@ export default function Login() {
     });
   };
 
-  const handleKakaoLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: window.location.origin,
-        scopes: 'profile_nickname profile_image',
-      },
-    });
-  };
-
   const handleGuestLogin = async () => {
     setGuestLoading(true);
     const { error } = await supabase.auth.signInAnonymously();
@@ -123,16 +113,6 @@ export default function Login() {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
                 {t('login.google')}
-              </button>
-
-              <button
-                onClick={handleKakaoLogin}
-                className="w-full flex items-center justify-center gap-3 bg-[#FEE500] text-[#3A1D1D] border-2 border-[#e6cf00] rounded-lg px-4 py-3 min-h-[48px] text-sm font-semibold tracking-wide hover:bg-[#f5dc00] transition-all shadow-[3px_3px_0_#c9b700] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.607 5.084 4.035 6.538L5.09 21l4.553-2.394A11.63 11.63 0 0012 18.6c5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/>
-                </svg>
-                카카오로 시작하기
               </button>
 
               <div className="flex items-center gap-2 my-1">
