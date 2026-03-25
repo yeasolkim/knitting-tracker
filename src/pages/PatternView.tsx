@@ -128,7 +128,7 @@ function PatternViewerPage({ pattern }: Props) {
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
-  const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y || 50);
+  const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
   const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 0.3, 5.4));
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
@@ -413,7 +413,7 @@ function PatternViewerPage({ pattern }: Props) {
     setSaveViewStatus('done');
     if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current);
     saveViewTimerRef.current = setTimeout(() => setSaveViewStatus('idle'), 2000);
-  }, [saveFn, viewTransform]);
+  }, [saveAll]);
 
   const handleRowChange = (row: number) => {
     captureHistory();
