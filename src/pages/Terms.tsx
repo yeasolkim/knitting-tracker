@@ -21,14 +21,14 @@ export default function Terms() {
         <div className="space-y-8 text-sm text-[#3d2b1f] leading-relaxed">
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제1조 (목적)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제1조 (목적)</h2>
             <p>
               이 약관은 니팅인더사우나(이하 "서비스")가 제공하는 뜨개질 도안 진행 추적 서비스의 이용 조건 및 절차, 서비스 제공자와 이용자의 권리·의무·책임 사항을 규정함을 목적으로 합니다.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제2조 (정의)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제2조 (정의)</h2>
             <ul className="space-y-1.5 list-none">
               <li><span className="font-semibold">① "서비스"</span>란 니팅인더사우나가 제공하는 웹 애플리케이션 및 관련 서비스 일체를 말합니다.</li>
               <li><span className="font-semibold">② "이용자"</span>란 이 약관에 동의하고 서비스를 이용하는 자를 말합니다.</li>
@@ -38,7 +38,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제3조 (약관의 효력 및 변경)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제3조 (약관의 효력 및 변경)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 이 약관은 서비스 화면에 게시하거나 이용자에게 공지함으로써 효력이 발생합니다.</li>
               <li>② 서비스는 관련 법령을 위배하지 않는 범위에서 약관을 변경할 수 있으며, 변경 시 시행일 7일 전에 공지합니다.</li>
@@ -47,7 +47,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제4조 (서비스 이용)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제4조 (서비스 이용)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 서비스는 이메일 기반 계정 가입 후 이용할 수 있습니다.</li>
               <li>② 이용자는 타인의 계정을 사용하거나 타인에게 자신의 계정을 양도할 수 없습니다.</li>
@@ -57,7 +57,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제5조 (이용자의 의무)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제5조 (이용자의 의무)</h2>
             <p className="mb-2">이용자는 다음 행위를 하여서는 안 됩니다.</p>
             <ul className="space-y-1.5 list-disc list-inside text-[#5a3e2e]">
               <li>타인의 저작권을 침해하는 도안 파일의 업로드 및 배포</li>
@@ -69,7 +69,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제6조 (콘텐츠 및 저작권)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제6조 (콘텐츠 및 저작권)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 이용자가 업로드한 콘텐츠의 저작권 및 책임은 해당 이용자에게 있습니다.</li>
               <li>② 서비스는 이용자의 콘텐츠를 서비스 운영 목적 외에 사용하지 않습니다.</li>
@@ -78,7 +78,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제7조 (서비스 중단 및 데이터)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제7조 (서비스 중단 및 데이터)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 서비스는 천재지변, 기술적 장애, 운영 정책 변경 등의 사유로 사전 예고 없이 중단될 수 있습니다.</li>
               <li>② 서비스 종료 시 이용자에게 30일 이전에 공지하며, 이용자는 해당 기간 내 데이터를 직접 백업해야 합니다.</li>
@@ -87,7 +87,7 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제8조 (책임의 제한)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제8조 (책임의 제한)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 서비스는 이용자의 귀책 사유로 발생한 손해에 대하여 책임을 지지 않습니다.</li>
               <li>② 서비스는 천재지변, 불가항력적 사유로 인한 서비스 중단에 대해 책임을 지지 않습니다.</li>
@@ -96,14 +96,14 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#c4a07a]">제9조 (준거법 및 분쟁 해결)</h2>
+            <h2 className="text-base font-bold text-[#3d2b1f] mb-3 pb-2 border-b-2 border-[#b07840]">제9조 (준거법 및 분쟁 해결)</h2>
             <ul className="space-y-1.5 list-none">
               <li>① 이 약관은 대한민국 법령에 따라 해석됩니다.</li>
               <li>② 서비스 이용과 관련된 분쟁은 서울중앙지방법원을 관할 법원으로 합니다.</li>
             </ul>
           </section>
 
-          <section className="bg-[#fdf6e8] border-2 border-[#c4a07a] rounded-xl p-4">
+          <section className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4">
             <h2 className="text-base font-bold text-[#3d2b1f] mb-2">문의</h2>
             <p className="text-[#7a5c46]">
               약관에 관한 문의는 Instagram{' '}

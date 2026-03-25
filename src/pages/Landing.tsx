@@ -87,7 +87,7 @@ function AppMockup() {
           </div>
 
           {/* App header */}
-          <div className="bg-[#f5edd6] border-b-2 border-[#c4a07a] px-2.5 py-2 flex items-center justify-between">
+          <div className="bg-[#f5edd6] border-b-2 border-[#b07840] px-2.5 py-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M7 2L3 5L7 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -184,7 +184,7 @@ function AppMockup() {
           </div>
 
           {/* Sub-pattern tabs */}
-          <div className="bg-[#f5edd6] border-t-2 border-[#c4a07a] flex gap-1 px-2 py-1.5">
+          <div className="bg-[#f5edd6] border-t-2 border-[#b07840] flex gap-1 px-2 py-1.5">
             <div className="bg-[#b5541e] text-[#fdf6e8] rounded px-2 py-1 leading-none">
               <p className="font-bold" style={{ fontSize: 8 }}>{t('sub.defaultPrefix')} 1</p>
               <p style={{ fontSize: 7, opacity: 0.85 }}>{t('sub.rowDisplay', { current: 7, total: 40 })}</p>
@@ -196,9 +196,9 @@ function AppMockup() {
           </div>
 
           {/* Row counter */}
-          <div className="bg-[#fdf6e8] border-t-2 border-[#c4a07a] px-3 pt-2 pb-1.5">
+          <div className="bg-[#fdf6e8] border-t-2 border-[#b07840] px-3 pt-2 pb-1.5">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6]">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#b07840] bg-[#f5edd6]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M6.5 2L3.5 5L6.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -207,14 +207,14 @@ function AppMockup() {
                 <span className="font-bold text-[#3d2b1f]" style={{ fontSize: 26 }}>7</span>
                 <span className="text-[#a08060] ml-0.5" style={{ fontSize: 10 }}>{t('counter.rowOf', { total: totalRows })}</span>
               </div>
-              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6]">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-[#b07840] bg-[#f5edd6]">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M3.5 2L6.5 5L3.5 8" stroke="#7a5c46" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
             {/* progress bar */}
-            <div className="h-1 bg-[#c4a07a] rounded-full overflow-hidden">
+            <div className="h-1 bg-[#b07840] rounded-full overflow-hidden">
               <div className="h-full bg-[#b5541e] rounded-full" style={{ width: `${(currentRow / totalRows) * 100}%` }} />
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#c4a07a] bg-[#f5edd6]">
+      <nav className="px-5 sm:px-8 h-14 flex items-center justify-between border-b-2 border-[#b07840] bg-[#f5edd6]">
         <div className="flex items-center gap-2">
           <KnittingInTheSaunaIcon size={22} color="#b5541e" opacity2={0.4} />
           <span className="font-bold text-[#3d2b1f] tracking-tight text-lg">{t('app.name')}</span>
@@ -269,7 +269,7 @@ export default function Landing() {
         </div>
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 border-2 border-[#c4a07a] rounded-full px-4 py-1.5 mb-8">
+        <div className="inline-flex items-center gap-2 border-2 border-[#b07840] rounded-full px-4 py-1.5 mb-8">
           <svg width="12" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M0,4 L2.5,0 L5,4 L7.5,0 L10,4" stroke="#b5541e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
@@ -324,7 +324,7 @@ export default function Landing() {
           ].map((f) => (
             <div
               key={f.label}
-              className="bg-[#fdf6e8] border-2 border-[#c4a07a] rounded-lg px-3 py-2.5 text-left"
+              className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-lg px-3 py-2.5 text-left"
             >
               <p className="text-[11px] font-bold tracking-wide text-[#3d2b1f] uppercase">{f.label}</p>
               <p className="text-[10px] text-[#a08060] mt-0.5">{f.desc}</p>
@@ -333,7 +333,7 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#c4a07a] space-y-1.5">
+      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#b07840] space-y-1.5">
         <p>{t('footer.copyright')}</p>
         <p className="flex items-center justify-center gap-3">
           <a
@@ -344,7 +344,7 @@ export default function Landing() {
           >
             {t('footer.business')}
           </a>
-          <span className="text-[#c4a07a]">·</span>
+          <span className="text-[#b07840]">·</span>
           <a
             href="https://www.instagram.com/knitting_in_the_sauna"
             target="_blank"
@@ -358,7 +358,7 @@ export default function Landing() {
           <Link to="/terms" className="hover:text-[#a08060] transition-colors underline underline-offset-2">
             이용약관
           </Link>
-          <span className="text-[#c4a07a]">·</span>
+          <span className="text-[#b07840]">·</span>
           <Link to="/privacy" className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold">
             개인정보처리방침
           </Link>

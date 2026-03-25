@@ -18,7 +18,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="px-5 sm:px-8 h-14 flex items-center border-b-2 border-[#c4a07a]">
+      <nav className="px-5 sm:px-8 h-14 flex items-center border-b-2 border-[#b07840]">
         <div className="flex items-center gap-2.5">
           <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
             <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -30,10 +30,10 @@ export default function Login() {
       </nav>
 
       <main className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-[#fdf6e8] border-2 border-[#c4a07a] rounded-xl shadow-[4px_4px_0_#c4a07a] p-7 sm:p-9 w-full max-w-sm">
+        <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl shadow-[4px_4px_0_#b07840] p-7 sm:p-9 w-full max-w-sm">
           {/* Logo area */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-[#f5edd6] border-2 border-[#c4a07a] mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-[#f5edd6] border-2 border-[#b07840] mb-4">
               <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
                 <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -47,7 +47,7 @@ export default function Login() {
           <div className="flex items-center gap-1 justify-center mb-7">
             {Array.from({ length: 5 }).map((_, i) => (
               <svg key={i} width="10" height="7" viewBox="0 0 10 7" fill="none">
-                <path d="M0,3.5 L2.5,0 L5,3.5 L7.5,0 L10,3.5" stroke="#c4a07a" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,3.5 L2.5,0 L5,3.5 L7.5,0 L10,3.5" stroke="#b07840" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             ))}
           </div>
@@ -67,7 +67,7 @@ export default function Login() {
         </div>
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#c4a07a]">
+      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#b07840]">
         {t('footer.copyright')}
       </footer>
     </div>

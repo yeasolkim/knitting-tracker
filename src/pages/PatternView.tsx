@@ -628,7 +628,7 @@ function PatternViewerPage({ pattern }: Props) {
   return (
     <div className="flex flex-col h-[100dvh] bg-[#f5edd6]">
       {/* Top bar */}
-      <div className="bg-[#f5edd6] border-b-2 border-[#c4a07a] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
+      <div className="bg-[#f5edd6] border-b-2 border-[#b07840] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={async () => {
@@ -658,7 +658,7 @@ function PatternViewerPage({ pattern }: Props) {
         <div className="flex items-center gap-1 shrink-0">
           <Link
             to={`/patterns/${pattern.id}/edit`}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#c4a07a] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840] transition-colors"
             title={t('view.edit')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -668,7 +668,7 @@ function PatternViewerPage({ pattern }: Props) {
           <button
             onClick={handleUndo}
             disabled={!canUndo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#c4a07a] disabled:opacity-25 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840] disabled:opacity-25 transition-colors"
             title={t('view.undo')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -678,7 +678,7 @@ function PatternViewerPage({ pattern }: Props) {
           <button
             onClick={handleRedo}
             disabled={!canRedo}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#c4a07a] disabled:opacity-25 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840] disabled:opacity-25 transition-colors"
             title={t('view.redo')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -690,7 +690,7 @@ function PatternViewerPage({ pattern }: Props) {
           <button
             onClick={handleSaveView}
             disabled={saveViewStatus === 'saving'}
-            className="h-9 px-2 flex items-center gap-1 rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#c4a07a] disabled:opacity-50 transition-colors"
+            className="h-9 px-2 flex items-center gap-1 rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840] disabled:opacity-50 transition-colors"
             title={t('view.saveView')}
           >
             {saveViewStatus === 'done' ? (
@@ -825,7 +825,7 @@ function PatternViewerPage({ pattern }: Props) {
         {/* Ruler settings floating panel — opposite side of direction */}
         {showRulerSettings && !isCrochet && (
           <div
-            className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#c4a07a] shadow-[3px_3px_0_#c4a07a] px-3 py-2.5"
+            className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5"
             style={
               rulerDirection === 'up'
                 ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px' }
@@ -874,7 +874,7 @@ function PatternViewerPage({ pattern }: Props) {
       </div>
 
       {/* Bottom controls */}
-      <div className="bg-[#fdf6e8] border-t-2 border-[#c4a07a] shrink-0 safe-bottom">
+      <div className="bg-[#fdf6e8] border-t-2 border-[#b07840] shrink-0 safe-bottom">
         {/* SubPattern selector is outside overflow container so its dropdown isn't clipped */}
         <div className="px-3 sm:px-4 pt-2 sm:pt-3 flex items-center gap-2 sm:gap-3">
           <SubPatternSelector
@@ -898,7 +898,7 @@ function PatternViewerPage({ pattern }: Props) {
               <button
                 onClick={() => handleRowChange(Math.max(0, (activeSub?.current_row || 0) - 1))}
                 disabled={(activeSub?.current_row || 0) <= 0}
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] disabled:opacity-30 transition-colors"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-sm font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] disabled:opacity-30 transition-colors"
               >
                 −
               </button>
@@ -929,7 +929,7 @@ function PatternViewerPage({ pattern }: Props) {
               {crochetMarks.length > 0 && (
                 <button
                   onClick={() => { if (confirm(t('marker.deleteConfirm'))) handleCrochetMarkDeleteAll(); }}
-                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
                   title={t('marker.deleteTitle')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -963,7 +963,7 @@ function PatternViewerPage({ pattern }: Props) {
               {knittingMarks.length > 0 && (
                 <button
                   onClick={() => { if (confirm(t('marker.deleteConfirm'))) handleKnittingMarkDeleteAll(); }}
-                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
+                  className="flex items-center justify-center w-10 h-10 min-h-[44px] rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
                   title={t('marker.deleteTitle')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

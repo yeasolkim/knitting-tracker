@@ -30,7 +30,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
       <button
         onClick={() => onChange(current - 1)}
         disabled={current <= 0}
-        className="w-11 h-11 rounded-lg border-2 border-[#c4a07a] bg-[#f5edd6] text-[#7a5c46] text-xl font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-11 h-11 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-xl font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label="단 감소"
       >
         −

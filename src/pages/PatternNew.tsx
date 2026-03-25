@@ -251,7 +251,7 @@ function UploadForm() {
         <FileDropZone onFileSelect={handleFileSelect} />
       ) : (
         <div className="space-y-2.5">
-          <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#c4a07a]">
+          <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#b07840]">
             {preview ? (
               <img
                 src={preview}
@@ -261,8 +261,8 @@ function UploadForm() {
             ) : (
               <div className="flex items-center justify-center h-28 gap-3">
                 <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
-                  <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#c4a07a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#c4a07a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
                 <p className="text-sm text-[#a08060] truncate max-w-[200px]">{file.name}</p>
               </div>
@@ -287,7 +287,7 @@ function UploadForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full border-2 border-[#c4a07a] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.namePlaceholder')}
         />
       </div>
@@ -308,7 +308,7 @@ function UploadForm() {
               className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold tracking-wide transition-all ${
                 type === option.value
                   ? 'border-[#b5541e] bg-[#b5541e] text-[#fdf6e8]'
-                  : 'border-[#c4a07a] bg-[#fdf6e8] text-[#7a5c46] hover:border-[#b5541e]'
+                  : 'border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] hover:border-[#b5541e]'
               }`}
             >
               {option.label}
@@ -325,7 +325,7 @@ function UploadForm() {
           type="text"
           value={yarn}
           onChange={(e) => setYarn(e.target.value)}
-          className="w-full border-2 border-[#c4a07a] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.yarnPlaceholder')}
         />
       </div>
@@ -338,7 +338,7 @@ function UploadForm() {
           type="text"
           value={needle}
           onChange={(e) => setNeedle(e.target.value)}
-          className="w-full border-2 border-[#c4a07a] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.needlePlaceholder')}
         />
       </div>

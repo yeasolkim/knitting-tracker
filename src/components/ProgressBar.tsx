@@ -14,7 +14,7 @@ const ProgressBar = memo(function ProgressBar({ current, total }: ProgressBarPro
         <span>{current} / {total}단</span>
         <span>{Math.round(percent)}%</span>
       </div>
-      <div className="w-full h-1.5 bg-[#f5edd6] border border-[#c4a07a] rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-[#f5edd6] border border-[#b07840] rounded-full overflow-hidden">
         <div
           className="h-full bg-[#b5541e] rounded-full transition-all duration-300"
           style={{ width: `${percent}%` }}
