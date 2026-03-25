@@ -16,6 +16,7 @@ interface Pattern {
   title: string;
   file_url: string | null;
   thumbnail_url: string | null;
+  file_size: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -146,16 +147,32 @@ export default function AdminDashboard() {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
-            <p className="text-xs text-[#a08060] mb-1">총 회원</p>
-            <p className="text-3xl font-bold text-[#3d2b1f]">{users.length}</p>
-          </div>
-          <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
-            <p className="text-xs text-[#a08060] mb-1">총 도안</p>
-            <p className="text-3xl font-bold text-[#3d2b1f]">{patterns.length}</p>
-          </div>
-        </div>
+        {(() => {
+          const totalBytes = patterns.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
+          const formatSize = (bytes: number) => {
+            if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+            if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+            if (bytes >= 1024) return (bytes / 1024).toFixed(0) + ' KB';
+            return bytes + ' B';
+          };
+          return (
+            <div className="grid grid-cols-3 gap-3 mb-8">
+              <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
+                <p className="text-xs text-[#a08060] mb-1">총 회원</p>
+                <p className="text-3xl font-bold text-[#3d2b1f]">{users.length}</p>
+                <p className="text-[10px] text-[#a08060] mt-1">비회원 {users.filter(u => u.is_anonymous).length}명</p>
+              </div>
+              <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
+                <p className="text-xs text-[#a08060] mb-1">총 도안</p>
+                <p className="text-3xl font-bold text-[#3d2b1f]">{patterns.length}</p>
+              </div>
+              <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
+                <p className="text-xs text-[#a08060] mb-1">총 용량</p>
+                <p className="text-2xl font-bold text-[#3d2b1f]">{formatSize(totalBytes)}</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Tabs */}
         <div className="flex gap-2 mb-5">
