@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [filterAnonUsers, setFilterAnonUsers] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [thumbnailTotalBytes, setThumbnailTotalBytes] = useState<number | null>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
@@ -45,8 +46,19 @@ export default function AdminDashboard() {
       client.from('patterns').select('*').order('created_at', { ascending: false }),
     ]).then(([usersRes, patternsRes]) => {
       if (usersRes.data) setUsers(usersRes.data.users as AdminUser[]);
-      if (patternsRes.data) setPatterns(patternsRes.data as Pattern[]);
+      const ps = (patternsRes.data ?? []) as Pattern[];
+      if (patternsRes.data) setPatterns(ps);
       setLoading(false);
+
+      // 썸네일 크기 HEAD 요청으로 측정
+      const thumbUrls = ps.map(p => p.thumbnail_url).filter(Boolean) as string[];
+      Promise.all(
+        thumbUrls.map(url =>
+          fetch(url, { method: 'HEAD' })
+            .then(r => parseInt(r.headers.get('content-length') ?? '0', 10))
+            .catch(() => 0)
+        )
+      ).then(sizes => setThumbnailTotalBytes(sizes.reduce((a, b) => a + b, 0)));
     });
   }, [navigate]);
 
@@ -148,7 +160,8 @@ export default function AdminDashboard() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Stats */}
         {(() => {
-          const totalBytes = patterns.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
+          const fileBytes = patterns.reduce((sum, p) => sum + (p.file_size ?? 0), 0);
+          const totalBytes = fileBytes + (thumbnailTotalBytes ?? 0);
           const formatSize = (bytes: number) => {
             if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
             if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
@@ -168,7 +181,14 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-xl p-4 shadow-[2px_2px_0_#b07840]">
                 <p className="text-xs text-[#a08060] mb-1">총 용량</p>
-                <p className="text-2xl font-bold text-[#3d2b1f]">{formatSize(totalBytes)}</p>
+                <p className="text-2xl font-bold text-[#3d2b1f]">
+                  {thumbnailTotalBytes === null ? '측정 중…' : formatSize(totalBytes)}
+                </p>
+                {thumbnailTotalBytes !== null && (
+                  <p className="text-[10px] text-[#a08060] mt-1">
+                    파일 {formatSize(fileBytes)} + 썸네일 {formatSize(thumbnailTotalBytes)}
+                  </p>
+                )}
               </div>
             </div>
           );
