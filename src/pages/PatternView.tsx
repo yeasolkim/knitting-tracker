@@ -509,13 +509,18 @@ function PatternViewerPage({ pattern }: Props) {
   }, [captureHistory, activeSub, updateActiveSub, screenToContent]);
 
   // CompletedOverlay is rendered outside the CSS transform (screen space),
-  // so its y/height values are in screen % — convert back to content % on update.
+  // so its y/height values are in screen % — convert back to image-relative % on update.
   const handleCompletedMarkUpdate = useCallback((index: number, screenMark: CompletedMark) => {
-    const { viewTransform: t, containerH: H } = latestRef.current;
-    const screenY = (screenMark.y / 100) * H;
-    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
+    const toImagePct = (screenPct: number) => {
+      const screenY = (screenPct / 100) * H;
+      const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+      return iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+    };
+    const imageY = toImagePct(screenMark.y);
+    const imageBottom = toImagePct(screenMark.y + screenMark.height);
     setCompletedMarks((prev) => prev.map((m, i) =>
-      i === index ? { y: (contentY / H) * 100, height: screenMark.height / t.scale } : m
+      i === index ? { y: imageY, height: imageBottom - imageY } : m
     ));
   }, []);
 
@@ -623,9 +628,9 @@ function PatternViewerPage({ pattern }: Props) {
   });
 
   const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
-    const contentY = (m.y / 100) * containerH;
-    const screenY = (contentY - containerH / 2) * viewTransform.scale + containerH / 2 + viewTransform.y;
-    return { y: (screenY / containerH) * 100, height: m.height * viewTransform.scale };
+    const y = contentToScreenY(m.y);
+    const bottom = contentToScreenY(m.y + m.height);
+    return { y, height: bottom - y };
   });
 
   return (
