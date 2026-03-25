@@ -87,7 +87,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
       onTransformChange?.(transform, H, W);
-    }, [transform, onTransformChange]);
+
+      // Pan bounds clamping — prevent image from being dragged fully off-screen
+      const imgEl = contentItemRef.current;
+      if (!imgEl) return;
+      const { scale, x, y } = transform;
+      const maxTy = Math.max(0, (imgEl.offsetHeight * scale - H) / 2);
+      const maxTx = Math.max(0, (imgEl.offsetWidth * scale - W) / 2);
+      const cx = Math.max(-maxTx, Math.min(maxTx, x));
+      const cy = Math.max(-maxTy, Math.min(maxTy, y));
+      if (cx !== x || cy !== y) setXY(cx, cy);
+    }, [transform, onTransformChange, setXY]);
 
     useEffect(() => {
       if (!sizeRef.current) return;
