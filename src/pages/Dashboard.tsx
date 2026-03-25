@@ -201,16 +201,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       <footer className="border-t-2 border-[#b07840]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center gap-1.5 text-center text-[11px] text-[#a08060]">
           <p>{t('footer.copyright')}</p>
-          <p className="flex items-center gap-3">
-            <a
-              href="https://www.instagram.com/knitting_in_the_sauna"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-            >
-              {t('footer.business')}
-            </a>
-            <span className="text-[#b07840]">·</span>
+          <p>
             <a
               href="https://www.instagram.com/knitting_in_the_sauna"
               target="_blank"

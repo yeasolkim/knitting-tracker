@@ -350,16 +350,7 @@ export default function Landing() {
 
       <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#b07840] space-y-1.5">
         <p>{t('footer.copyright')}</p>
-        <p className="flex items-center justify-center gap-3">
-          <a
-            href="https://www.instagram.com/knitting_in_the_sauna"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#b5541e] transition-colors underline underline-offset-2"
-          >
-            {t('footer.business')}
-          </a>
-          <span className="text-[#b07840]">·</span>
+        <p>
           <a
             href="https://www.instagram.com/knitting_in_the_sauna"
             target="_blank"
