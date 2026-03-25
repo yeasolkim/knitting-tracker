@@ -96,10 +96,7 @@ export default function AdminDashboard() {
     const client = createAdminClient();
 
     const urls = [...new Set([pattern.file_url, pattern.thumbnail_url].filter(Boolean))] as string[];
-    const r2ok = await deleteR2Files(urls);
-    if (!r2ok) {
-      if (!confirm('R2 파일 삭제에 실패했어요. DB 기록만 삭제할까요?')) return;
-    }
+    await deleteR2Files(urls);
 
     await Promise.all([
       client.from('pattern_progress').delete().eq('pattern_id', pattern.id),
@@ -124,13 +121,7 @@ export default function AdminDashboard() {
     const urls = [...new Set(
       userPatterns.flatMap(p => [p.file_url, p.thumbnail_url]).filter(Boolean)
     )] as string[];
-    const r2ok = await deleteR2Files(urls);
-    if (!r2ok && urls.length > 0) {
-      if (!confirm('R2 파일 삭제에 실패했어요. DB 기록만 삭제할까요?')) {
-        setDeleting(false);
-        return;
-      }
-    }
+    await deleteR2Files(urls);
 
     // DB 삭제 (pattern_progress → patterns → user)
     const patternIds = userPatterns.map(p => p.id);
