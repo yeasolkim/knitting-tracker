@@ -22,8 +22,18 @@ export default function Login() {
     });
   };
 
+  const siteLoginUrl = 'https://kis.marihoworld.com/#/login';
+
   const handleOpenBrowser = () => {
-    window.open(`https://kis.marihoworld.com/#/login`, '_blank');
+    // Android: intent:// scheme forces Chrome to open
+    const intentUrl = `intent://${siteLoginUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+    window.location.href = intentUrl;
+  };
+
+  const handleCopyUrl = () => {
+    navigator.clipboard.writeText(siteLoginUrl).then(() => {
+      alert('주소가 복사됐어요!\nChrome 브라우저를 열고 붙여넣기 해주세요 🙂');
+    });
   };
 
   return (
@@ -77,6 +87,15 @@ export default function Login() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
                 Chrome으로 열기
+              </button>
+              <button
+                onClick={handleCopyUrl}
+                className="w-full flex items-center justify-center gap-2 bg-[#fdf6e8] text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-4 py-2.5 min-h-[44px] text-xs font-medium tracking-wide hover:bg-[#f5edd6] transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                주소 복사하기 (Chrome에 붙여넣기)
               </button>
             </div>
           ) : (
