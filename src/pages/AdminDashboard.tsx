@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<'users' | 'patterns'>('users');
   const [filterAnonymous, setFilterAnonymous] = useState(false);
   const [filterAnonUsers, setFilterAnonUsers] = useState(false);
+  const [sortByPatterns, setSortByPatterns] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [thumbnailTotalBytes, setThumbnailTotalBytes] = useState<number | null>(null);
@@ -231,7 +232,10 @@ export default function AdminDashboard() {
         {/* Users */}
         {tab === 'users' && (() => {
           const anonUsers = users.filter(u => u.is_anonymous);
-          const displayedUsers = filterAnonUsers ? anonUsers : users;
+          const baseUsers = filterAnonUsers ? anonUsers : users;
+          const displayedUsers = sortByPatterns
+            ? [...baseUsers].sort((a, b) => patterns.filter(p => p.user_id === b.id).length - patterns.filter(p => p.user_id === a.id).length)
+            : baseUsers;
           const allAnonSelected = anonUsers.length > 0 && anonUsers.every(u => selectedUserIds.has(u.id));
 
           return (
@@ -246,6 +250,16 @@ export default function AdminDashboard() {
                   }`}
                 >
                   비회원만 보기
+                </button>
+                <button
+                  onClick={() => setSortByPatterns(f => !f)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${
+                    sortByPatterns
+                      ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                      : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840]'
+                  }`}
+                >
+                  도안 많은 순
                 </button>
                 {filterAnonUsers && (
                   <>
