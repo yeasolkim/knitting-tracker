@@ -129,7 +129,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 5.4));
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 2.7));
   const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
@@ -291,7 +291,7 @@ function PatternViewerPage({ pattern }: Props) {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const contentH_px = (screenHPct / 100) * H / t.scale;
     const refH = iH > 0 ? iH : H;
-    setRulerHeight(Math.min(5.4, Math.max(0.001, (contentH_px / refH) * 100)));
+    setRulerHeight(Math.min(2.7, Math.max(0.001, (contentH_px / refH) * 100)));
     setShowGuide(false);
   }, []);
 
@@ -853,36 +853,46 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         )}
 
-        {/* Ruler settings floating panel — opposite side of direction */}
+        {/* Ruler settings floating panel — above the settings button */}
         {showRulerSettings && !isCrochet && (
           <div
             className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5"
-            style={
-              rulerDirection === 'up'
-                ? { top: `calc(${screenRulerY + screenRulerHeight}% + 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px' }
-                : { top: `calc(${screenRulerY}% - 8px)`, left: 'clamp(108px, 30vw, 148px)', right: '60px', transform: 'translateY(-100%)' }
-            }
+            style={{
+              bottom: `max(8px, calc(${100 - screenRulerY - screenRulerHeight / 2}% + 24px))`,
+              left: '6px',
+              right: '60px',
+            }}
           >
-            <div className="flex items-center gap-2.5">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap">{t('ruler.height')}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap shrink-0">{t('ruler.height')}</span>
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.max(0.001, parseFloat((h - 0.01).toFixed(3))))}
+                className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-white text-[#b5541e] font-bold text-sm hover:bg-[#fdf6e8] active:scale-95 shrink-0 select-none"
+              >−</button>
               <input
                 type="range"
                 min={0}
                 max={10000}
                 step={1}
-                value={Math.round(rulerHeight / 5.4 * 10000)}
+                value={Math.round(Math.min(rulerHeight, 2.7) / 2.7 * 10000)}
                 onPointerDown={captureHistory}
                 onChange={(e) => {
                   setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 5.4));
+                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 2.7));
                 }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onMouseUp={() => setIsAdjustingRuler(false)}
                 onTouchEnd={() => setIsAdjustingRuler(false)}
                 className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
               />
-              <span className="text-[11px] text-[#b5541e] font-mono w-12 text-right shrink-0">
-                {(rulerHeight / 5.4 * 100).toFixed(2)}
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.min(2.7, parseFloat((h + 0.01).toFixed(3))))}
+                className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-white text-[#b5541e] font-bold text-sm hover:bg-[#fdf6e8] active:scale-95 shrink-0 select-none"
+              >+</button>
+              <span className="text-[11px] text-[#b5541e] font-mono w-10 text-right shrink-0">
+                {(rulerHeight / 2.7 * 100).toFixed(1)}%
               </span>
             </div>
           </div>
