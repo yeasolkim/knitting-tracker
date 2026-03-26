@@ -401,7 +401,7 @@ function PatternViewerPage({ pattern }: Props) {
   const handleCrochetRyChange = useCallback((screenRPct: number) => {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const refH = iH > 0 ? iH : H;
-    setCrochetRy(Math.max(0.5, (screenRPct / 100) * H / t.scale / refH * 100));
+    setCrochetRy(Math.max(0.1, (screenRPct / 100) * H / t.scale / refH * 100));
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(

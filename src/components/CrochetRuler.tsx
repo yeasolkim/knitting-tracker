@@ -91,7 +91,7 @@ export default function CrochetRuler({
   const onRyMove = (e: React.PointerEvent<SVGGElement>) => {
     if (!ryDragRef.current || !onRyChange) return;
     const dy = (e.clientY - ryDragRef.current.sy) / containerH * 100;
-    onRyChange(Math.max(1, ryDragRef.current.ry + dy * ryDragRef.current.dir));
+    onRyChange(Math.max(0.1, ryDragRef.current.ry + dy * ryDragRef.current.dir));
   };
   const onRyUp = () => { ryDragRef.current = null; setIsRyDragging(false); };
 
@@ -386,7 +386,7 @@ export default function CrochetRuler({
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
                   onChange={(e) => {
                     onAdjustingChange(true);
-                    onRyChange?.(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
+                    onRyChange?.(Math.max(0.1, Number(e.target.value) / 10000 * MAX_R));
                   }}
                   onPointerUp={() => onAdjustingChange(false)}
                   onPointerCancel={() => onAdjustingChange(false)}
@@ -395,7 +395,7 @@ export default function CrochetRuler({
                 />
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRyChange?.(Math.max(0.5, ryActual - 0.5))}
+                  onClick={() => onRyChange?.(Math.max(0.1, ryActual - 0.5))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
                 >−</button>
                 <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
