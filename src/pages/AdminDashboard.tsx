@@ -301,6 +301,12 @@ export default function AdminDashboard() {
                         {u.is_anonymous && (
                           <span className="shrink-0 text-[10px] font-bold text-[#a08060] border border-[#b07840] rounded px-1">비회원</span>
                         )}
+                        {(() => {
+                          const count = patterns.filter(p => p.user_id === u.id).length;
+                          return count > 0 ? (
+                            <span className="shrink-0 text-[10px] font-bold text-[#b5541e] border border-[#b5541e] rounded px-1">{count}개</span>
+                          ) : null;
+                        })()}
                       </div>
                       <p className="text-[11px] text-[#a08060] mt-0.5">
                         가입: {new Date(u.created_at).toLocaleDateString('ko-KR')}
@@ -308,6 +314,19 @@ export default function AdminDashboard() {
                           <span className="ml-3">마지막 로그인: {new Date(u.last_sign_in_at).toLocaleDateString('ko-KR')}</span>
                         )}
                       </p>
+                      {(() => {
+                        const userPatterns = patterns.filter(p => p.user_id === u.id);
+                        if (userPatterns.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {userPatterns.map(p => (
+                              <span key={p.id} className="text-[10px] text-[#7a5c46] bg-[#f5edd6] border border-[#c4a882] rounded px-1.5 py-0.5 truncate max-w-[140px]">
+                                {p.title || '(제목 없음)'}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <span className="text-[10px] text-[#a08060] font-mono shrink-0">{u.id.slice(0, 8)}…</span>
                   </div>
