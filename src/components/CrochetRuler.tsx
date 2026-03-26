@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
@@ -45,6 +45,9 @@ export default function CrochetRuler({
   const ryActual = ry ?? r;
   const ryPx = isEllipse ? Math.max(4, (ryActual / 100) * containerH) : rPx;
 
+  const [maxR, setMaxR] = useState(() => Math.max(49, r));
+  const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
+
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
 
   // Center drag
@@ -85,8 +88,6 @@ export default function CrochetRuler({
       ghostRings.push({ rx: grx, ry: ryPx + stepRy * i });
     }
   }
-
-  const MAX_R = 49;
 
   // Nudge button positions (screen %, relative to container edges)
   const rHPct = (rPx / containerH) * 100;  // r converted to % of containerH for circle
@@ -160,7 +161,7 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring border */}
-        <ellipse cx={cxPx} cy={cyPx} rx={rPx} ry={ryPx} fill="none" stroke="#b5541e" strokeWidth={2} />
+        <ellipse cx={cxPx} cy={cyPx} rx={rPx} ry={ryPx} fill="none" stroke="#b5541e" strokeWidth={1} />
 
         {/* Center crosshair */}
         <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
@@ -309,17 +310,22 @@ export default function CrochetRuler({
             <div className="flex flex-col items-center gap-1.5">
               {isEllipse && <span className="text-[9px] text-[#a08060] font-bold">↔</span>}
               <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxR((m) => m * 1.3)}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+              >×1.3</button>
+              <button
                 onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                onClick={() => onRadiusChange(Math.min(MAX_R, r + 0.5))}
+                onClick={() => onRadiusChange(Math.min(maxR, r + maxR / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >+</button>
               <input
                 type="range" min={0} max={10000} step={1}
-                value={Math.round(Math.min(r, MAX_R) / MAX_R * 10000)}
+                value={Math.round(Math.min(r, maxR) / maxR * 10000)}
                 onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
                 onChange={(e) => {
                   onAdjustingChange(true);
-                  onRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
+                  onRadiusChange(Math.max(0.01, Number(e.target.value) / 10000 * maxR));
                 }}
                 onPointerUp={() => onAdjustingChange(false)}
                 onPointerCancel={() => onAdjustingChange(false)}
@@ -328,11 +334,11 @@ export default function CrochetRuler({
               />
               <button
                 onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                onClick={() => onRadiusChange(Math.max(0.5, r - 0.5))}
+                onClick={() => onRadiusChange(Math.max(0.01, r - maxR / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >−</button>
               <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                {r.toFixed(1)}%
+                {r.toFixed(2)}%
               </span>
             </div>
 
@@ -341,17 +347,22 @@ export default function CrochetRuler({
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[9px] text-[#a08060] font-bold">↕</span>
                 <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRy((m) => m * 1.3)}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                >×1.3</button>
+                <button
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRyChange?.(Math.min(MAX_R, ryActual + 0.5))}
+                  onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
                 >+</button>
                 <input
                   type="range" min={0} max={10000} step={1}
-                  value={Math.round(Math.min(ryActual, MAX_R) / MAX_R * 10000)}
+                  value={Math.round(Math.min(ryActual, maxRy) / maxRy * 10000)}
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
                   onChange={(e) => {
                     onAdjustingChange(true);
-                    onRyChange?.(Math.max(0.1, Number(e.target.value) / 10000 * MAX_R));
+                    onRyChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRy));
                   }}
                   onPointerUp={() => onAdjustingChange(false)}
                   onPointerCancel={() => onAdjustingChange(false)}
@@ -360,11 +371,11 @@ export default function CrochetRuler({
                 />
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRyChange?.(Math.max(0.1, ryActual - 0.5))}
+                  onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
                 >−</button>
                 <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                  {ryActual.toFixed(1)}%
+                  {ryActual.toFixed(2)}%
                 </span>
               </div>
             )}
