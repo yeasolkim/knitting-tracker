@@ -853,48 +853,49 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         )}
 
-        {/* Ruler settings floating panel — above the settings button */}
+        {/* Ruler height settings — vertical popup above ⚙️ button */}
         {showRulerSettings && !isCrochet && (
           <div
-            className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5"
-            style={{
-              bottom: `max(8px, calc(${100 - screenRulerY - screenRulerHeight / 2}% + 24px))`,
-              left: '6px',
-              right: '60px',
-            }}
+            className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+            style={{ bottom: `max(8px, calc(${100 - screenRulerY - screenRulerHeight / 2}% + 18px))` }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] whitespace-nowrap shrink-0">{t('ruler.height')}</span>
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.max(0.001, h - 1.35 / 10000))}
-                className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-white text-[#b5541e] font-bold text-sm hover:bg-[#fdf6e8] active:scale-95 shrink-0 select-none"
-              >−</button>
-              <input
-                type="range"
-                min={0}
-                max={10000}
-                step={1}
-                value={Math.round(Math.min(rulerHeight, 1.35) / 1.35 * 10000)}
-                onPointerDown={captureHistory}
-                onChange={(e) => {
-                  setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 1.35));
-                }}
-                onPointerUp={() => setIsAdjustingRuler(false)}
-                onMouseUp={() => setIsAdjustingRuler(false)}
-                onTouchEnd={() => setIsAdjustingRuler(false)}
-                className="flex-1 min-w-0 h-1.5 accent-[#b5541e] cursor-pointer"
-              />
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.min(1.35, h + 1.35 / 10000))}
-                className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-white text-[#b5541e] font-bold text-sm hover:bg-[#fdf6e8] active:scale-95 shrink-0 select-none"
-              >+</button>
-              <span className="text-[11px] text-[#b5541e] font-mono w-12 text-right shrink-0">
-                {(rulerHeight / 1.35 * 100).toFixed(2)}%
-              </span>
-            </div>
+            {/* + 버튼 (위) */}
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onClick={() => setRulerHeight((h) => Math.min(1.35, h + 1.35 / 10000))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+            >+</button>
+
+            {/* 세로 슬라이더 */}
+            <input
+              type="range"
+              min={0}
+              max={10000}
+              step={1}
+              value={Math.round(Math.min(rulerHeight, 1.35) / 1.35 * 10000)}
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onChange={(e) => {
+                setIsAdjustingRuler(true);
+                setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 1.35));
+              }}
+              onPointerUp={() => setIsAdjustingRuler(false)}
+              onPointerCancel={() => setIsAdjustingRuler(false)}
+              className="accent-[#b5541e] cursor-pointer"
+              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+            />
+
+            {/* - 버튼 (아래) */}
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onClick={() => setRulerHeight((h) => Math.max(0.001, h - 1.35 / 10000))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+            >−</button>
+
+            {/* 수치 표시 */}
+            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+              {(rulerHeight / 1.35 * 100).toFixed(2)}%
+            </span>
           </div>
         )}
 
