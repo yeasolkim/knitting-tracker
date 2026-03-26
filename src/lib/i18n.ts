@@ -180,6 +180,12 @@ const ko: Translations = {
   'crochet.shape.circle': '원형',
   'crochet.shape.ellipse': '타원형',
   'crochet.shape.rect': '사각형',
+  'guide.crochet.initial': "원형 진행선으로 단을 추적해요. '진행선 가져오기'를 눌러 시작하세요.",
+  'guide.crochet.title': '원형 진행선 설정 안내',
+  'guide.crochet.step1.title': '중심 위치 조절',
+  'guide.crochet.step1.desc': '주황색 원 핸들을 드래그해 도안의 원형 중심에 맞추세요.',
+  'guide.crochet.step2.title': '반지름(단 크기) 조절',
+  'guide.crochet.step2.desc': '오른쪽 흰색 핸들을 드래그해 현재 단의 반지름에 맞추고 "완료 (다음 단으로)"를 눌러 진행하세요.',
 };
 
 const en: Translations = {
@@ -345,6 +351,12 @@ const en: Translations = {
   'crochet.shape.circle': 'Circle',
   'crochet.shape.ellipse': 'Ellipse',
   'crochet.shape.rect': 'Rectangle',
+  'guide.crochet.initial': "Track rounds with the circular ruler. Tap 'Bring Here' to begin.",
+  'guide.crochet.title': 'Circular Ruler Setup',
+  'guide.crochet.step1.title': 'Adjust center position',
+  'guide.crochet.step1.desc': 'Drag the orange handle to the center of your crochet pattern.',
+  'guide.crochet.step2.title': 'Adjust radius (round size)',
+  'guide.crochet.step2.desc': 'Drag the white handle on the right to match the round\'s radius, then tap "Done (next row)".',
 };
 
 const ja: Translations = {
@@ -510,6 +522,12 @@ const ja: Translations = {
   'crochet.shape.circle': '円形',
   'crochet.shape.ellipse': '楕円形',
   'crochet.shape.rect': '四角形',
+  'guide.crochet.initial': "円形ルーラーで段を追跡します。「ラインをここへ」を押して始めましょう。",
+  'guide.crochet.title': '円形ルーラーの設定',
+  'guide.crochet.step1.title': '中心位置の調整',
+  'guide.crochet.step1.desc': 'オレンジ色のハンドルをドラッグしてかぎ針編みの中心に合わせてください。',
+  'guide.crochet.step2.title': '半径（段のサイズ）の調整',
+  'guide.crochet.step2.desc': '右側の白いハンドルをドラッグして半径を合わせ、「完了（次の段へ）」をタップしてください。',
 };
 
 const zh: Translations = {
@@ -675,6 +693,12 @@ const zh: Translations = {
   'crochet.shape.circle': '圆形',
   'crochet.shape.ellipse': '椭圆形',
   'crochet.shape.rect': '矩形',
+  'guide.crochet.initial': "使用圆形进行线追踪钩针行数。点击「移进度线到此处」开始。",
+  'guide.crochet.title': '圆形进行线设置',
+  'guide.crochet.step1.title': '调整中心位置',
+  'guide.crochet.step1.desc': '拖动橙色手柄，对准钩针图案的圆心。',
+  'guide.crochet.step2.title': '调整半径（圈大小）',
+  'guide.crochet.step2.desc': '拖动右侧白色手柄匹配当前行的半径，然后点击「完成（下一行）」。',
 };
 
 const es: Translations = {
@@ -824,6 +848,12 @@ const es: Translations = {
   'crochet.shape.circle': 'Círculo',
   'crochet.shape.ellipse': 'Elipse',
   'crochet.shape.rect': 'Rectángulo',
+  'guide.crochet.initial': "Sigue las vueltas con la línea circular. Pulsa «Traer aquí» para comenzar.",
+  'guide.crochet.title': 'Configuración de la línea circular',
+  'guide.crochet.step1.title': 'Ajustar la posición central',
+  'guide.crochet.step1.desc': 'Arrastra el marcador naranja hasta el centro del patrón de ganchillo.',
+  'guide.crochet.step2.title': 'Ajustar el radio (tamaño de vuelta)',
+  'guide.crochet.step2.desc': 'Arrastra el marcador blanco derecho para ajustar el radio y pulsa «Hecho (siguiente fila)».',
 };
 
 const fr: Translations = {
@@ -973,6 +1003,12 @@ const fr: Translations = {
   'crochet.shape.circle': 'Cercle',
   'crochet.shape.ellipse': 'Ellipse',
   'crochet.shape.rect': 'Rectangle',
+  'guide.crochet.initial': "Suivez les tours avec la ligne circulaire. Appuyez sur « Amener ici » pour commencer.",
+  'guide.crochet.title': 'Configuration de la ligne circulaire',
+  'guide.crochet.step1.title': 'Ajuster la position centrale',
+  'guide.crochet.step1.desc': 'Faites glisser le marqueur orange jusqu\'au centre du motif au crochet.',
+  'guide.crochet.step2.title': 'Ajuster le rayon (taille du tour)',
+  'guide.crochet.step2.desc': 'Faites glisser le marqueur blanc droit pour le rayon, puis tapez « Terminé (rang suivant) ».',
 };
 
 const it: Translations = {
@@ -1122,6 +1158,12 @@ const it: Translations = {
   'crochet.shape.circle': 'Cerchio',
   'crochet.shape.ellipse': 'Ellisse',
   'crochet.shape.rect': 'Rettangolo',
+  'guide.crochet.initial': "Usa la riga circolare per tracciare i giri. Premi «Porta qui» per iniziare.",
+  'guide.crochet.title': 'Impostazione della riga circolare',
+  'guide.crochet.step1.title': 'Regola la posizione centrale',
+  'guide.crochet.step1.desc': 'Trascina il marcatore arancione al centro del pattern all\'uncinetto.',
+  'guide.crochet.step2.title': 'Regola il raggio (dimensione del giro)',
+  'guide.crochet.step2.desc': 'Trascina il marcatore bianco destro per il raggio, poi tocca «Fatto (riga successiva)».',
 };
 
 const de: Translations = {
@@ -1271,6 +1313,12 @@ const de: Translations = {
   'crochet.shape.circle': 'Kreis',
   'crochet.shape.ellipse': 'Ellipse',
   'crochet.shape.rect': 'Rechteck',
+  'guide.crochet.initial': "Nutze das Kreislineal, um Runden zu verfolgen. Tippe auf «Hierher holen» zum Starten.",
+  'guide.crochet.title': 'Kreislineal einrichten',
+  'guide.crochet.step1.title': 'Mittelposition anpassen',
+  'guide.crochet.step1.desc': 'Ziehe den orangen Griff in die Mitte deines Häkelmusters.',
+  'guide.crochet.step2.title': 'Radius (Rundengröße) anpassen',
+  'guide.crochet.step2.desc': 'Ziehe den weißen Griff rechts auf den richtigen Radius und tippe auf «Fertig (nächste Reihe)».',
 };
 
 const pt: Translations = {
@@ -1420,6 +1468,12 @@ const pt: Translations = {
   'crochet.shape.circle': 'Círculo',
   'crochet.shape.ellipse': 'Elipse',
   'crochet.shape.rect': 'Retângulo',
+  'guide.crochet.initial': "Usa a linha circular para seguir as voltas. Toca em «Trazer aqui» para começar.",
+  'guide.crochet.title': 'Configurar a linha circular',
+  'guide.crochet.step1.title': 'Ajustar a posição central',
+  'guide.crochet.step1.desc': 'Arrasta o marcador laranja até ao centro do padrão de croché.',
+  'guide.crochet.step2.title': 'Ajustar o raio (tamanho da volta)',
+  'guide.crochet.step2.desc': 'Arrasta o marcador branco direito para o raio e toca em «Feito (próxima carreira)».',
 };
 
 const ru: Translations = {
@@ -1569,6 +1623,12 @@ const ru: Translations = {
   'crochet.shape.circle': 'Круг',
   'crochet.shape.ellipse': 'Эллипс',
   'crochet.shape.rect': 'Прямоугольник',
+  'guide.crochet.initial': "Используйте круговую линейку для отслеживания рядов. Нажмите «Привести сюда», чтобы начать.",
+  'guide.crochet.title': 'Настройка круговой линейки',
+  'guide.crochet.step1.title': 'Настройте положение центра',
+  'guide.crochet.step1.desc': 'Перетащите оранжевый маркер к центру вязанного крючком рисунка.',
+  'guide.crochet.step2.title': 'Настройте радиус (размер ряда)',
+  'guide.crochet.step2.desc': 'Перетащите белый маркер справа для радиуса, затем нажмите «Готово (следующий ряд)».',
 };
 
 const no: Translations = {
@@ -1718,6 +1778,12 @@ const no: Translations = {
   'crochet.shape.circle': 'Sirkel',
   'crochet.shape.ellipse': 'Ellipse',
   'crochet.shape.rect': 'Rektangel',
+  'guide.crochet.initial': "Bruk den sirkulære linjalen til å spore omgangene. Trykk på «Hent hit» for å starte.",
+  'guide.crochet.title': 'Sirkulær linjealoppsett',
+  'guide.crochet.step1.title': 'Juster sentreringen',
+  'guide.crochet.step1.desc': 'Dra den oransje markøren til midten av heklemønsteret.',
+  'guide.crochet.step2.title': 'Juster radius (omgangsstørrelse)',
+  'guide.crochet.step2.desc': 'Dra den hvite markøren til høyre for radiusen og trykk på «Ferdig (neste rad)».',
 };
 
 const nl: Translations = {
@@ -1867,6 +1933,12 @@ const nl: Translations = {
   'crochet.shape.circle': 'Cirkel',
   'crochet.shape.ellipse': 'Ellips',
   'crochet.shape.rect': 'Rechthoek',
+  'guide.crochet.initial': "Gebruik de cirkelliniaal om toeren bij te houden. Tik op «Hierheen halen» om te beginnen.",
+  'guide.crochet.title': 'Cirkelliniaal instellen',
+  'guide.crochet.step1.title': 'Middenpositie aanpassen',
+  'guide.crochet.step1.desc': 'Sleep de oranje markering naar het midden van je haakpatroon.',
+  'guide.crochet.step2.title': 'Straal aanpassen (toermaat)',
+  'guide.crochet.step2.desc': 'Sleep de witte markering rechts voor de straal en tik op «Klaar (volgende rij)».',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };

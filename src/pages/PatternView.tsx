@@ -809,11 +809,21 @@ function PatternViewerPage({ pattern }: Props) {
           rulerYPercent={rulerY + rulerHeight / 2}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
-          onResetRuler={!isCrochet ? () => {
-            const { viewTransform: t, containerH: H, imgH: iH, rulerHeight: rh } = latestRef.current;
-            // Content Y (container px) that is currently at screen center
+          onResetRuler={isCrochet ? () => {
+            const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
+            const contentX = W / 2 - t.x / t.scale;
             const contentY = H / 2 - t.y / t.scale;
-            // Convert to image-relative % (same logic as screenToContentY)
+            const cx = iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+            const cy = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+            setCrochetCx(cx);
+            setCrochetCy(cy);
+            if (showGuideRef.current) {
+              setShowGuide(false);
+              setShowRulerGuide(true);
+            }
+          } : () => {
+            const { viewTransform: t, containerH: H, imgH: iH, rulerHeight: rh } = latestRef.current;
+            const contentY = H / 2 - t.y / t.scale;
             const refH = iH > 0 ? iH : H;
             const offset = iH > 0 ? (H - iH) / 2 : 0;
             setRulerY((contentY - offset) / refH * 100 - rh / 2);
@@ -821,7 +831,7 @@ function PatternViewerPage({ pattern }: Props) {
               setShowGuide(false);
               setShowRulerGuide(true);
             }
-          } : undefined}
+          }}
           contentOverlay={
             <NoteBubbles
               notes={notes}
@@ -930,37 +940,49 @@ function PatternViewerPage({ pattern }: Props) {
         </PatternViewer>
 
         {/* First-time initial guide — non-blocking floating banner */}
-        {showGuide && !isCrochet && (
+        {showGuide && (
           <div className="absolute inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none px-4">
             <div className="bg-[#fdf6e8]/95 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-5 py-4 max-w-xs w-full">
-              <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">{t('guide.initial')}</p>
+              <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">
+                {isCrochet ? t('guide.crochet.initial') : t('guide.initial')}
+              </p>
             </div>
           </div>
         )}
 
         {/* Ruler settings guide — shown after first '진행선 가져오기' click */}
-        {showRulerGuide && !isCrochet && (
+        {showRulerGuide && (
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
-              <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">{t('guide.title')}</h2>
+              <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">
+                {isCrochet ? t('guide.crochet.title') : t('guide.title')}
+              </h2>
               <ol className="space-y-3 mb-5">
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">1</span>
                   <div>
-                    <p className="text-xs font-semibold text-[#3d2b1f]">{t('guide.step1.title')}</p>
-                    <p className="text-[11px] text-[#7a5c46] mt-0.5">{t('guide.step1.desc')}</p>
+                    <p className="text-xs font-semibold text-[#3d2b1f]">
+                      {isCrochet ? t('guide.crochet.step1.title') : t('guide.step1.title')}
+                    </p>
+                    <p className="text-[11px] text-[#7a5c46] mt-0.5">
+                      {isCrochet ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
+                    </p>
                   </div>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">2</span>
                   <div>
-                    <p className="text-xs font-semibold text-[#3d2b1f]">{t('guide.step2.title')}</p>
-                    <p className="text-[11px] text-[#7a5c46] mt-0.5">{t('guide.step2.desc')}</p>
+                    <p className="text-xs font-semibold text-[#3d2b1f]">
+                      {isCrochet ? t('guide.crochet.step2.title') : t('guide.step2.title')}
+                    </p>
+                    <p className="text-[11px] text-[#7a5c46] mt-0.5">
+                      {isCrochet ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
+                    </p>
                   </div>
                 </li>
               </ol>
               <button
-                onClick={() => { setShowRulerGuide(false); setShowRulerSettings(true); }}
+                onClick={() => { setShowRulerGuide(false); if (!isCrochet) setShowRulerSettings(true); }}
                 className="w-full bg-[#b5541e] text-[#fdf6e8] py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318]"
               >
                 {t('guide.start')}
