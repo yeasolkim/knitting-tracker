@@ -83,6 +83,8 @@ interface Props {
   pattern: PatternWithProgress;
 }
 
+type CrochetRing = { cx: number; cy: number; r: number };
+
 type Snapshot = {
   subPatterns: SubPattern[];
   activeSubId: string;
@@ -95,7 +97,7 @@ type Snapshot = {
   crochetCx: number;
   crochetCy: number;
   crochetR: number;
-  completedCrochetRings: number[];
+  completedCrochetRings: CrochetRing[];
 };
 
 const MAX_HISTORY = 20;
@@ -136,7 +138,9 @@ function PatternViewerPage({ pattern }: Props) {
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
   const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height ?? 0.3);
   const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, pattern.progress?.ruler_height ?? 0));
-  const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
+  const [showSubPatternGuide, setShowSubPatternGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
+  const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [showRulerGuide, setShowRulerGuide] = useState(false);
 
   // Crochet ruler state
@@ -156,9 +160,11 @@ function PatternViewerPage({ pattern }: Props) {
     const saved = pattern.progress?.crochet_ruler_data as { r?: number } | undefined;
     return saved?.r ?? 10;
   });
-  const [completedCrochetRings, setCompletedCrochetRings] = useState<number[]>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { completedRings?: number[] } | undefined;
-    return saved?.completedRings ?? [];
+  const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
+    const savedCx = saved?.cx ?? 50;
+    const savedCy = saved?.cy ?? 50;
+    return (saved?.completedRings ?? []).map(r => typeof r === 'number' ? { cx: savedCx, cy: savedCy, r } : r);
   });
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
@@ -182,8 +188,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
-  const showGuideRef = useRef(showGuide);
-  useEffect(() => { showGuideRef.current = showGuide; }, [showGuide]);
+  const showGuideRef = useRef(showSubPatternGuide || showCrochetShapeGuide || showGuide);
+  useEffect(() => { showGuideRef.current = showSubPatternGuide || showCrochetShapeGuide || showGuide; }, [showSubPatternGuide, showCrochetShapeGuide, showGuide]);
 
   const handleImageSize = useCallback((w: number, h: number) => {
     setImgW(w);
@@ -205,10 +211,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings });
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings };
-  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings]);
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings };
+  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -407,10 +413,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
-    const { crochetR: cr, completedCrochetRings: rings } = latestRef.current;
-    const lastR = rings.length > 0 ? rings[rings.length - 1] : 0;
+    const { crochetR: cr, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings } = latestRef.current;
+    const lastR = rings.length > 0 ? rings[rings.length - 1].r : 0;
     const step = Math.max(cr - lastR, cr * 0.3);
-    setCompletedCrochetRings(prev => [...prev, cr]);
+    setCompletedCrochetRings(prev => [...prev, { cx, cy, r: cr }]);
     setCrochetR(cr + step);
     updateActiveSub(s => ({ ...s, current_row: s.current_row + 1 }));
   }, [captureHistory, updateActiveSub]);
@@ -901,7 +907,11 @@ function PatternViewerPage({ pattern }: Props) {
               cx={contentToScreenX(crochetCx)}
               cy={contentToScreenY(crochetCy)}
               r={contentToScreenR(crochetR)}
-              completedRings={completedCrochetRings.map(r => contentToScreenR(r))}
+              completedRings={completedCrochetRings.map(ring => ({
+                cx: contentToScreenX(ring.cx),
+                cy: contentToScreenY(ring.cy),
+                r: contentToScreenR(ring.r),
+              }))}
               containerW={containerW}
               containerH={containerH}
               onCenterChange={handleCrochetCenterChange}
@@ -945,12 +955,57 @@ function PatternViewerPage({ pattern }: Props) {
           )}
         </PatternViewer>
 
+        {/* Sub-pattern setup guide — shown on very first open */}
+        {showSubPatternGuide && (
+          <div className="absolute inset-0 z-40 flex items-start justify-center pt-4 bg-black/40 backdrop-blur-[2px]">
+            <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
+              <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-2">
+                {t('guide.subPattern.title')}
+              </h2>
+              <p className="text-[11px] text-[#7a5c46] leading-relaxed mb-5">
+                {t('guide.subPattern.desc')}
+              </p>
+              <button
+                onClick={() => { setShowSubPatternGuide(false); if (isCrochet) setShowCrochetShapeGuide(true); else setShowGuide(true); }}
+                className="w-full bg-[#b5541e] text-[#fdf6e8] py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318]"
+              >
+                {t('guide.subPattern.next')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Crochet shape selection guide */}
+        {showCrochetShapeGuide && (
+          <div className="absolute inset-0 z-40 flex items-start justify-center pt-4 bg-black/40 backdrop-blur-[2px]">
+            <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
+              <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-2">
+                {t('guide.crochetShape.title')}
+              </h2>
+              <p className="text-[11px] text-[#7a5c46] leading-relaxed mb-4">
+                {t('guide.crochetShape.desc')}
+              </p>
+              <div className="flex gap-2">
+                {(['line', 'circle'] as const).map((shape) => (
+                  <button
+                    key={shape}
+                    onClick={() => { setCrochetShape(shape); setShowCrochetShapeGuide(false); setShowGuide(true); }}
+                    className="flex-1 py-2.5 rounded-lg text-xs font-bold tracking-wide border-2 bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e] transition-colors"
+                  >
+                    {t(`crochet.shape.${shape}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* First-time initial guide — non-blocking floating banner */}
         {showGuide && (
           <div className="absolute inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none px-4">
             <div className="bg-[#fdf6e8]/95 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-5 py-4 max-w-xs w-full">
               <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">
-                {isCrochet ? t('guide.crochet.initial') : t('guide.initial')}
+                {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.initial') : t('guide.initial')}
               </p>
             </div>
           </div>
@@ -961,17 +1016,17 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
               <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">
-                {isCrochet ? t('guide.crochet.title') : t('guide.title')}
+                {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.title') : t('guide.title')}
               </h2>
               <ol className="space-y-3 mb-5">
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">1</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {isCrochet ? t('guide.crochet.step1.title') : t('guide.step1.title')}
+                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step1.title') : t('guide.step1.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {isCrochet ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
+                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
                     </p>
                   </div>
                 </li>
@@ -979,16 +1034,16 @@ function PatternViewerPage({ pattern }: Props) {
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">2</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {isCrochet ? t('guide.crochet.step2.title') : t('guide.step2.title')}
+                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step2.title') : t('guide.step2.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {isCrochet ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
+                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
                     </p>
                   </div>
                 </li>
               </ol>
               <button
-                onClick={() => { setShowRulerGuide(false); if (!isCrochet) setShowRulerSettings(true); }}
+                onClick={() => { setShowRulerGuide(false); if (!isCrochet || crochetShape === 'line') setShowRulerSettings(true); }}
                 className="w-full bg-[#b5541e] text-[#fdf6e8] py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318]"
               >
                 {t('guide.start')}
@@ -1148,6 +1203,7 @@ function PatternViewerPage({ pattern }: Props) {
             subPatterns={subPatterns}
             activeId={activeSubId}
             isCrochet={isCrochet}
+            initialExpanded={showSubPatternGuide}
             onSelect={setActiveSubId}
             onAdd={handleAddSubPattern}
             onUpdate={handleUpdateSubPattern}

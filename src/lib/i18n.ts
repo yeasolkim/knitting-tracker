@@ -186,6 +186,11 @@ const ko: Translations = {
   'guide.crochet.step1.desc': '주황색 원 핸들을 드래그해 도안의 원형 중심에 맞추세요.',
   'guide.crochet.step2.title': '반지름(단 크기) 조절',
   'guide.crochet.step2.desc': '오른쪽 흰색 핸들을 드래그해 현재 단의 반지름에 맞추고 "완료 (다음 단으로)"를 눌러 진행하세요.',
+  'guide.subPattern.title': '도안 이름과 단수 설정',
+  'guide.subPattern.desc': '작업할 도안의 이름을 입력하고, 총 단수를 설정해주세요.',
+  'guide.subPattern.next': '다음',
+  'guide.crochetShape.title': '진행선 형태 선택',
+  'guide.crochetShape.desc': '작업하는 코바늘 도안에 맞는 진행선 형태를 선택해주세요.',
 };
 
 const en: Translations = {
@@ -357,6 +362,11 @@ const en: Translations = {
   'guide.crochet.step1.desc': 'Drag the orange handle to the center of your crochet pattern.',
   'guide.crochet.step2.title': 'Adjust radius (round size)',
   'guide.crochet.step2.desc': 'Drag the white handle on the right to match the round\'s radius, then tap "Done (next row)".',
+  'guide.subPattern.title': 'Set Pattern Name & Rows',
+  'guide.subPattern.desc': 'Enter a name for your pattern piece and set the total number of rows.',
+  'guide.subPattern.next': 'Next',
+  'guide.crochetShape.title': 'Select Ruler Type',
+  'guide.crochetShape.desc': 'Choose the ruler type that matches your crochet pattern.',
 };
 
 const ja: Translations = {
@@ -528,6 +538,11 @@ const ja: Translations = {
   'guide.crochet.step1.desc': 'オレンジ色のハンドルをドラッグしてかぎ針編みの中心に合わせてください。',
   'guide.crochet.step2.title': '半径（段のサイズ）の調整',
   'guide.crochet.step2.desc': '右側の白いハンドルをドラッグして半径を合わせ、「完了（次の段へ）」をタップしてください。',
+  'guide.subPattern.title': 'パターン名と段数の設定',
+  'guide.subPattern.desc': '編み図の名前を入力し、総段数を設定してください。',
+  'guide.subPattern.next': '次へ',
+  'guide.crochetShape.title': '進行ラインの種類を選択',
+  'guide.crochetShape.desc': '編み図に合った進行ラインの種類を選んでください。',
 };
 
 const zh: Translations = {
@@ -699,6 +714,11 @@ const zh: Translations = {
   'guide.crochet.step1.desc': '拖动橙色手柄，对准钩针图案的圆心。',
   'guide.crochet.step2.title': '调整半径（圈大小）',
   'guide.crochet.step2.desc': '拖动右侧白色手柄匹配当前行的半径，然后点击「完成（下一行）」。',
+  'guide.subPattern.title': '设置图案名称和行数',
+  'guide.subPattern.desc': '请输入图案名称，并设置总行数。',
+  'guide.subPattern.next': '下一步',
+  'guide.crochetShape.title': '选择进度线类型',
+  'guide.crochetShape.desc': '请选择与您的钩针图案相符的进度线类型。',
 };
 
 const es: Translations = {
@@ -854,6 +874,11 @@ const es: Translations = {
   'guide.crochet.step1.desc': 'Arrastra el marcador naranja hasta el centro del patrón de ganchillo.',
   'guide.crochet.step2.title': 'Ajustar el radio (tamaño de vuelta)',
   'guide.crochet.step2.desc': 'Arrastra el marcador blanco derecho para ajustar el radio y pulsa «Hecho (siguiente fila)».',
+  'guide.subPattern.title': 'Configurar nombre y filas',
+  'guide.subPattern.desc': 'Introduce un nombre para tu pieza e indica el número total de filas.',
+  'guide.subPattern.next': 'Siguiente',
+  'guide.crochetShape.title': 'Seleccionar tipo de marcador',
+  'guide.crochetShape.desc': 'Elige el tipo de marcador que corresponda a tu patrón de ganchillo.',
 };
 
 const fr: Translations = {
@@ -1009,6 +1034,11 @@ const fr: Translations = {
   'guide.crochet.step1.desc': 'Faites glisser le marqueur orange jusqu\'au centre du motif au crochet.',
   'guide.crochet.step2.title': 'Ajuster le rayon (taille du tour)',
   'guide.crochet.step2.desc': 'Faites glisser le marqueur blanc droit pour le rayon, puis tapez « Terminé (rang suivant) ».',
+  'guide.subPattern.title': 'Nom et nombre de rangs',
+  'guide.subPattern.desc': 'Saisissez un nom pour votre pièce et indiquez le nombre total de rangs.',
+  'guide.subPattern.next': 'Suivant',
+  'guide.crochetShape.title': 'Choisir le type de marqueur',
+  'guide.crochetShape.desc': 'Choisissez le type de marqueur adapté à votre patron au crochet.',
 };
 
 const it: Translations = {
@@ -1164,6 +1194,11 @@ const it: Translations = {
   'guide.crochet.step1.desc': 'Trascina il marcatore arancione al centro del pattern all\'uncinetto.',
   'guide.crochet.step2.title': 'Regola il raggio (dimensione del giro)',
   'guide.crochet.step2.desc': 'Trascina il marcatore bianco destro per il raggio, poi tocca «Fatto (riga successiva)».',
+  'guide.subPattern.title': 'Nome e numero di righe',
+  'guide.subPattern.desc': 'Inserisci un nome per il tuo pezzo e imposta il numero totale di righe.',
+  'guide.subPattern.next': 'Avanti',
+  'guide.crochetShape.title': 'Scegli il tipo di righello',
+  'guide.crochetShape.desc': 'Scegli il tipo di righello adatto al tuo schema all\'uncinetto.',
 };
 
 const de: Translations = {
@@ -1319,6 +1354,11 @@ const de: Translations = {
   'guide.crochet.step1.desc': 'Ziehe den orangen Griff in die Mitte deines Häkelmusters.',
   'guide.crochet.step2.title': 'Radius (Rundengröße) anpassen',
   'guide.crochet.step2.desc': 'Ziehe den weißen Griff rechts auf den richtigen Radius und tippe auf «Fertig (nächste Reihe)».',
+  'guide.subPattern.title': 'Name und Reihenzahl',
+  'guide.subPattern.desc': 'Gib einen Namen für dein Strickteil ein und lege die Gesamtzahl der Reihen fest.',
+  'guide.subPattern.next': 'Weiter',
+  'guide.crochetShape.title': 'Linientyp auswählen',
+  'guide.crochetShape.desc': 'Wähle den Linientyp, der zu deinem Häkelmuster passt.',
 };
 
 const pt: Translations = {
@@ -1474,6 +1514,11 @@ const pt: Translations = {
   'guide.crochet.step1.desc': 'Arrasta o marcador laranja até ao centro do padrão de croché.',
   'guide.crochet.step2.title': 'Ajustar o raio (tamanho da volta)',
   'guide.crochet.step2.desc': 'Arrasta o marcador branco direito para o raio e toca em «Feito (próxima carreira)».',
+  'guide.subPattern.title': 'Nome e total de fileiras',
+  'guide.subPattern.desc': 'Insira um nome para a sua peça e defina o número total de fileiras.',
+  'guide.subPattern.next': 'Próximo',
+  'guide.crochetShape.title': 'Escolher tipo de marcador',
+  'guide.crochetShape.desc': 'Escolha o tipo de marcador adequado ao seu padrão de crochê.',
 };
 
 const ru: Translations = {
@@ -1629,6 +1674,11 @@ const ru: Translations = {
   'guide.crochet.step1.desc': 'Перетащите оранжевый маркер к центру вязанного крючком рисунка.',
   'guide.crochet.step2.title': 'Настройте радиус (размер ряда)',
   'guide.crochet.step2.desc': 'Перетащите белый маркер справа для радиуса, затем нажмите «Готово (следующий ряд)».',
+  'guide.subPattern.title': 'Название и количество рядов',
+  'guide.subPattern.desc': 'Введите название изделия и укажите общее количество рядов.',
+  'guide.subPattern.next': 'Далее',
+  'guide.crochetShape.title': 'Выберите тип линии',
+  'guide.crochetShape.desc': 'Выберите тип линии, соответствующий вашей схеме вязания крючком.',
 };
 
 const no: Translations = {
@@ -1784,6 +1834,11 @@ const no: Translations = {
   'guide.crochet.step1.desc': 'Dra den oransje markøren til midten av heklemønsteret.',
   'guide.crochet.step2.title': 'Juster radius (omgangsstørrelse)',
   'guide.crochet.step2.desc': 'Dra den hvite markøren til høyre for radiusen og trykk på «Ferdig (neste rad)».',
+  'guide.subPattern.title': 'Angi navn og antall rader',
+  'guide.subPattern.desc': 'Skriv inn et navn for mønsteret ditt og sett totalt antall rader.',
+  'guide.subPattern.next': 'Neste',
+  'guide.crochetShape.title': 'Velg type markør',
+  'guide.crochetShape.desc': 'Velg markørtypen som passer til hekling-mønsteret ditt.',
 };
 
 const nl: Translations = {
@@ -1939,6 +1994,11 @@ const nl: Translations = {
   'guide.crochet.step1.desc': 'Sleep de oranje markering naar het midden van je haakpatroon.',
   'guide.crochet.step2.title': 'Straal aanpassen (toermaat)',
   'guide.crochet.step2.desc': 'Sleep de witte markering rechts voor de straal en tik op «Klaar (volgende rij)».',
+  'guide.subPattern.title': 'Naam en aantal rijen',
+  'guide.subPattern.desc': 'Voer een naam in voor je patroononderdeel en stel het totale aantal rijen in.',
+  'guide.subPattern.next': 'Volgende',
+  'guide.crochetShape.title': 'Kies lijntype',
+  'guide.crochetShape.desc': 'Kies het lijntype dat past bij jouw haakpatroon.',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };

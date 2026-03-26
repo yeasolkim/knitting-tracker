@@ -6,6 +6,7 @@ interface SubPatternSelectorProps {
   subPatterns: SubPattern[];
   activeId: string;
   isCrochet?: boolean;
+  initialExpanded?: boolean;
   onSelect: (id: string) => void;
   onAdd: () => void;
   onUpdate: (id: string, updates: Partial<SubPattern>) => void;
@@ -42,6 +43,7 @@ export default function SubPatternSelector({
   subPatterns,
   activeId,
   isCrochet = false,
+  initialExpanded = false,
   onSelect,
   onAdd,
   onUpdate,
@@ -49,7 +51,7 @@ export default function SubPatternSelector({
 }: SubPatternSelectorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const { t } = useLanguage();
 
   const active = subPatterns.find((s) => s.id === activeId);

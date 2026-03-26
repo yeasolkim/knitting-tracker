@@ -5,7 +5,7 @@ interface Props {
   cx: number;               // center X as % of containerW (screen space)
   cy: number;               // center Y as % of containerH (screen space)
   r: number;                // radius as % of containerW (screen space)
-  completedRings: number[]; // each completed ring radius as % of containerW (screen space)
+  completedRings: { cx: number; cy: number; r: number }[]; // each completed ring in screen % space (own center)
   containerW: number;
   containerH: number;
   showSettings?: boolean;
@@ -66,14 +66,14 @@ export default function CrochetRuler({
   const onRadiusUp = () => { radiusDragRef.current = null; setIsRadiusDragging(false); };
 
   // Full-circle path via two 180° arcs (compatible with fill-rule: evenodd)
-  const arcPath = (radius: number) =>
-    `M ${cxPx - radius} ${cyPx} ` +
+  const arcPath = (cx: number, cy: number, radius: number) =>
+    `M ${cx - radius} ${cy} ` +
     `a ${radius} ${radius} 0 1 0 ${radius * 2} 0 ` +
     `a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`;
 
   // Ghost preview rings — shown when dragging radius or settings open
   const lastCompletedPx = completedRings.length > 0
-    ? Math.max(4, (completedRings[completedRings.length - 1] / 100) * containerW)
+    ? Math.max(4, (completedRings[completedRings.length - 1].r / 100) * containerW)
     : 0;
   const stepPx = Math.max(rPx - lastCompletedPx, rPx * 0.3);
   const showGhosts = isRadiusDragging || isAdjusting || showSettings;
@@ -94,44 +94,34 @@ export default function CrochetRuler({
       >
         {/* Shadow overlay — outside current ring */}
         <path
-          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${arcPath(rPx)}`}
+          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${arcPath(cxPx, cyPx, rPx)}`}
           fill="rgba(0,0,0,0.25)"
           fillRule="evenodd"
         />
 
-        {/* Completed rings — shaded annular regions + dashed borders */}
-        {completedRings.map((ringR, i) => {
-          const outerPx = Math.max(4, (ringR / 100) * containerW);
-          const innerPx = i > 0 ? Math.max(4, (completedRings[i - 1] / 100) * containerW) : 0;
-          const d = innerPx > 2
-            ? arcPath(outerPx) + ' ' + arcPath(innerPx)
-            : arcPath(outerPx);
+        {/* Completed rings — each fixed at its own center */}
+        {completedRings.map((ring, i) => {
+          const ringCxPx = (ring.cx / 100) * containerW;
+          const ringCyPx = (ring.cy / 100) * containerH;
+          const ringRPx = Math.max(4, (ring.r / 100) * containerW);
           return (
             <g key={i}>
-              <path d={d} fill="rgba(181,84,30,0.18)" fillRule="evenodd" />
-              <circle cx={cxPx} cy={cyPx} r={outerPx}
+              <path d={arcPath(ringCxPx, ringCyPx, ringRPx)} fill="rgba(181,84,30,0.15)" fillRule="evenodd" />
+              <circle cx={ringCxPx} cy={ringCyPx} r={ringRPx}
                 fill="none" stroke="rgba(181,84,30,0.45)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
             </g>
           );
         })}
 
-        {/* Current ring — shaded annular from last completed to current */}
-        {(() => {
-          const innerPx = completedRings.length > 0
-            ? Math.max(4, (completedRings[completedRings.length - 1] / 100) * containerW)
-            : 0;
-          const d = innerPx > 2
-            ? arcPath(rPx) + ' ' + arcPath(innerPx)
-            : arcPath(rPx);
-          return <path d={d} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />;
-        })()}
+        {/* Current ring — shaded from center to current radius */}
+        <path d={arcPath(cxPx, cyPx, rPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
         {/* Ghost preview rings — future ring positions */}
         {ghostRings.map((gr, i) => {
           const opacity = Math.max(0.07, 0.6 - i * 0.06);
           const prevGr = i === 0 ? rPx : ghostRings[i - 1];
-          const d = arcPath(gr) + ' ' + arcPath(prevGr);
+          const d = arcPath(cxPx, cyPx, gr) + ' ' + arcPath(cxPx, cyPx, prevGr);
           return (
             <g key={i} style={{ opacity }}>
               <path d={d} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
