@@ -12,11 +12,13 @@ interface Props {
   isAdjusting?: boolean;
   onCenterChange: (cx: number, cy: number) => void;
   onRadiusChange: (r: number) => void;
+  onAdjustingChange: (v: boolean) => void;
   onComplete: () => void;
   onToggleSettings: () => void;
   onDragStart: () => void;
   onDeleteRing: (index: number) => void;
   onDeleteAllRings: () => void;
+  onReset: () => void;
 }
 
 export default function CrochetRuler({
@@ -24,8 +26,8 @@ export default function CrochetRuler({
   containerW, containerH,
   showSettings = false,
   isAdjusting = false,
-  onCenterChange, onRadiusChange, onComplete, onToggleSettings, onDragStart,
-  onDeleteRing, onDeleteAllRings,
+  onCenterChange, onRadiusChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
+  onDeleteRing, onDeleteAllRings, onReset,
 }: Props) {
   const { t } = useLanguage();
 
@@ -74,7 +76,7 @@ export default function CrochetRuler({
     `a ${radius} ${radius} 0 1 0 ${radius * 2} 0 ` +
     `a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`;
 
-  // Ghost preview rings — shown when dragging radius or settings open
+  // Ghost preview rings
   const lastCompletedPx = completedRings.length > 0
     ? Math.max(4, (completedRings[completedRings.length - 1].r / 100) * containerW)
     : 0;
@@ -88,6 +90,8 @@ export default function CrochetRuler({
       ghostRings.push(gr);
     }
   }
+
+  const MAX_R = 49;
 
   return (
     <>
@@ -113,7 +117,6 @@ export default function CrochetRuler({
               <circle cx={ringCxPx} cy={ringCyPx} r={ringRPx}
                 fill="none" stroke="rgba(16,185,129,0.5)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
-              {/* Delete button at top of ring */}
               <g
                 style={{ pointerEvents: 'all', cursor: 'pointer' }}
                 onClick={() => onDeleteRing(i)}
@@ -130,10 +133,10 @@ export default function CrochetRuler({
           );
         })}
 
-        {/* Current ring — shaded from center to current radius */}
+        {/* Current ring — shaded */}
         <path d={arcPath(cxPx, cyPx, rPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
-        {/* Ghost preview rings — future ring positions */}
+        {/* Ghost preview rings */}
         {ghostRings.map((gr, i) => {
           const opacity = Math.max(0.07, 0.6 - i * 0.06);
           const prevGr = i === 0 ? rPx : ghostRings[i - 1];
@@ -144,14 +147,8 @@ export default function CrochetRuler({
               <circle cx={cxPx} cy={cyPx} r={gr}
                 fill="none" stroke="rgba(181,84,30,0.55)"
                 strokeWidth={1} strokeDasharray="4 3" />
-              <text
-                x={cxPx + gr + 4}
-                y={cyPx + 4}
-                fontSize={10}
-                fill="rgba(181,84,30,0.75)"
-                fontWeight="600"
-                style={{ userSelect: 'none' }}
-              >
+              <text x={cxPx + gr + 4} y={cyPx + 4} fontSize={10}
+                fill="rgba(181,84,30,0.75)" fontWeight="600" style={{ userSelect: 'none' }}>
                 +{i + 1}
               </text>
             </g>
@@ -159,18 +156,14 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring border */}
-        <circle cx={cxPx} cy={cyPx} r={rPx}
-          fill="none" stroke="#b5541e" strokeWidth={2} />
+        <circle cx={cxPx} cy={cyPx} r={rPx} fill="none" stroke="#b5541e" strokeWidth={2} />
 
         {/* Center crosshair */}
-        <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx}
-          stroke="#b5541e" strokeWidth={1.5} />
-        <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6}
-          stroke="#b5541e" strokeWidth={1.5} />
+        <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
+        <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6} stroke="#b5541e" strokeWidth={1.5} />
 
-        {/* Center drag handle — small circle */}
-        <circle
-          cx={cxPx} cy={cyPx} r={7}
+        {/* Center drag handle */}
+        <circle cx={cxPx} cy={cyPx} r={7}
           fill="#b5541e" stroke="#fdf6e8" strokeWidth={1.5}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'move' }}
           onPointerDown={onCenterDown}
@@ -196,52 +189,104 @@ export default function CrochetRuler({
         </g>
       </svg>
 
-      {/* Floating buttons — left side, same layout as RowRuler */}
+      {/* Floating buttons — left side */}
       <div
-        className="absolute left-1.5 pointer-events-auto z-20 flex items-center gap-1 sm:gap-1.5"
+        className="absolute left-1.5 pointer-events-auto z-20"
         style={{ top: `${cy}%`, transform: 'translateY(-50%)' }}
       >
-        {/* Complete button */}
-        <button
-          onClick={onComplete}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
-          title={t('ruler.complete')}
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </button>
-
-        {/* Delete all rings button — shown when there are completed rings */}
-        {completedRings.length > 0 && (
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          {/* Complete button */}
           <button
-            onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
+            onClick={onComplete}
             onPointerDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
-            title={t('view.deleteAll')}
+            className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
+            title={t('ruler.complete')}
           >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </button>
-        )}
 
-        {/* Settings button */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
-            showSettings
-              ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
-              : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
-          }`}
-          title={t('ruler.heightSettings')}
-        >
-          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-        </button>
+          {/* Delete all rings button */}
+          {completedRings.length > 0 && (
+            <button
+              onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
+              title={t('view.deleteAll')}
+            >
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
+
+          {/* Reset button */}
+          <button
+            onClick={() => { if (confirm(t('crochet.ruler.resetConfirm'))) onReset(); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
+            title={t('crochet.ruler.reset')}
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* Settings button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
+              showSettings
+                ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
+                : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
+            }`}
+            title={t('ruler.heightSettings')}
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Radius settings popup — positioned right of buttons via left-full */}
+        {showSettings && (
+          <div
+            className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+              onClick={() => onRadiusChange(Math.min(MAX_R, r + 0.5))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+            >+</button>
+
+            <input
+              type="range" min={0} max={10000} step={1}
+              value={Math.round(Math.min(r, MAX_R) / MAX_R * 10000)}
+              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+              onChange={(e) => {
+                onAdjustingChange(true);
+                onRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
+              }}
+              onPointerUp={() => onAdjustingChange(false)}
+              onPointerCancel={() => onAdjustingChange(false)}
+              className="accent-[#b5541e] cursor-pointer"
+              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+            />
+
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+              onClick={() => onRadiusChange(Math.max(0.5, r - 0.5))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+            >−</button>
+
+            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+              {r.toFixed(1)}%
+            </span>
+          </div>
+        )}
       </div>
     </>
   );

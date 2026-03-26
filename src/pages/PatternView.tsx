@@ -925,9 +925,22 @@ function PatternViewerPage({ pattern }: Props) {
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               showSettings={showCrochetSettings}
               isAdjusting={isAdjustingCrochetRadius}
+              onAdjustingChange={setIsAdjustingCrochetRadius}
               onDragStart={captureHistory}
               onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); }}
               onDeleteAllRings={() => { captureHistory(); setCompletedCrochetRings([]); }}
+              onReset={() => {
+                captureHistory();
+                setCompletedCrochetRings([]);
+                const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
+                const contentX = W / 2 - t.x / t.scale;
+                const contentY = H / 2 - t.y / t.scale;
+                const cx = iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+                const cy = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+                setCrochetCx(cx);
+                setCrochetCy(cy);
+                setCrochetR(10);
+              }}
             />
           )}
 
@@ -1140,51 +1153,6 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         )}
 
-        {/* Circle radius settings — vertical popup, same layout as height settings */}
-        {showCrochetSettings && isCrochet && crochetShape === 'circle' && (
-          <div
-            className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
-            style={{ top: `${Math.max(4, Math.min(contentToScreenY(crochetCy), 80))}%`, transform: 'translateY(-50%)' }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {/* + 버튼 (위) */}
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => handleCrochetRadiusChange(Math.min(49, contentToScreenR(crochetR) + 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >+</button>
-
-            {/* 세로 슬라이더 */}
-            <input
-              type="range"
-              min={0}
-              max={10000}
-              step={1}
-              value={Math.round(Math.min(contentToScreenR(crochetR), 49) / 49 * 10000)}
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onChange={(e) => {
-                setIsAdjustingCrochetRadius(true);
-                handleCrochetRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * 49));
-              }}
-              onPointerUp={() => setIsAdjustingCrochetRadius(false)}
-              onPointerCancel={() => setIsAdjustingCrochetRadius(false)}
-              className="accent-[#b5541e] cursor-pointer"
-              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-            />
-
-            {/* - 버튼 (아래) */}
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => handleCrochetRadiusChange(Math.max(0.5, contentToScreenR(crochetR) - 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >−</button>
-
-            {/* 수치 표시 */}
-            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-              {contentToScreenR(crochetR).toFixed(1)}%
-            </span>
-          </div>
-        )}
 
         {(!isCrochet || crochetShape === 'line') && hasMarkSelection && completedMarks.length > 1 && (
           <div className="absolute top-4 right-4 z-30">
