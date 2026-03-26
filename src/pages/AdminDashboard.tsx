@@ -80,6 +80,9 @@ export default function AdminDashboard() {
             .catch(() => 0)
         )
       ).then(sizes => setThumbnailTotalBytes(sizes.reduce((a, b) => a + b, 0)));
+    }).catch((err) => {
+      console.error('Admin data fetch failed:', err);
+      setLoading(false);
     });
   }, [navigate]);
 
