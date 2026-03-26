@@ -196,17 +196,7 @@ function EditForm() {
           .filter((u): u is string => !!u && !newUrls.has(u));
         const toDelete = [...new Set(oldUrls)];
         if (toDelete.length > 0) {
-          fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({ urls: toDelete }),
-            },
-          ).catch(() => {});
+          supabase.functions.invoke('r2-delete', { body: { urls: toDelete } }).catch(() => {});
         }
       }
 

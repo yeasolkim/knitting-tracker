@@ -101,13 +101,11 @@ function UploadForm() {
 
     let createdPatternId: string | null = null;
     let uploadedUrls: string[] = [];
-    let accessToken: string | null = null;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error(t('form.error.login'));
       const user = session.user;
-      accessToken = session.access_token;
 
       // 패턴 개수 한도 체크
       const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
@@ -234,12 +232,8 @@ function UploadForm() {
         ]).catch(() => {});
       }
       // R2 업로드된 파일 정리
-      if (uploadedUrls.length > 0 && accessToken) {
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-delete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ urls: uploadedUrls }),
-        }).catch(() => {});
+      if (uploadedUrls.length > 0) {
+        supabase.functions.invoke('r2-delete', { body: { urls: uploadedUrls } }).catch(() => {});
       }
       setError(err instanceof Error ? err.message : t('form.error.generic'));
       setUploading(false);
