@@ -131,6 +131,7 @@ function PatternViewerPage({ pattern }: Props) {
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
   const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 1.35));
   const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
+  const [showRulerGuide, setShowRulerGuide] = useState(false);
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -736,6 +737,10 @@ function PatternViewerPage({ pattern }: Props) {
             const refH = iH > 0 ? iH : H;
             const offset = iH > 0 ? (H - iH) / 2 : 0;
             setRulerY((contentY - offset) / refH * 100 - rh / 2);
+            if (showGuideRef.current) {
+              setShowGuide(false);
+              setShowRulerGuide(true);
+            }
           } : undefined}
           contentOverlay={
             <NoteBubbles
@@ -781,7 +786,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          {!isCrochet && (
+          {!isCrochet && !showGuide && (
             <RowRuler
               positionY={screenRulerY}
               height={screenRulerHeight}
@@ -829,8 +834,17 @@ function PatternViewerPage({ pattern }: Props) {
           )}
         </PatternViewer>
 
-        {/* First-time guide overlay */}
+        {/* First-time initial guide — non-blocking floating banner */}
         {showGuide && !isCrochet && (
+          <div className="absolute inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none px-4">
+            <div className="bg-[#fdf6e8]/95 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-5 py-4 max-w-xs w-full">
+              <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">{t('guide.initial')}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Ruler settings guide — shown after first '진행선 가져오기' click */}
+        {showRulerGuide && !isCrochet && (
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
               <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">{t('guide.title')}</h2>
@@ -851,7 +865,7 @@ function PatternViewerPage({ pattern }: Props) {
                 </li>
               </ol>
               <button
-                onClick={() => { setShowGuide(false); setShowRulerSettings(true); }}
+                onClick={() => { setShowRulerGuide(false); setShowRulerSettings(true); }}
                 className="w-full bg-[#b5541e] text-[#fdf6e8] py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318]"
               >
                 {t('guide.start')}

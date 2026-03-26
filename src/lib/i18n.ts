@@ -175,6 +175,7 @@ const ko: Translations = {
   'guide.step2.title': '진행선 위치 조절',
   'guide.step2.desc': '진행선을 드래그해 현재 뜨고 있는 단에 맞춰 보세요.',
   'guide.start': '설정 시작하기',
+  'guide.initial': "뜨개질을 시작할 위치로 가서 '진행선 가져오기' 버튼을 눌러 시작하세요.",
 };
 
 const en: Translations = {
@@ -335,6 +336,7 @@ const en: Translations = {
   'guide.step2.title': 'Position the ruler',
   'guide.step2.desc': 'Drag the ruler to align it with the row you are currently knitting.',
   'guide.start': 'Start Setup',
+  'guide.initial': "Scroll to where you want to start knitting, then tap 'Bring Here'.",
 };
 
 const ja: Translations = {
@@ -495,6 +497,7 @@ const ja: Translations = {
   'guide.step2.title': 'ルーラーの位置を調整',
   'guide.step2.desc': 'ルーラーをドラッグして、現在編んでいる段に合わせてください。',
   'guide.start': '設定を始める',
+  'guide.initial': "編み始めの位置に移動して「ラインをここへ」ボタンを押してください。",
 };
 
 const zh: Translations = {
@@ -655,6 +658,7 @@ const zh: Translations = {
   'guide.step2.title': '调整进行线位置',
   'guide.step2.desc': '拖动进行线对准当前正在编织的行。',
   'guide.start': '开始设置',
+  'guide.initial': "滚动到开始编织的位置，点击「移进度线到此处」按钮开始。",
 };
 
 const es: Translations = {
@@ -799,6 +803,7 @@ const es: Translations = {
   'guide.step2.title': 'Posicionar la línea',
   'guide.step2.desc': 'Arrastra la línea hasta la fila que estás tejiendo.',
   'guide.start': 'Empezar configuración',
+  'guide.initial': "Ve a la fila inicial y pulsa «Traer aquí» para empezar.",
 };
 
 const fr: Translations = {
@@ -943,6 +948,7 @@ const fr: Translations = {
   'guide.step2.title': 'Positionner la ligne',
   'guide.step2.desc': 'Faites glisser la ligne pour l\'aligner sur le rang en cours.',
   'guide.start': 'Commencer la configuration',
+  'guide.initial': "Allez à la rangée de départ et appuyez sur « Amener ici ».",
 };
 
 const it: Translations = {
@@ -1087,6 +1093,7 @@ const it: Translations = {
   'guide.step2.title': 'Posiziona la riga',
   'guide.step2.desc': 'Trascina la riga per allinearla al punto che stai lavorando.',
   'guide.start': 'Inizia configurazione',
+  'guide.initial': "Vai alla riga di partenza e premi «Porta qui» per iniziare.",
 };
 
 const de: Translations = {
@@ -1231,6 +1238,7 @@ const de: Translations = {
   'guide.step2.title': 'Position anpassen',
   'guide.step2.desc': 'Ziehe das Lineal auf die Reihe, die du gerade strickst.',
   'guide.start': 'Einrichtung starten',
+  'guide.initial': "Gehe zur Startreihe und tippe auf «Hierher holen».",
 };
 
 const pt: Translations = {
@@ -1375,6 +1383,7 @@ const pt: Translations = {
   'guide.step2.title': 'Posicionar a linha',
   'guide.step2.desc': 'Arraste a linha para alinhar com a carreira que está a tricotar.',
   'guide.start': 'Iniciar configuração',
+  'guide.initial': "Vai para a carreira inicial e toca em «Trazer aqui».",
 };
 
 const ru: Translations = {
@@ -1519,6 +1528,7 @@ const ru: Translations = {
   'guide.step2.title': 'Позиционировать линейку',
   'guide.step2.desc': 'Перетащите линейку на текущий ряд.',
   'guide.start': 'Начать настройку',
+  'guide.initial': "Перейдите к начальному ряду и нажмите «Привести сюда».",
 };
 
 const no: Translations = {
@@ -1663,6 +1673,7 @@ const no: Translations = {
   'guide.step2.title': 'Plasser linjalen',
   'guide.step2.desc': 'Dra linjalen til raden du strikker.',
   'guide.start': 'Start oppsett',
+  'guide.initial': "Gå til startraden og trykk på «Hent hit».",
 };
 
 const nl: Translations = {
@@ -1807,6 +1818,7 @@ const nl: Translations = {
   'guide.step2.title': 'Lineaal positioneren',
   'guide.step2.desc': 'Sleep het lineaal naar de rij die je aan het breien bent.',
   'guide.start': 'Instellen starten',
+  'guide.initial': "Ga naar de startrij en tik op «Hierheen halen».",
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };
