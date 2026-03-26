@@ -2,12 +2,15 @@ import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, 
 import { useGestures } from '@/hooks/useGestures';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+let pdfVersion = '';
+const pdfVersionListeners: Array<(v: string) => void> = [];
+
 const PdfDocument = lazy(() =>
   import('react-pdf').then((mod) => {
-    mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.mjs',
-      import.meta.url
-    ).toString();
+    pdfVersion = mod.pdfjs.version;
+    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
+    pdfVersionListeners.forEach((fn) => fn(pdfVersion));
+    pdfVersionListeners.length = 0;
     return { default: mod.Document };
   })
 );
@@ -40,7 +43,20 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
-    const pdfOptions = useMemo(() => ({ cMapPacked: true }), []);
+    const [pdfVer, setPdfVer] = useState(pdfVersion);
+    useEffect(() => {
+      if (pdfVersion) { setPdfVer(pdfVersion); return; }
+      const fn = (v: string) => setPdfVer(v);
+      pdfVersionListeners.push(fn);
+      return () => {
+        const idx = pdfVersionListeners.indexOf(fn);
+        if (idx !== -1) pdfVersionListeners.splice(idx, 1);
+      };
+    }, []);
+    const pdfOptions = useMemo(() => ({
+      cMapUrl: pdfVer ? `//unpkg.com/pdfjs-dist@${pdfVer}/cmaps/` : undefined,
+      cMapPacked: true,
+    }), [pdfVer]);
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
