@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [tab, setTab] = useState<'users' | 'patterns'>('users');
   const [filterAnonymous, setFilterAnonymous] = useState(false);
   const [filterAnonUsers, setFilterAnonUsers] = useState(false);
@@ -48,7 +49,8 @@ export default function AdminDashboard() {
       let page = 1;
       while (true) {
         const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
-        if (error || !data?.users?.length) break;
+        if (error) throw new Error(`listUsers failed: ${error.message} (status: ${error.status})`);
+        if (!data?.users?.length) break;
         allUsers.push(...(data.users as AdminUser[]));
         if (data.users.length < 1000) break;
         page++;
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
       ).then(sizes => setThumbnailTotalBytes(sizes.reduce((a, b) => a + b, 0)));
     }).catch((err) => {
       console.error('Admin data fetch failed:', err);
+      setFetchError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     });
   }, [navigate]);
@@ -159,6 +162,18 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f5edd6]">
         <div className="w-8 h-8 border-2 border-[#b07840] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5edd6] p-6">
+        <div className="bg-[#fdf6e8] border-2 border-red-400 rounded-xl p-6 max-w-lg w-full">
+          <p className="text-sm font-bold text-red-600 mb-2">데이터 로드 실패</p>
+          <pre className="text-xs text-red-500 whitespace-pre-wrap break-all bg-red-50 rounded p-3">{fetchError}</pre>
+          <button onClick={() => window.location.reload()} className="mt-4 text-xs text-[#b5541e] underline">새로고침</button>
+        </div>
       </div>
     );
   }
