@@ -168,6 +168,12 @@ const ko: Translations = {
   'form.previewAlt': '미리보기',
   'aria.rowDecrease': '단 감소',
   'aria.rowIncrease': '단 증가',
+  'guide.title': '진행선 설정 안내',
+  'guide.step1.title': '진행선 높이 조절',
+  'guide.step1.desc': '왼쪽 ⚙️ 버튼을 눌러 진행선의 높이(두께)를 설정하세요.',
+  'guide.step2.title': '진행선 위치 조절',
+  'guide.step2.desc': '진행선을 드래그해 현재 뜨고 있는 단에 맞춰 보세요.',
+  'guide.start': '설정 시작하기',
 };
 
 const en: Translations = {
@@ -321,6 +327,12 @@ const en: Translations = {
   'form.previewAlt': 'Preview',
   'aria.rowDecrease': 'Decrease row',
   'aria.rowIncrease': 'Increase row',
+  'guide.title': 'Row Ruler Setup',
+  'guide.step1.title': 'Adjust ruler height',
+  'guide.step1.desc': 'Tap the ⚙️ button on the left to set the ruler height.',
+  'guide.step2.title': 'Position the ruler',
+  'guide.step2.desc': 'Drag the ruler to align it with the row you are currently knitting.',
+  'guide.start': 'Start Setup',
 };
 
 const ja: Translations = {
@@ -474,6 +486,12 @@ const ja: Translations = {
   'form.previewAlt': 'プレビュー',
   'aria.rowDecrease': '段を減らす',
   'aria.rowIncrease': '段を増やす',
+  'guide.title': '進行ルーラーの設定',
+  'guide.step1.title': 'ルーラーの高さを調整',
+  'guide.step1.desc': '左の ⚙️ ボタンをタップしてルーラーの高さを設定してください。',
+  'guide.step2.title': 'ルーラーの位置を調整',
+  'guide.step2.desc': 'ルーラーをドラッグして、現在編んでいる段に合わせてください。',
+  'guide.start': '設定を始める',
 };
 
 const zh: Translations = {
@@ -627,6 +645,12 @@ const zh: Translations = {
   'form.previewAlt': '预览',
   'aria.rowDecrease': '减少行数',
   'aria.rowIncrease': '增加行数',
+  'guide.title': '进行线设置指南',
+  'guide.step1.title': '调整进行线高度',
+  'guide.step1.desc': '点击左侧 ⚙️ 按钮设置进行线的高度。',
+  'guide.step2.title': '调整进行线位置',
+  'guide.step2.desc': '拖动进行线对准当前正在编织的行。',
+  'guide.start': '开始设置',
 };
 
 const es: Translations = {
@@ -764,6 +788,12 @@ const es: Translations = {
   'form.previewAlt': 'Vista previa',
   'aria.rowDecrease': 'Disminuir fila',
   'aria.rowIncrease': 'Aumentar fila',
+  'guide.title': 'Configuración de la línea',
+  'guide.step1.title': 'Ajustar la altura',
+  'guide.step1.desc': 'Pulsa el botón ⚙️ de la izquierda para ajustar la altura de la línea.',
+  'guide.step2.title': 'Posicionar la línea',
+  'guide.step2.desc': 'Arrastra la línea hasta la fila que estás tejiendo.',
+  'guide.start': 'Empezar configuración',
 };
 
 const fr: Translations = {
@@ -901,6 +931,12 @@ const fr: Translations = {
   'form.previewAlt': 'Aperçu',
   'aria.rowDecrease': 'Diminuer la rangée',
   'aria.rowIncrease': 'Augmenter la rangée',
+  'guide.title': 'Configuration de la ligne',
+  'guide.step1.title': 'Ajuster la hauteur',
+  'guide.step1.desc': 'Appuyez sur le bouton ⚙️ à gauche pour régler la hauteur.',
+  'guide.step2.title': 'Positionner la ligne',
+  'guide.step2.desc': 'Faites glisser la ligne pour l\'aligner sur le rang en cours.',
+  'guide.start': 'Commencer la configuration',
 };
 
 const it: Translations = {
@@ -1038,6 +1074,12 @@ const it: Translations = {
   'form.previewAlt': 'Anteprima',
   'aria.rowDecrease': 'Diminuisci riga',
   'aria.rowIncrease': 'Aumenta riga',
+  'guide.title': 'Impostazione della riga',
+  'guide.step1.title': 'Regola l\'altezza',
+  'guide.step1.desc': 'Tocca il pulsante ⚙️ a sinistra per impostare l\'altezza della riga.',
+  'guide.step2.title': 'Posiziona la riga',
+  'guide.step2.desc': 'Trascina la riga per allinearla al punto che stai lavorando.',
+  'guide.start': 'Inizia configurazione',
 };
 
 const de: Translations = {
@@ -1175,6 +1217,12 @@ const de: Translations = {
   'form.previewAlt': 'Vorschau',
   'aria.rowDecrease': 'Reihe verringern',
   'aria.rowIncrease': 'Reihe erhöhen',
+  'guide.title': 'Reihenlineal einrichten',
+  'guide.step1.title': 'Höhe anpassen',
+  'guide.step1.desc': 'Tippe auf die ⚙️-Schaltfläche links, um die Höhe einzustellen.',
+  'guide.step2.title': 'Position anpassen',
+  'guide.step2.desc': 'Ziehe das Lineal auf die Reihe, die du gerade strickst.',
+  'guide.start': 'Einrichtung starten',
 };
 
 const pt: Translations = {
@@ -1312,6 +1360,12 @@ const pt: Translations = {
   'form.previewAlt': 'Pré-visualização',
   'aria.rowDecrease': 'Diminuir fileira',
   'aria.rowIncrease': 'Aumentar fileira',
+  'guide.title': 'Configurar a linha',
+  'guide.step1.title': 'Ajustar a altura',
+  'guide.step1.desc': 'Toque no botão ⚙️ à esquerda para definir a altura da linha.',
+  'guide.step2.title': 'Posicionar a linha',
+  'guide.step2.desc': 'Arraste a linha para alinhar com a carreira que está a tricotar.',
+  'guide.start': 'Iniciar configuração',
 };
 
 const ru: Translations = {
@@ -1449,6 +1503,12 @@ const ru: Translations = {
   'form.previewAlt': 'Предпросмотр',
   'aria.rowDecrease': 'Уменьшить ряд',
   'aria.rowIncrease': 'Увеличить ряд',
+  'guide.title': 'Настройка линейки',
+  'guide.step1.title': 'Настроить высоту',
+  'guide.step1.desc': 'Нажмите кнопку ⚙️ слева, чтобы задать высоту линейки.',
+  'guide.step2.title': 'Позиционировать линейку',
+  'guide.step2.desc': 'Перетащите линейку на текущий ряд.',
+  'guide.start': 'Начать настройку',
 };
 
 const no: Translations = {
@@ -1586,6 +1646,12 @@ const no: Translations = {
   'form.previewAlt': 'Forhåndsvisning',
   'aria.rowDecrease': 'Reduser rad',
   'aria.rowIncrease': 'Øk rad',
+  'guide.title': 'Oppsett av linjal',
+  'guide.step1.title': 'Juster høyden',
+  'guide.step1.desc': 'Trykk på ⚙️-knappen til venstre for å stille inn høyden.',
+  'guide.step2.title': 'Plasser linjalen',
+  'guide.step2.desc': 'Dra linjalen til raden du strikker.',
+  'guide.start': 'Start oppsett',
 };
 
 const nl: Translations = {
@@ -1723,6 +1789,12 @@ const nl: Translations = {
   'form.previewAlt': 'Voorbeeld',
   'aria.rowDecrease': 'Rij verminderen',
   'aria.rowIncrease': 'Rij verhogen',
+  'guide.title': 'Lineaal instellen',
+  'guide.step1.title': 'Hoogte aanpassen',
+  'guide.step1.desc': 'Tik op de ⚙️-knop links om de hoogte in te stellen.',
+  'guide.step2.title': 'Lineaal positioneren',
+  'guide.step2.desc': 'Sleep het lineaal naar de rij die je aan het breien bent.',
+  'guide.start': 'Instellen starten',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };

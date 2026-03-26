@@ -129,7 +129,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height || 0.3, 5.4));
+  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 5.4));
+  const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -291,6 +292,7 @@ function PatternViewerPage({ pattern }: Props) {
     const contentH_px = (screenHPct / 100) * H / t.scale;
     const refH = iH > 0 ? iH : H;
     setRulerHeight(Math.min(5.4, Math.max(0.001, (contentH_px / refH) * 100)));
+    setShowGuide(false);
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
@@ -819,6 +821,37 @@ function PatternViewerPage({ pattern }: Props) {
             </div>
           )}
         </PatternViewer>
+
+        {/* First-time guide overlay */}
+        {showGuide && !isCrochet && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+            <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
+              <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">{t('guide.title')}</h2>
+              <ol className="space-y-3 mb-5">
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">1</span>
+                  <div>
+                    <p className="text-xs font-semibold text-[#3d2b1f]">{t('guide.step1.title')}</p>
+                    <p className="text-[11px] text-[#7a5c46] mt-0.5">{t('guide.step1.desc')}</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">2</span>
+                  <div>
+                    <p className="text-xs font-semibold text-[#3d2b1f]">{t('guide.step2.title')}</p>
+                    <p className="text-[11px] text-[#7a5c46] mt-0.5">{t('guide.step2.desc')}</p>
+                  </div>
+                </li>
+              </ol>
+              <button
+                onClick={() => { setShowGuide(false); setShowRulerSettings(true); }}
+                className="w-full bg-[#b5541e] text-[#fdf6e8] py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318]"
+              >
+                {t('guide.start')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Ruler settings floating panel — opposite side of direction */}
         {showRulerSettings && !isCrochet && (

@@ -213,6 +213,7 @@ function UploadForm() {
           user_id: user.id,
           current_row: 0,
           ruler_position_y: 50,
+          ruler_height: 0,
           notes: {},
         }),
       ]);
