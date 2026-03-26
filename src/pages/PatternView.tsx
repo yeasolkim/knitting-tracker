@@ -138,7 +138,7 @@ function PatternViewerPage({ pattern }: Props) {
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
   const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height ?? 0.3);
   const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, pattern.progress?.ruler_height ?? 0));
-  const [showSubPatternGuide, setShowSubPatternGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
+  const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showRulerGuide, setShowRulerGuide] = useState(false);
@@ -188,8 +188,9 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
-  const showGuideRef = useRef(showSubPatternGuide || showCrochetShapeGuide || showGuide);
-  useEffect(() => { showGuideRef.current = showSubPatternGuide || showCrochetShapeGuide || showGuide; }, [showSubPatternGuide, showCrochetShapeGuide, showGuide]);
+  const isFirstOpenRef = useRef((pattern.progress?.ruler_height ?? -1) === 0);
+  const showGuideRef = useRef(showCrochetShapeGuide || showGuide);
+  useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
 
   const handleImageSize = useCallback((w: number, h: number) => {
     setImgW(w);
@@ -199,9 +200,12 @@ function PatternViewerPage({ pattern }: Props) {
       // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (showGuideRef.current) {
-            // 첫 방문: 화면 맞춤 + 첫 페이지 상단
+          if (isFirstOpenRef.current || showGuideRef.current) {
+            // 첫 방문 또는 가이드 중: 화면 맞춤 먼저, 그 다음 가이드 표시
             viewerRef.current?.fitWidthTop();
+            if (isFirstOpenRef.current) {
+              setShowSubPatternGuide(true);
+            }
           } else {
             viewerRef.current?.goToRuler();
           }
