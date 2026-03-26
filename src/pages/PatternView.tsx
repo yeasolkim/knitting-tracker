@@ -159,11 +159,11 @@ function PatternViewerPage({ pattern }: Props) {
   });
   const [crochetR, setCrochetR] = useState<number>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { r?: number } | undefined;
-    return saved?.r ?? 10;
+    return saved?.r ?? 3;
   });
   const [crochetRy, setCrochetRy] = useState<number>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { ry?: number; r?: number } | undefined;
-    return saved?.ry ?? saved?.r ?? 10;
+    return saved?.ry ?? saved?.r ?? 3;
   });
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
@@ -1065,7 +1065,7 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none px-4">
             <div className="bg-[#fdf6e8]/95 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-5 py-4 max-w-xs w-full">
               <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">
-                {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.initial') : t('guide.initial')}
+                {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.initial`) : t('guide.initial')}
               </p>
             </div>
           </div>
@@ -1076,17 +1076,17 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
               <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">
-                {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.title') : t('guide.title')}
+                {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.title`) : t('guide.title')}
               </h2>
               <ol className="space-y-3 mb-5">
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">1</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step1.title') : t('guide.step1.title')}
+                      {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.step1.title`) : t('guide.step1.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
+                      {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.step1.desc`) : t('guide.step1.desc')}
                     </p>
                   </div>
                 </li>
@@ -1094,10 +1094,10 @@ function PatternViewerPage({ pattern }: Props) {
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">2</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step2.title') : t('guide.step2.title')}
+                      {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.step2.title`) : t('guide.step2.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
+                      {(isCrochet && crochetShape !== 'line') ? t(`guide.crochet.${crochetShape}.step2.desc`) : t('guide.step2.desc')}
                     </p>
                   </div>
                 </li>
