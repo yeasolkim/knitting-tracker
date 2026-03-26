@@ -147,8 +147,8 @@ const RowRuler = memo(function RowRuler({
         </div>
       </div>
 
-      {/* Up nudge — horizontally centered, just above top edge */}
-      <div
+      {/* Up nudge — horizontally centered, just above top edge (only when settings open) */}
+      {showSettings && <div
         className="absolute left-1/2 pointer-events-auto z-20"
         style={{ top: `${positionY}%`, transform: 'translate(-50%, -100%)' }}
       >
@@ -161,9 +161,9 @@ const RowRuler = memo(function RowRuler({
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
           </svg>
         </button>
-      </div>
-      {/* Down nudge — horizontally centered, just below bottom edge */}
-      <div
+      </div>}
+      {/* Down nudge — horizontally centered, just below bottom edge (only when settings open) */}
+      {showSettings && <div
         className="absolute left-1/2 pointer-events-auto z-20"
         style={{ top: `${positionY + height}%`, transform: 'translate(-50%, 0%)' }}
       >
@@ -176,7 +176,7 @@ const RowRuler = memo(function RowRuler({
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-      </div>
+      </div>}
 
       {/* Floating complete + direction + settings buttons */}
       <div
