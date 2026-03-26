@@ -18,6 +18,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const isPendingLongPress = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const toPercent = useCallback((clientX: number, clientY: number) => {
@@ -35,7 +36,9 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
       const pointerId = e.pointerId;
       const target = e.currentTarget as HTMLElement;
 
+      isPendingLongPress.current = true;
       longPressTimer.current = setTimeout(() => {
+        isPendingLongPress.current = false;
         setDraggingKey(key);
         setExpandedKey(null);
         target.setPointerCapture(pointerId);
@@ -46,10 +49,14 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
 
   const handlePointerMove = useCallback(
     (key: string) => (e: React.PointerEvent) => {
-      if (draggingKey !== key) return;
+      // Block pan propagation during long-press wait AND while dragging
+      if (draggingKey !== key && !isPendingLongPress.current) return;
       e.stopPropagation();
-      const { x, y } = toPercent(e.clientX, e.clientY);
-      onPositionChange(key, { x, y });
+      e.preventDefault();
+      if (draggingKey === key) {
+        const { x, y } = toPercent(e.clientX, e.clientY);
+        onPositionChange(key, { x, y });
+      }
     },
     [draggingKey, onPositionChange, toPercent]
   );
@@ -57,6 +64,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const handlePointerUp = useCallback(
     (key: string) => (e: React.PointerEvent) => {
       e.stopPropagation();
+      isPendingLongPress.current = false;
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
@@ -71,6 +79,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   );
 
   const handlePointerCancel = useCallback(() => {
+    isPendingLongPress.current = false;
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
