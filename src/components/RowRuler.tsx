@@ -114,8 +114,8 @@ const RowRuler = memo(function RowRuler({
         style={{ top: `${positionY + height}%` }}
       />
 
-      {/* Ghost preview lines — visible while dragging position or adjusting height */}
-      {(isAdjusting || isDragging) && previewLines.map((y, i) => {
+      {/* Ghost preview lines — visible while dragging position, adjusting height, or settings open */}
+      {(isAdjusting || isDragging || showSettings) && previewLines.map((y, i) => {
         const opacity = Math.max(0.1, 0.85 - i * 0.08);
         return (
           <div
