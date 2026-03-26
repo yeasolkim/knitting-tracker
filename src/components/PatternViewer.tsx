@@ -23,6 +23,7 @@ export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
   scrollToContentY: (contentYPercent: number) => void;
   goToRuler: () => void;
+  fitWidthTop: () => void;
   restoreTransform: (scale: number, x: number, y: number) => void;
 }
 
@@ -157,6 +158,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       },
       goToRuler() {
         goToRuler();
+      },
+      fitWidthTop() {
+        const W = sizeRef.current?.clientWidth || 1;
+        const H = sizeRef.current?.clientHeight || 1;
+        const imgW = contentItemRef.current?.offsetWidth || W;
+        const imgH = contentItemRef.current?.offsetHeight || H;
+        const targetScale = Math.min(5, Math.max(0.5, W / imgW));
+        const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+        setFullTransform({ scale: targetScale, x: 0, y: maxTy });
       },
       restoreTransform(scale: number, x: number, y: number) {
         setFullTransform({ scale, x, y });

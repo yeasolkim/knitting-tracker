@@ -151,6 +151,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
+  const showGuideRef = useRef(showGuide);
+  useEffect(() => { showGuideRef.current = showGuide; }, [showGuide]);
 
   const handleImageSize = useCallback((w: number, h: number) => {
     setImgW(w);
@@ -160,7 +162,12 @@ function PatternViewerPage({ pattern }: Props) {
       // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          viewerRef.current?.goToRuler();
+          if (showGuideRef.current) {
+            // 첫 방문: 화면 맞춤 + 첫 페이지 상단
+            viewerRef.current?.fitWidthTop();
+          } else {
+            viewerRef.current?.goToRuler();
+          }
         });
       });
     }
