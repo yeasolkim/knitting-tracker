@@ -1024,7 +1024,7 @@ function PatternViewerPage({ pattern }: Props) {
         )}
 
         {/* Ruler height settings — vertical popup above ⚙️ button */}
-        {showRulerSettings && !isCrochet && (
+        {showRulerSettings && (!isCrochet || crochetShape === 'line') && (
           <div
             className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
             style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
