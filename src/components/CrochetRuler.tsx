@@ -52,6 +52,8 @@ export default function CrochetRuler({
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
+  const [isDraggingBody, setIsDraggingBody] = useState(false);
+  const bodyDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
 
   // Center drag
   const onCenterDown = (e: React.PointerEvent<SVGCircleElement>) => {
@@ -67,6 +69,39 @@ export default function CrochetRuler({
     onCenterChange(centerDragRef.current.cx + dx, centerDragRef.current.cy + dy);
   };
   const onCenterUp = () => { centerDragRef.current = null; };
+
+  // Corner drag (bottom-right) — resize rx and ry simultaneously
+  const cornerDragRef = useRef<{ sx: number; sy: number; r: number; ry: number } | null>(null);
+  const onCornerDown = (e: React.PointerEvent<SVGCircleElement>) => {
+    e.stopPropagation();
+    onDragStart();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    cornerDragRef.current = { sx: e.clientX, sy: e.clientY, r, ry: ryActual };
+  };
+  const onCornerMove = (e: React.PointerEvent<SVGCircleElement>) => {
+    if (!cornerDragRef.current) return;
+    const dx = (e.clientX - cornerDragRef.current.sx) / containerW * 100;
+    const dy = (e.clientY - cornerDragRef.current.sy) / containerH * 100;
+    onRadiusChange(Math.max(0.5, cornerDragRef.current.r + dx));
+    onRyChange?.(Math.max(0.5, cornerDragRef.current.ry + dy));
+  };
+  const onCornerUp = () => { cornerDragRef.current = null; };
+
+  // Body drag (interior of shape)
+  const onBodyDown = (e: React.PointerEvent<SVGPathElement>) => {
+    e.stopPropagation();
+    onDragStart();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingBody(true);
+    bodyDragRef.current = { sx: e.clientX, sy: e.clientY, cx, cy };
+  };
+  const onBodyMove = (e: React.PointerEvent<SVGPathElement>) => {
+    if (!bodyDragRef.current) return;
+    const dx = (e.clientX - bodyDragRef.current.sx) / containerW * 100;
+    const dy = (e.clientY - bodyDragRef.current.sy) / containerH * 100;
+    onCenterChange(bodyDragRef.current.cx + dx, bodyDragRef.current.cy + dy);
+  };
+  const onBodyUp = () => { setIsDraggingBody(false); bodyDragRef.current = null; };
 
   // Ellipse path via two 180° arcs (compatible with fill-rule: evenodd)
   const ellipsePath = (ecx: number, ecy: number, erx: number, ery: number) =>
@@ -180,6 +215,17 @@ export default function CrochetRuler({
         <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
         <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6} stroke="#b5541e" strokeWidth={1.5} />
 
+        {/* Interior drag area — whole shape is draggable */}
+        <path
+          d={shapePath(cxPx, cyPx, rPx, ryPx)}
+          fill="rgba(0,0,0,0)"
+          style={{ pointerEvents: 'all', touchAction: 'none', cursor: isDraggingBody ? 'grabbing' : 'grab' }}
+          onPointerDown={onBodyDown}
+          onPointerMove={onBodyMove}
+          onPointerUp={onBodyUp}
+          onPointerCancel={onBodyUp}
+        />
+
         {/* Center drag handle */}
         <circle cx={cxPx} cy={cyPx} r={7}
           fill="#b5541e" stroke="#fdf6e8" strokeWidth={1.5}
@@ -189,6 +235,27 @@ export default function CrochetRuler({
           onPointerUp={onCenterUp}
           onPointerCancel={onCenterUp}
         />
+
+        {/* Bottom-right corner resize handle — 2D shapes only */}
+        {is2D && (
+          <>
+            <circle cx={cxPx + rPx} cy={cyPx + ryPx} r={9}
+              fill="#b07840" stroke="#fdf6e8" strokeWidth={1.5}
+              style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'nwse-resize' }}
+              onPointerDown={onCornerDown}
+              onPointerMove={onCornerMove}
+              onPointerUp={onCornerUp}
+              onPointerCancel={onCornerUp}
+            />
+            {/* Resize icon lines (visual only, on top of circle) */}
+            <line x1={cxPx + rPx - 4} y1={cyPx + ryPx + 4} x2={cxPx + rPx + 4} y2={cyPx + ryPx - 4}
+              stroke="#fdf6e8" strokeWidth={1.5} strokeLinecap="round" style={{ pointerEvents: 'none' }} />
+            <line x1={cxPx + rPx + 1} y1={cyPx + ryPx + 4} x2={cxPx + rPx + 4} y2={cyPx + ryPx + 1}
+              stroke="#fdf6e8" strokeWidth={1.5} strokeLinecap="round" style={{ pointerEvents: 'none' }} />
+            <line x1={cxPx + rPx - 4} y1={cyPx + ryPx - 1} x2={cxPx + rPx - 1} y2={cyPx + ryPx - 4}
+              stroke="#fdf6e8" strokeWidth={1.5} strokeLinecap="round" style={{ pointerEvents: 'none' }} />
+          </>
+        )}
       </svg>
 
       {/* Nudge buttons — visible when settings open */}

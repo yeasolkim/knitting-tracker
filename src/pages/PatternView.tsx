@@ -193,8 +193,14 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
-  // 첫 오픈: progress 없거나, ruler_height가 0/null/undefined (아직 진행선 설정 안 한 상태)
-  const isFirstOpenRef = useRef(!pattern.progress || !(pattern.progress.ruler_height as number | null | undefined));
+  // 첫 오픈 판정: 코바늘 원형/타원/사각은 crochet_ruler_data.r 유무로, 나머지는 ruler_height 유무로 판단
+  const isFirstOpenRef = useRef((() => {
+    if (!pattern.progress) return true;
+    const savedCrochetData = pattern.progress.crochet_ruler_data as { r?: number; shape?: string } | undefined;
+    const isCrochetNonLine = pattern.type === 'crochet' && (savedCrochetData?.shape ?? 'circle') !== 'line';
+    if (isCrochetNonLine) return !(savedCrochetData?.r);
+    return !(pattern.progress.ruler_height as number | null | undefined);
+  })());
   const showGuideRef = useRef(showCrochetShapeGuide || showGuide);
   useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
 
@@ -848,7 +854,7 @@ function PatternViewerPage({ pattern }: Props) {
           ref={viewerRef}
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
-          rulerYPercent={rulerY + rulerHeight / 2}
+          rulerYPercent={isCrochet && crochetShape !== 'line' ? crochetCy : rulerY + rulerHeight / 2}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
           onResetRuler={isCrochet && crochetShape !== 'line' ? () => {
@@ -1182,7 +1188,7 @@ function PatternViewerPage({ pattern }: Props) {
 
             {/* 수치 표시 */}
             <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-              {(rulerHeight / maxRulerHeight * 100).toFixed(1)}%
+              {(rulerHeight / maxRulerHeight * 100).toFixed(2)}%
             </span>
           </div>
         )}
