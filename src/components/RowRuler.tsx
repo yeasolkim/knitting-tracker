@@ -155,9 +155,9 @@ const RowRuler = memo(function RowRuler({
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onChangePosition(Math.max(0, positionY - 0.3)); }}
-          className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/90 border border-[#d4b896] text-[#b07840] shadow-md hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+          className="flex items-center justify-center w-8 h-8 text-[#b07840]/70 hover:text-[#b5541e] active:scale-95 transition-all"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
           </svg>
         </button>
@@ -170,9 +170,9 @@ const RowRuler = memo(function RowRuler({
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
-          className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/90 border border-[#d4b896] text-[#b07840] shadow-md hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+          className="flex items-center justify-center w-8 h-8 text-[#b07840]/70 hover:text-[#b5541e] active:scale-95 transition-all"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
