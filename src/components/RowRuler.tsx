@@ -114,34 +114,26 @@ const RowRuler = memo(function RowRuler({
         style={{ top: `${positionY + height}%` }}
       />
 
-      {/* Ghost preview lines — visible while dragging position, adjusting height, or settings open */}
+      {/* Ghost preview lines */}
       {(isAdjusting || isDragging || showSettings) && previewLines.map((y, i) => {
         const opacity = Math.max(0.1, 0.85 - i * 0.08);
         return (
           <div
             key={i}
             className="absolute left-0 right-0 pointer-events-none"
-            style={{
-              top: `${y}%`,
-              height: `${height}%`,
-              opacity,
-              transition: 'none',
-            }}
+            style={{ top: `${y}%`, height: `${height}%`, opacity, transition: 'none' }}
           >
-            {/* Filled band */}
-            <div className="absolute inset-0 bg-rose-300/20" />
-            {/* Top & bottom edge lines — thin but visible */}
-            <div className="absolute top-0 inset-x-0 h-px bg-rose-400/70" />
-            <div className="absolute bottom-0 inset-x-0 h-px bg-rose-400/70" />
-            {/* Row number label */}
-            <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-rose-500/80 select-none">
+            <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
+            <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
+            <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
+            <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold select-none" style={{ color: 'rgba(181,84,30,0.75)' }}>
               +{i + 1}
             </div>
           </div>
         );
       })}
 
-      {/* Active ruler band — transparent window, just edge lines */}
+      {/* Active ruler band */}
       <div
         className="absolute left-0 right-0"
         style={{ top: `${positionY}%`, height: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto' }}
@@ -150,14 +142,12 @@ const RowRuler = memo(function RowRuler({
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
           onPointerDown={handleBodyPointerDown}
         >
-          {/* Top edge */}
-          <div className={`absolute top-0 inset-x-0 h-px ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
-          {/* Bottom edge */}
-          <div className={`absolute bottom-0 inset-x-0 h-px ${isDragging ? 'bg-rose-500/80' : 'bg-rose-400/70'}`} />
+          <div className="absolute top-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+          <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
         </div>
       </div>
 
-      {/* Floating complete + direction buttons */}
+      {/* Floating complete + direction + settings buttons */}
       <div
         className="absolute left-1.5 pointer-events-auto z-20 flex items-center gap-1 sm:gap-1.5"
         style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
@@ -165,7 +155,7 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onComplete(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
+          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
           title={t('ruler.complete')}
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -176,7 +166,7 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleDirection(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex flex-col items-center justify-center gap-0.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/90 border border-rose-200 text-rose-500 shadow-md hover:bg-rose-50 active:bg-rose-100 transition-all"
+          className="flex flex-col items-center justify-center gap-0.5 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#fdf6e8]/90 border border-[#d4b896] text-[#b5541e] shadow-md hover:bg-[#f5edd6] active:bg-[#ede5cc] transition-all"
           title={direction === 'up' ? t('ruler.dirUp') : t('ruler.dirDown')}
         >
           <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -202,8 +192,8 @@ const RowRuler = memo(function RowRuler({
           onPointerDown={(e) => e.stopPropagation()}
           className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
             showSettings
-              ? 'bg-rose-500 border-rose-500 text-white'
-              : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
+              ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
+              : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
           }`}
           title={t('ruler.heightSettings')}
         >

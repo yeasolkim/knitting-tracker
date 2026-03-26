@@ -1089,7 +1089,7 @@ function PatternViewerPage({ pattern }: Props) {
             <button
               onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
               onClick={() => handleCrochetRadiusChange(Math.min(49, contentToScreenR(crochetR) + 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-rose-200 bg-white text-rose-500 font-bold text-lg hover:bg-rose-50 active:scale-95 select-none leading-none"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
             >+</button>
 
             {/* 세로 슬라이더 */}
@@ -1106,7 +1106,7 @@ function PatternViewerPage({ pattern }: Props) {
               }}
               onPointerUp={() => setIsAdjustingCrochetRadius(false)}
               onPointerCancel={() => setIsAdjustingCrochetRadius(false)}
-              className="accent-rose-500 cursor-pointer"
+              className="accent-[#b5541e] cursor-pointer"
               style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
             />
 
@@ -1114,11 +1114,11 @@ function PatternViewerPage({ pattern }: Props) {
             <button
               onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
               onClick={() => handleCrochetRadiusChange(Math.max(0.5, contentToScreenR(crochetR) - 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-rose-200 bg-white text-rose-500 font-bold text-lg hover:bg-rose-50 active:scale-95 select-none leading-none"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
             >−</button>
 
             {/* 수치 표시 */}
-            <span className="text-[10px] text-rose-500 font-mono text-center leading-tight">
+            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
               {contentToScreenR(crochetR).toFixed(1)}%
             </span>
           </div>

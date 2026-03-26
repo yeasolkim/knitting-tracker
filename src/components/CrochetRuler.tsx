@@ -92,7 +92,7 @@ export default function CrochetRuler({
         className="absolute inset-0"
         style={{ width: containerW, height: containerH, pointerEvents: 'none', overflow: 'visible' }}
       >
-        {/* Shadow overlay — outside current ring (like RowRuler's above/below shadow) */}
+        {/* Shadow overlay — outside current ring */}
         <path
           d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${arcPath(rPx)}`}
           fill="rgba(0,0,0,0.25)"
@@ -108,9 +108,9 @@ export default function CrochetRuler({
             : arcPath(outerPx);
           return (
             <g key={i}>
-              <path d={d} fill="rgba(244,63,94,0.18)" fillRule="evenodd" />
+              <path d={d} fill="rgba(181,84,30,0.18)" fillRule="evenodd" />
               <circle cx={cxPx} cy={cyPx} r={outerPx}
-                fill="none" stroke="rgba(244,63,94,0.45)"
+                fill="none" stroke="rgba(181,84,30,0.45)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
             </g>
           );
@@ -124,7 +124,7 @@ export default function CrochetRuler({
           const d = innerPx > 2
             ? arcPath(rPx) + ' ' + arcPath(innerPx)
             : arcPath(rPx);
-          return <path d={d} fill="rgba(244,63,94,0.08)" fillRule="evenodd" />;
+          return <path d={d} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />;
         })()}
 
         {/* Ghost preview rings — future ring positions */}
@@ -134,15 +134,15 @@ export default function CrochetRuler({
           const d = arcPath(gr) + ' ' + arcPath(prevGr);
           return (
             <g key={i} style={{ opacity }}>
-              <path d={d} fill="rgba(251,113,133,0.22)" fillRule="evenodd" />
+              <path d={d} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
               <circle cx={cxPx} cy={cyPx} r={gr}
-                fill="none" stroke="rgba(251,113,133,0.7)"
+                fill="none" stroke="rgba(181,84,30,0.55)"
                 strokeWidth={1} strokeDasharray="4 3" />
               <text
                 x={cxPx + gr + 4}
                 y={cyPx + 4}
                 fontSize={10}
-                fill="rgba(244,63,94,0.8)"
+                fill="rgba(181,84,30,0.75)"
                 fontWeight="600"
                 style={{ userSelect: 'none' }}
               >
@@ -154,18 +154,18 @@ export default function CrochetRuler({
 
         {/* Current ring border */}
         <circle cx={cxPx} cy={cyPx} r={rPx}
-          fill="none" stroke="rgb(244,63,94)" strokeWidth={2} />
+          fill="none" stroke="#b5541e" strokeWidth={2} />
 
         {/* Center crosshair */}
         <line x1={cxPx - 7} y1={cyPx} x2={cxPx + 7} y2={cyPx}
-          stroke="rgb(244,63,94)" strokeWidth={1.5} />
+          stroke="#b5541e" strokeWidth={1.5} />
         <line x1={cxPx} y1={cyPx - 7} x2={cxPx} y2={cyPx + 7}
-          stroke="rgb(244,63,94)" strokeWidth={1.5} />
+          stroke="#b5541e" strokeWidth={1.5} />
 
         {/* Center drag handle */}
         <circle
           cx={cxPx} cy={cyPx} r={11}
-          fill="rgb(244,63,94)" stroke="white" strokeWidth={2}
+          fill="#b5541e" stroke="#fdf6e8" strokeWidth={2}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'move' }}
           onPointerDown={onCenterDown}
           onPointerMove={onCenterMove}
@@ -176,7 +176,7 @@ export default function CrochetRuler({
         {/* Radius drag handle — at right edge of circle */}
         <circle
           cx={cxPx + rPx} cy={cyPx} r={9}
-          fill="white" stroke="rgb(244,63,94)" strokeWidth={2.5}
+          fill="#fdf6e8" stroke="#b5541e" strokeWidth={2.5}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
           onPointerDown={onRadiusDown}
           onPointerMove={onRadiusMove}
@@ -194,7 +194,7 @@ export default function CrochetRuler({
         <button
           onClick={onComplete}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
+          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
           title={t('ruler.complete')}
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -208,8 +208,8 @@ export default function CrochetRuler({
           onPointerDown={(e) => e.stopPropagation()}
           className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
             showSettings
-              ? 'bg-rose-500 border-rose-500 text-white'
-              : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
+              ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
+              : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
           }`}
           title={t('ruler.heightSettings')}
         >
