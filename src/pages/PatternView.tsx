@@ -83,7 +83,7 @@ interface Props {
   pattern: PatternWithProgress;
 }
 
-type CrochetRing = { cx: number; cy: number; r: number };
+type CrochetRing = { cx: number; cy: number; r: number; ry?: number };
 
 type Snapshot = {
   subPatterns: SubPattern[];
@@ -97,6 +97,7 @@ type Snapshot = {
   crochetCx: number;
   crochetCy: number;
   crochetR: number;
+  crochetRy: number;
   completedCrochetRings: CrochetRing[];
 };
 
@@ -144,9 +145,9 @@ function PatternViewerPage({ pattern }: Props) {
   const [showRulerGuide, setShowRulerGuide] = useState(false);
 
   // Crochet ruler state
-  const [crochetShape, setCrochetShape] = useState<'line' | 'circle'>(() => {
+  const [crochetShape, setCrochetShape] = useState<'line' | 'circle' | 'ellipse'>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { shape?: string } | undefined;
-    return (saved?.shape ?? 'circle') as 'line' | 'circle';
+    return (saved?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse';
   });
   const [crochetCx, setCrochetCx] = useState<number>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { cx?: number } | undefined;
@@ -159,6 +160,10 @@ function PatternViewerPage({ pattern }: Props) {
   const [crochetR, setCrochetR] = useState<number>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { r?: number } | undefined;
     return saved?.r ?? 10;
+  });
+  const [crochetRy, setCrochetRy] = useState<number>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { ry?: number; r?: number } | undefined;
+    return saved?.ry ?? saved?.r ?? 10;
   });
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
     const saved = pattern.progress?.crochet_ruler_data as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
@@ -216,10 +221,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings });
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings };
-  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetCx, crochetCy, completedCrochetRings]);
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
+  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -248,6 +253,7 @@ function PatternViewerPage({ pattern }: Props) {
     crochetCx,
     crochetCy,
     crochetR,
+    crochetRy,
     completedCrochetRings,
   });
 
@@ -271,6 +277,7 @@ function PatternViewerPage({ pattern }: Props) {
     setCrochetCx(snap.crochetCx);
     setCrochetCy(snap.crochetCy);
     setCrochetR(snap.crochetR);
+    setCrochetRy(snap.crochetRy);
     setCompletedCrochetRings(snap.completedCrochetRings);
   }, []);
 
@@ -334,6 +341,12 @@ function PatternViewerPage({ pattern }: Props) {
     return (imagePct / 100) * refW * t.scale / W * 100;
   };
 
+  // Vertical radius (ry): uses containerH instead of containerW
+  const contentToScreenRy = (imagePct: number, t = viewTransform, H = containerH, iH = imgH) => {
+    const refH = iH > 0 ? iH : H;
+    return (imagePct / 100) * refH * t.scale / H * 100;
+  };
+
   // Convert screen % → image-relative %
   const screenToContentY = (screenPct: number, t = viewTransform, H = containerH, iH = imgH) => {
     const screenY = (screenPct / 100) * H;
@@ -385,6 +398,12 @@ function PatternViewerPage({ pattern }: Props) {
     setCrochetR(Math.max(0.5, (screenRPct / 100) * W / t.scale / refW * 100));
   }, []);
 
+  const handleCrochetRyChange = useCallback((screenRPct: number) => {
+    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
+    const refH = iH > 0 ? iH : H;
+    setCrochetRy(Math.max(0.5, (screenRPct / 100) * H / t.scale / refH * 100));
+  }, []);
+
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
     (pattern.progress?.crochet_marks as CrochetMark[]) || []
   );
@@ -399,8 +418,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
@@ -418,11 +437,16 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
-    const { crochetR: cr, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings } = latestRef.current;
-    const lastR = rings.length > 0 ? rings[rings.length - 1].r : 0;
-    const step = Math.max(cr - lastR, cr * 0.3);
-    setCompletedCrochetRings(prev => [...prev, { cx, cy, r: cr }]);
-    setCrochetR(cr + step);
+    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape } = latestRef.current;
+    const isEllipse = shape === 'ellipse';
+    const lastRing = rings.length > 0 ? rings[rings.length - 1] : null;
+    const lastR = lastRing ? lastRing.r : 0;
+    const lastRy = lastRing ? (lastRing.ry ?? lastRing.r) : 0;
+    const stepR = Math.max(cr - lastR, cr * 0.3);
+    const stepRy = Math.max(cry - lastRy, cry * 0.3);
+    setCompletedCrochetRings(prev => [...prev, { cx, cy, r: cr, ry: isEllipse ? cry : undefined }]);
+    setCrochetR(cr + stepR);
+    if (isEllipse) setCrochetRy(cry + stepRy);
     updateActiveSub(s => ({ ...s, current_row: s.current_row + 1 }));
   }, [captureHistory, updateActiveSub]);
 
@@ -472,9 +496,9 @@ function PatternViewerPage({ pattern }: Props) {
       note_positions: notePositions,
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
-      crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, completedRings: completedCrochetRings },
+      crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, completedCrochetRings, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => saveFn({
@@ -493,7 +517,7 @@ function PatternViewerPage({ pattern }: Props) {
     view_x: viewTransform.x,
     view_y: viewTransform.y,
     crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, completedRings: completedCrochetRings },
-  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, completedCrochetRings]);
+  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
@@ -823,7 +847,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerYPercent={rulerY + rulerHeight / 2}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
-          onResetRuler={isCrochet && crochetShape === 'circle' ? () => {
+          onResetRuler={isCrochet && crochetShape !== 'line' ? () => {
             const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
             const contentX = W / 2 - t.x / t.scale;
             const contentY = H / 2 - t.y / t.scale;
@@ -907,20 +931,24 @@ function PatternViewerPage({ pattern }: Props) {
             />
           )}
 
-          {isCrochet && crochetShape === 'circle' && (
+          {isCrochet && crochetShape !== 'line' && (
             <CrochetRuler
               cx={contentToScreenX(crochetCx)}
               cy={contentToScreenY(crochetCy)}
               r={contentToScreenR(crochetR)}
+              ry={crochetShape === 'ellipse' ? contentToScreenRy(crochetRy) : undefined}
+              shape={crochetShape === 'ellipse' ? 'ellipse' : 'circle'}
               completedRings={completedCrochetRings.map(ring => ({
                 cx: contentToScreenX(ring.cx),
                 cy: contentToScreenY(ring.cy),
                 r: contentToScreenR(ring.r),
+                ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
               }))}
               containerW={containerW}
               containerH={containerH}
               onCenterChange={handleCrochetCenterChange}
               onRadiusChange={handleCrochetRadiusChange}
+              onRyChange={crochetShape === 'ellipse' ? handleCrochetRyChange : undefined}
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               showSettings={showCrochetSettings}
@@ -940,6 +968,7 @@ function PatternViewerPage({ pattern }: Props) {
                 setCrochetCx(cx);
                 setCrochetCy(cy);
                 setCrochetR(10);
+                setCrochetRy(10);
               }}
             />
           )}
@@ -1006,7 +1035,7 @@ function PatternViewerPage({ pattern }: Props) {
                 {t('guide.crochetShape.desc')}
               </p>
               <div className="flex gap-2">
-                {(['line', 'circle'] as const).map((shape) => (
+                {(['line', 'circle', 'ellipse'] as const).map((shape) => (
                   <button
                     key={shape}
                     onClick={() => { setCrochetShape(shape); setShowCrochetShapeGuide(false); setShowGuide(true); }}
@@ -1025,7 +1054,7 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none px-4">
             <div className="bg-[#fdf6e8]/95 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-5 py-4 max-w-xs w-full">
               <p className="text-sm text-[#3d2b1f] text-center leading-relaxed">
-                {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.initial') : t('guide.initial')}
+                {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.initial') : t('guide.initial')}
               </p>
             </div>
           </div>
@@ -1036,17 +1065,17 @@ function PatternViewerPage({ pattern }: Props) {
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
             <div className="mx-4 bg-[#fdf6e8] rounded-2xl border-2 border-[#b07840] shadow-[4px_4px_0_#b07840] p-5 max-w-xs w-full">
               <h2 className="text-sm font-bold text-[#3d2b1f] tracking-tight mb-3">
-                {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.title') : t('guide.title')}
+                {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.title') : t('guide.title')}
               </h2>
               <ol className="space-y-3 mb-5">
                 <li className="flex items-start gap-2.5">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">1</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step1.title') : t('guide.step1.title')}
+                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step1.title') : t('guide.step1.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
+                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step1.desc') : t('guide.step1.desc')}
                     </p>
                   </div>
                 </li>
@@ -1054,10 +1083,10 @@ function PatternViewerPage({ pattern }: Props) {
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center">2</span>
                   <div>
                     <p className="text-xs font-semibold text-[#3d2b1f]">
-                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step2.title') : t('guide.step2.title')}
+                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step2.title') : t('guide.step2.title')}
                     </p>
                     <p className="text-[11px] text-[#7a5c46] mt-0.5">
-                      {(isCrochet && crochetShape === 'circle') ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
+                      {(isCrochet && crochetShape !== 'line') ? t('guide.crochet.step2.desc') : t('guide.step2.desc')}
                     </p>
                   </div>
                 </li>
@@ -1078,13 +1107,13 @@ function PatternViewerPage({ pattern }: Props) {
             {([
               { key: 'line', label: t('crochet.shape.line') },
               { key: 'circle', label: t('crochet.shape.circle') },
-              { key: 'ellipse', label: t('crochet.shape.ellipse'), disabled: true },
+              { key: 'ellipse', label: t('crochet.shape.ellipse') },
               { key: 'rect', label: t('crochet.shape.rect'), disabled: true },
             ] as { key: string; label: string; disabled?: boolean }[]).map(({ key, label, disabled }) => (
               <button
                 key={key}
                 disabled={disabled}
-                onClick={() => setCrochetShape(key as 'line' | 'circle')}
+                onClick={() => setCrochetShape(key as 'line' | 'circle' | 'ellipse')}
                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
                   crochetShape === key
                     ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] shadow-[1px_1px_0_#9a4318]'

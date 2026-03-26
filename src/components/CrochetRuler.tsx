@@ -4,14 +4,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface Props {
   cx: number;               // center X as % of containerW (screen space)
   cy: number;               // center Y as % of containerH (screen space)
-  r: number;                // radius as % of containerW (screen space)
-  completedRings: { cx: number; cy: number; r: number }[]; // each completed ring in screen % space (own center)
+  r: number;                // horizontal radius as % of containerW (screen space)
+  ry?: number;              // vertical radius as % of containerH (screen space, ellipse only)
+  shape?: 'circle' | 'ellipse';
+  completedRings: { cx: number; cy: number; r: number; ry?: number }[];
   containerW: number;
   containerH: number;
   showSettings?: boolean;
   isAdjusting?: boolean;
   onCenterChange: (cx: number, cy: number) => void;
   onRadiusChange: (r: number) => void;
+  onRyChange?: (ry: number) => void;
   onAdjustingChange: (v: boolean) => void;
   onComplete: () => void;
   onToggleSettings: () => void;
@@ -22,25 +25,32 @@ interface Props {
 }
 
 export default function CrochetRuler({
-  cx, cy, r, completedRings,
+  cx, cy, r, ry,
+  shape = 'circle',
+  completedRings,
   containerW, containerH,
   showSettings = false,
   isAdjusting = false,
-  onCenterChange, onRadiusChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset,
 }: Props) {
   const { t } = useLanguage();
 
+  const isEllipse = shape === 'ellipse';
   const cxPx = (cx / 100) * containerW;
   const cyPx = (cy / 100) * containerH;
   const rPx = Math.max(4, (r / 100) * containerW);
+  const ryActual = ry ?? r;
+  const ryPx = isEllipse ? Math.max(4, (ryActual / 100) * containerH) : rPx;
 
-  const [isRadiusDragging, setIsRadiusDragging] = useState(false);
+  const [isRxDragging, setIsRxDragging] = useState(false);
+  const [isRyDragging, setIsRyDragging] = useState(false);
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
-  const radiusDragRef = useRef<{ sx: number; r: number } | null>(null);
+  const rxDragRef = useRef<{ sx: number; r: number; dir: 1 | -1 } | null>(null);
+  const ryDragRef = useRef<{ sy: number; ry: number; dir: 1 | -1 } | null>(null);
 
-  // Center handle drag
+  // Center drag
   const onCenterDown = (e: React.PointerEvent<SVGCircleElement>) => {
     e.stopPropagation();
     onDragStart();
@@ -55,39 +65,57 @@ export default function CrochetRuler({
   };
   const onCenterUp = () => { centerDragRef.current = null; };
 
-  // Radius handle drag
-  const onRadiusDown = (e: React.PointerEvent<SVGGElement>) => {
+  // Rx handle drag (right: dir=1, left: dir=-1)
+  const onRxDown = (e: React.PointerEvent<SVGGElement>, dir: 1 | -1) => {
     e.stopPropagation();
     onDragStart();
     e.currentTarget.setPointerCapture(e.pointerId);
-    radiusDragRef.current = { sx: e.clientX, r };
-    setIsRadiusDragging(true);
+    rxDragRef.current = { sx: e.clientX, r, dir };
+    setIsRxDragging(true);
   };
-  const onRadiusMove = (e: React.PointerEvent<SVGGElement>) => {
-    if (!radiusDragRef.current) return;
-    const dx = (e.clientX - radiusDragRef.current.sx) / containerW * 100;
-    onRadiusChange(Math.max(1, radiusDragRef.current.r + dx));
+  const onRxMove = (e: React.PointerEvent<SVGGElement>) => {
+    if (!rxDragRef.current) return;
+    const dx = (e.clientX - rxDragRef.current.sx) / containerW * 100;
+    onRadiusChange(Math.max(1, rxDragRef.current.r + dx * rxDragRef.current.dir));
   };
-  const onRadiusUp = () => { radiusDragRef.current = null; setIsRadiusDragging(false); };
+  const onRxUp = () => { rxDragRef.current = null; setIsRxDragging(false); };
 
-  // Full-circle path via two 180° arcs (compatible with fill-rule: evenodd)
-  const arcPath = (cx: number, cy: number, radius: number) =>
-    `M ${cx - radius} ${cy} ` +
-    `a ${radius} ${radius} 0 1 0 ${radius * 2} 0 ` +
-    `a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`;
+  // Ry handle drag (bottom: dir=1, top: dir=-1)
+  const onRyDown = (e: React.PointerEvent<SVGGElement>, dir: 1 | -1) => {
+    e.stopPropagation();
+    onDragStart();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    ryDragRef.current = { sy: e.clientY, ry: ryActual, dir };
+    setIsRyDragging(true);
+  };
+  const onRyMove = (e: React.PointerEvent<SVGGElement>) => {
+    if (!ryDragRef.current || !onRyChange) return;
+    const dy = (e.clientY - ryDragRef.current.sy) / containerH * 100;
+    onRyChange(Math.max(1, ryDragRef.current.ry + dy * ryDragRef.current.dir));
+  };
+  const onRyUp = () => { ryDragRef.current = null; setIsRyDragging(false); };
+
+  // Ellipse path via two 180° arcs (compatible with fill-rule: evenodd)
+  const ellipsePath = (ecx: number, ecy: number, erx: number, ery: number) =>
+    `M ${ecx - erx} ${ecy} ` +
+    `a ${erx} ${ery} 0 1 0 ${erx * 2} 0 ` +
+    `a ${erx} ${ery} 0 1 0 ${-erx * 2} 0`;
 
   // Ghost preview rings
-  const lastCompletedPx = completedRings.length > 0
-    ? Math.max(4, (completedRings[completedRings.length - 1].r / 100) * containerW)
+  const lastCompleted = completedRings.length > 0 ? completedRings[completedRings.length - 1] : null;
+  const lastRPx = lastCompleted ? Math.max(4, (lastCompleted.r / 100) * containerW) : 0;
+  const lastRyPx = lastCompleted
+    ? (lastCompleted.ry != null ? Math.max(4, (lastCompleted.ry / 100) * containerH) : lastRPx)
     : 0;
-  const stepPx = Math.max(rPx - lastCompletedPx, rPx * 0.3);
-  const showGhosts = isRadiusDragging || isAdjusting || showSettings;
-  const ghostRings: number[] = [];
+  const stepRx = Math.max(rPx - lastRPx, rPx * 0.3);
+  const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
+  const showGhosts = isRxDragging || isRyDragging || isAdjusting || showSettings;
+  const ghostRings: { rx: number; ry: number }[] = [];
   if (showGhosts) {
     for (let i = 1; i <= 10; i++) {
-      const gr = rPx + stepPx * i;
-      if (gr > Math.max(containerW, containerH) * 1.2) break;
-      ghostRings.push(gr);
+      const grx = rPx + stepRx * i;
+      if (grx > Math.max(containerW, containerH) * 1.2) break;
+      ghostRings.push({ rx: grx, ry: ryPx + stepRy * i });
     }
   }
 
@@ -101,7 +129,7 @@ export default function CrochetRuler({
       >
         {/* Shadow overlay — outside current ring */}
         <path
-          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${arcPath(cxPx, cyPx, rPx)}`}
+          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${ellipsePath(cxPx, cyPx, rPx, ryPx)}`}
           fill="rgba(0,0,0,0.25)"
           fillRule="evenodd"
         />
@@ -110,20 +138,21 @@ export default function CrochetRuler({
         {completedRings.map((ring, i) => {
           const ringCxPx = (ring.cx / 100) * containerW;
           const ringCyPx = (ring.cy / 100) * containerH;
-          const ringRPx = Math.max(4, (ring.r / 100) * containerW);
+          const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
+          const ringRyPx = ring.ry != null ? Math.max(4, (ring.ry / 100) * containerH) : ringRxPx;
           return (
             <g key={i}>
-              <path d={arcPath(ringCxPx, ringCyPx, ringRPx)} fill="rgba(52,211,153,0.15)" fillRule="evenodd" />
-              <circle cx={ringCxPx} cy={ringCyPx} r={ringRPx}
+              <path d={ellipsePath(ringCxPx, ringCyPx, ringRxPx, ringRyPx)} fill="rgba(52,211,153,0.15)" fillRule="evenodd" />
+              <ellipse cx={ringCxPx} cy={ringCyPx} rx={ringRxPx} ry={ringRyPx}
                 fill="none" stroke="rgba(16,185,129,0.5)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
               <g
                 style={{ pointerEvents: 'all', cursor: 'pointer' }}
                 onClick={() => onDeleteRing(i)}
               >
-                <circle cx={ringCxPx} cy={ringCyPx - ringRPx} r={9} fill="rgba(239,68,68,0.8)" />
+                <circle cx={ringCxPx} cy={ringCyPx - ringRyPx} r={9} fill="rgba(239,68,68,0.8)" />
                 <text
-                  x={ringCxPx} y={ringCyPx - ringRPx}
+                  x={ringCxPx} y={ringCyPx - ringRyPx}
                   textAnchor="middle" dominantBaseline="central"
                   fill="white" fontSize={13} fontWeight="bold"
                   style={{ userSelect: 'none' }}
@@ -134,20 +163,21 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring — shaded */}
-        <path d={arcPath(cxPx, cyPx, rPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
+        <path d={ellipsePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
         {/* Ghost preview rings */}
-        {ghostRings.map((gr, i) => {
+        {ghostRings.map(({ rx: grx, ry: gry }, i) => {
           const opacity = Math.max(0.07, 0.6 - i * 0.06);
-          const prevGr = i === 0 ? rPx : ghostRings[i - 1];
-          const d = arcPath(cxPx, cyPx, gr) + ' ' + arcPath(cxPx, cyPx, prevGr);
+          const prevRx = i === 0 ? rPx : ghostRings[i - 1].rx;
+          const prevRy = i === 0 ? ryPx : ghostRings[i - 1].ry;
+          const d = ellipsePath(cxPx, cyPx, grx, gry) + ' ' + ellipsePath(cxPx, cyPx, prevRx, prevRy);
           return (
             <g key={i} style={{ opacity }}>
               <path d={d} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
-              <circle cx={cxPx} cy={cyPx} r={gr}
+              <ellipse cx={cxPx} cy={cyPx} rx={grx} ry={gry}
                 fill="none" stroke="rgba(181,84,30,0.55)"
                 strokeWidth={1} strokeDasharray="4 3" />
-              <text x={cxPx + gr + 4} y={cyPx + 4} fontSize={10}
+              <text x={cxPx + grx + 4} y={cyPx + 4} fontSize={10}
                 fill="rgba(181,84,30,0.75)" fontWeight="600" style={{ userSelect: 'none' }}>
                 +{i + 1}
               </text>
@@ -156,7 +186,7 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring border */}
-        <circle cx={cxPx} cy={cyPx} r={rPx} fill="none" stroke="#b5541e" strokeWidth={2} />
+        <ellipse cx={cxPx} cy={cyPx} rx={rPx} ry={ryPx} fill="none" stroke="#b5541e" strokeWidth={2} />
 
         {/* Center crosshair */}
         <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
@@ -172,14 +202,14 @@ export default function CrochetRuler({
           onPointerCancel={onCenterUp}
         />
 
-        {/* Radius drag handle — bidirectional arrow ↔ */}
+        {/* Right rx handle */}
         <g
           transform={`translate(${cxPx + rPx}, ${cyPx})`}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
-          onPointerDown={onRadiusDown}
-          onPointerMove={onRadiusMove}
-          onPointerUp={onRadiusUp}
-          onPointerCancel={onRadiusUp}
+          onPointerDown={(e) => onRxDown(e, 1)}
+          onPointerMove={onRxMove}
+          onPointerUp={onRxUp}
+          onPointerCancel={onRxUp}
         >
           <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
           <path
@@ -187,6 +217,60 @@ export default function CrochetRuler({
             stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
           />
         </g>
+
+        {/* Left rx handle — ellipse only */}
+        {isEllipse && (
+          <g
+            transform={`translate(${cxPx - rPx}, ${cyPx})`}
+            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
+            onPointerDown={(e) => onRxDown(e, -1)}
+            onPointerMove={onRxMove}
+            onPointerUp={onRxUp}
+            onPointerCancel={onRxUp}
+          >
+            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
+            <path
+              d="M -6 0 L -2.5 -3.5 M -6 0 L -2.5 3.5 M -6 0 L 6 0 M 6 0 L 2.5 -3.5 M 6 0 L 2.5 3.5"
+              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
+            />
+          </g>
+        )}
+
+        {/* Bottom ry handle — ellipse only */}
+        {isEllipse && (
+          <g
+            transform={`translate(${cxPx}, ${cyPx + ryPx})`}
+            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
+            onPointerDown={(e) => onRyDown(e, 1)}
+            onPointerMove={onRyMove}
+            onPointerUp={onRyUp}
+            onPointerCancel={onRyUp}
+          >
+            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
+            <path
+              d="M 0 -6 L -3.5 -2.5 M 0 -6 L 3.5 -2.5 M 0 -6 L 0 6 M 0 6 L -3.5 2.5 M 0 6 L 3.5 2.5"
+              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
+            />
+          </g>
+        )}
+
+        {/* Top ry handle — ellipse only */}
+        {isEllipse && (
+          <g
+            transform={`translate(${cxPx}, ${cyPx - ryPx})`}
+            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
+            onPointerDown={(e) => onRyDown(e, -1)}
+            onPointerMove={onRyMove}
+            onPointerUp={onRyUp}
+            onPointerCancel={onRyUp}
+          >
+            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
+            <path
+              d="M 0 -6 L -3.5 -2.5 M 0 -6 L 3.5 -2.5 M 0 -6 L 0 6 M 0 6 L -3.5 2.5 M 0 6 L 3.5 2.5"
+              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
+            />
+          </g>
+        )}
       </svg>
 
       {/* Floating buttons — left side */}
@@ -250,41 +334,75 @@ export default function CrochetRuler({
           </button>
         </div>
 
-        {/* Radius settings popup — positioned right of buttons via left-full */}
+        {/* Radius settings popup — positioned right of buttons */}
         {showSettings && (
           <div
-            className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+            className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex gap-2 items-end"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-              onClick={() => onRadiusChange(Math.min(MAX_R, r + 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >+</button>
+            {/* Rx (horizontal) column */}
+            <div className="flex flex-col items-center gap-1.5">
+              {isEllipse && <span className="text-[9px] text-[#a08060] font-bold">↔</span>}
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onClick={() => onRadiusChange(Math.min(MAX_R, r + 0.5))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >+</button>
+              <input
+                type="range" min={0} max={10000} step={1}
+                value={Math.round(Math.min(r, MAX_R) / MAX_R * 10000)}
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onChange={(e) => {
+                  onAdjustingChange(true);
+                  onRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
+                }}
+                onPointerUp={() => onAdjustingChange(false)}
+                onPointerCancel={() => onAdjustingChange(false)}
+                className="accent-[#b5541e] cursor-pointer"
+                style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+              />
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onClick={() => onRadiusChange(Math.max(0.5, r - 0.5))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >−</button>
+              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                {r.toFixed(1)}%
+              </span>
+            </div>
 
-            <input
-              type="range" min={0} max={10000} step={1}
-              value={Math.round(Math.min(r, MAX_R) / MAX_R * 10000)}
-              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-              onChange={(e) => {
-                onAdjustingChange(true);
-                onRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
-              }}
-              onPointerUp={() => onAdjustingChange(false)}
-              onPointerCancel={() => onAdjustingChange(false)}
-              className="accent-[#b5541e] cursor-pointer"
-              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-            />
-
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-              onClick={() => onRadiusChange(Math.max(0.5, r - 0.5))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >−</button>
-
-            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-              {r.toFixed(1)}%
-            </span>
+            {/* Ry (vertical) column — ellipse only */}
+            {isEllipse && (
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] text-[#a08060] font-bold">↕</span>
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onClick={() => onRyChange?.(Math.min(MAX_R, ryActual + 0.5))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                >+</button>
+                <input
+                  type="range" min={0} max={10000} step={1}
+                  value={Math.round(Math.min(ryActual, MAX_R) / MAX_R * 10000)}
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onChange={(e) => {
+                    onAdjustingChange(true);
+                    onRyChange?.(Math.max(0.5, Number(e.target.value) / 10000 * MAX_R));
+                  }}
+                  onPointerUp={() => onAdjustingChange(false)}
+                  onPointerCancel={() => onAdjustingChange(false)}
+                  className="accent-[#b5541e] cursor-pointer"
+                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+                />
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onClick={() => onRyChange?.(Math.max(0.5, ryActual - 0.5))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                >−</button>
+                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                  {ryActual.toFixed(1)}%
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
