@@ -4,10 +4,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface Props {
   cx: number;               // center X as % of containerW (screen space)
   cy: number;               // center Y as % of containerH (screen space)
-  r: number;                // horizontal radius as % of containerW (screen space)
-  ry?: number;              // vertical radius as % of containerH (screen space, ellipse only)
-  shape?: 'circle' | 'ellipse';
-  completedRings: { cx: number; cy: number; r: number; ry?: number }[];
+  r: number;                // horizontal radius/half-width as % of containerW (screen space)
+  ry?: number;              // vertical radius/half-height as % of containerH (screen space)
+  shape?: 'circle' | 'ellipse' | 'rect';
+  completedRings: { cx: number; cy: number; r: number; ry?: number; shape?: string }[];
   containerW: number;
   containerH: number;
   showSettings?: boolean;
@@ -38,12 +38,15 @@ export default function CrochetRuler({
 }: Props) {
   const { t } = useLanguage();
 
+  const isRect = shape === 'rect';
   const isEllipse = shape === 'ellipse';
+  const is2D = isEllipse || isRect;  // has independent ry dimension
+
   const cxPx = (cx / 100) * containerW;
   const cyPx = (cy / 100) * containerH;
   const rPx = Math.max(4, (r / 100) * containerW);
   const ryActual = ry ?? r;
-  const ryPx = isEllipse ? Math.max(4, (ryActual / 100) * containerH) : rPx;
+  const ryPx = is2D ? Math.max(1, (ryActual / 100) * containerH) : rPx;
 
   const [maxR, setMaxR] = useState(() => Math.max(49, r));
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
@@ -71,11 +74,21 @@ export default function CrochetRuler({
     `a ${erx} ${ery} 0 1 0 ${erx * 2} 0 ` +
     `a ${erx} ${ery} 0 1 0 ${-erx * 2} 0`;
 
+  // Rectangle path (clockwise, compatible with fill-rule: evenodd)
+  const rectPath = (ecx: number, ecy: number, erw: number, erh: number) =>
+    `M ${ecx - erw} ${ecy - erh} H ${ecx + erw} V ${ecy + erh} H ${ecx - erw} Z`;
+
+  const shapePath = (ecx: number, ecy: number, erx: number, ery: number) =>
+    isRect ? rectPath(ecx, ecy, erx, ery) : ellipsePath(ecx, ecy, erx, ery);
+
+  const ringPath = (ringShape: string | undefined, ecx: number, ecy: number, erx: number, ery: number) =>
+    ringShape === 'rect' ? rectPath(ecx, ecy, erx, ery) : ellipsePath(ecx, ecy, erx, ery);
+
   // Ghost preview rings
   const lastCompleted = completedRings.length > 0 ? completedRings[completedRings.length - 1] : null;
   const lastRPx = lastCompleted ? Math.max(4, (lastCompleted.r / 100) * containerW) : 0;
   const lastRyPx = lastCompleted
-    ? (lastCompleted.ry != null ? Math.max(4, (lastCompleted.ry / 100) * containerH) : lastRPx)
+    ? (lastCompleted.ry != null ? Math.max(1, (lastCompleted.ry / 100) * containerH) : lastRPx)
     : 0;
   const stepRx = Math.max(rPx - lastRPx, rPx * 0.3);
   const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
@@ -89,10 +102,10 @@ export default function CrochetRuler({
     }
   }
 
-  // Nudge button positions (screen %, relative to container edges)
-  const rHPct = (rPx / containerH) * 100;  // r converted to % of containerH for circle
-  const nudgeTopY = cy - (isEllipse ? ryActual : rHPct);
-  const nudgeBottomY = cy + (isEllipse ? ryActual : rHPct);
+  // Nudge button positions — at ring edges
+  const rHPct = (rPx / containerH) * 100;
+  const nudgeTopY = cy - (is2D ? ryActual : rHPct);
+  const nudgeBottomY = cy + (is2D ? ryActual : rHPct);
   const nudgeLeftX = cx - r;
   const nudgeRightX = cx + r;
 
@@ -104,7 +117,7 @@ export default function CrochetRuler({
       >
         {/* Shadow overlay — outside current ring */}
         <path
-          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${ellipsePath(cxPx, cyPx, rPx, ryPx)}`}
+          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${shapePath(cxPx, cyPx, rPx, ryPx)}`}
           fill="rgba(0,0,0,0.25)"
           fillRule="evenodd"
         />
@@ -114,12 +127,12 @@ export default function CrochetRuler({
           const ringCxPx = (ring.cx / 100) * containerW;
           const ringCyPx = (ring.cy / 100) * containerH;
           const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
-          const ringRyPx = ring.ry != null ? Math.max(4, (ring.ry / 100) * containerH) : ringRxPx;
+          const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
+          const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
           return (
             <g key={i}>
-              <path d={ellipsePath(ringCxPx, ringCyPx, ringRxPx, ringRyPx)} fill="rgba(52,211,153,0.15)" fillRule="evenodd" />
-              <ellipse cx={ringCxPx} cy={ringCyPx} rx={ringRxPx} ry={ringRyPx}
-                fill="none" stroke="rgba(16,185,129,0.5)"
+              <path d={rp} fill="rgba(52,211,153,0.15)" fillRule="evenodd" />
+              <path d={rp} fill="none" stroke="rgba(16,185,129,0.5)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
               <g
                 style={{ pointerEvents: 'all', cursor: 'pointer' }}
@@ -138,18 +151,18 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring — shaded */}
-        <path d={ellipsePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
+        <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
         {/* Ghost preview rings */}
         {ghostRings.map(({ rx: grx, ry: gry }, i) => {
           const opacity = Math.max(0.07, 0.6 - i * 0.06);
           const prevRx = i === 0 ? rPx : ghostRings[i - 1].rx;
           const prevRy = i === 0 ? ryPx : ghostRings[i - 1].ry;
-          const d = ellipsePath(cxPx, cyPx, grx, gry) + ' ' + ellipsePath(cxPx, cyPx, prevRx, prevRy);
+          const gd = shapePath(cxPx, cyPx, grx, gry) + ' ' + shapePath(cxPx, cyPx, prevRx, prevRy);
           return (
             <g key={i} style={{ opacity }}>
-              <path d={d} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
-              <ellipse cx={cxPx} cy={cyPx} rx={grx} ry={gry}
+              <path d={gd} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
+              <path d={shapePath(cxPx, cyPx, grx, gry)}
                 fill="none" stroke="rgba(181,84,30,0.55)"
                 strokeWidth={1} strokeDasharray="4 3" />
               <text x={cxPx + grx + 4} y={cyPx + 4} fontSize={10}
@@ -161,7 +174,7 @@ export default function CrochetRuler({
         })}
 
         {/* Current ring border */}
-        <ellipse cx={cxPx} cy={cyPx} rx={rPx} ry={ryPx} fill="none" stroke="#b5541e" strokeWidth={1} />
+        <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="none" stroke="#b5541e" strokeWidth={1} />
 
         {/* Center crosshair */}
         <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
@@ -300,15 +313,15 @@ export default function CrochetRuler({
           </button>
         </div>
 
-        {/* Radius settings popup — positioned right of buttons */}
+        {/* Size settings popup — positioned right of buttons */}
         {showSettings && (
           <div
             className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex gap-2 items-end"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {/* Rx (horizontal) column */}
+            {/* Rx / width column */}
             <div className="flex flex-col items-center gap-1.5">
-              {isEllipse && <span className="text-[9px] text-[#a08060] font-bold">↔</span>}
+              {is2D && <span className="text-[9px] text-[#a08060] font-bold">↔</span>}
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setMaxR((m) => m * 1.3)}
@@ -342,8 +355,8 @@ export default function CrochetRuler({
               </span>
             </div>
 
-            {/* Ry (vertical) column — ellipse only */}
-            {isEllipse && (
+            {/* Ry / height column — 2D shapes only */}
+            {is2D && (
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[9px] text-[#a08060] font-bold">↕</span>
                 <button
