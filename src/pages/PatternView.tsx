@@ -823,7 +823,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerYPercent={rulerY + rulerHeight / 2}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
-          onResetRuler={isCrochet ? () => {
+          onResetRuler={isCrochet && crochetShape === 'circle' ? () => {
             const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
             const contentX = W / 2 - t.x / t.scale;
             const contentY = H / 2 - t.y / t.scale;
