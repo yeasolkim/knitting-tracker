@@ -188,7 +188,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
-  const isFirstOpenRef = useRef((pattern.progress?.ruler_height ?? -1) === 0);
+  // 첫 오픈: progress 없거나, ruler_height가 0/null/undefined (아직 진행선 설정 안 한 상태)
+  const isFirstOpenRef = useRef(!pattern.progress || !(pattern.progress.ruler_height as number | null | undefined));
   const showGuideRef = useRef(showCrochetShapeGuide || showGuide);
   useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
 
