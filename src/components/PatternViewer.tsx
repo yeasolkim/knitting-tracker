@@ -2,15 +2,12 @@ import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, 
 import { useGestures } from '@/hooks/useGestures';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-let pdfVersion = '';
-const pdfVersionListeners: Array<(v: string) => void> = [];
-
 const PdfDocument = lazy(() =>
   import('react-pdf').then((mod) => {
-    pdfVersion = mod.pdfjs.version;
-    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
-    pdfVersionListeners.forEach((fn) => fn(pdfVersion));
-    pdfVersionListeners.length = 0;
+    mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString();
     return { default: mod.Document };
   })
 );
@@ -43,24 +40,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
-    const [pdfVer, setPdfVer] = useState(pdfVersion);
-    useEffect(() => {
-      if (pdfVersion) { setPdfVer(pdfVersion); return; }
-      const fn = (v: string) => setPdfVer(v);
-      pdfVersionListeners.push(fn);
-      return () => {
-        const idx = pdfVersionListeners.indexOf(fn);
-        if (idx !== -1) pdfVersionListeners.splice(idx, 1);
-      };
-    }, []);
-    const pdfOptions = useMemo(() => ({
-      cMapUrl: pdfVer ? `//unpkg.com/pdfjs-dist@${pdfVer}/cmaps/` : undefined,
-      cMapPacked: true,
-    }), [pdfVer]);
+    const pdfOptions = useMemo(() => ({ cMapPacked: true }), []);
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
-    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+    // PDF virtual scrolling: only render visible pages
+    const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
+    const pdfFirstPageHeightRef = useRef(0);
+    const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 });
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
     // being recreated on every pan/zoom frame.
@@ -95,6 +84,24 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const cy = Math.max(-maxTy, Math.min(maxTy, y));
       if (cx !== x || cy !== y) setXY(cx, cy);
     }, [transform, onTransformChange, setXY]);
+
+    // Recalculate visible PDF page range whenever transform changes
+    useEffect(() => {
+      if (fileType !== 'pdf' || pdfPages === 0) return;
+      const H = sizeRef.current?.clientHeight || 600;
+      const GAP = 8;
+      const pageH = pdfFirstPageHeightRef.current || Math.round(containerWidth * 0.9 * pdfPageAspectRatio);
+      if (pageH <= 0) return;
+      const totalH = pageH * pdfPages + GAP * Math.max(0, pdfPages - 1);
+      const contentTop = -totalH / 2;
+      const { scale, y } = transform;
+      const BUFFER = 1;
+      const viewTop = -y / scale - H / (2 * scale);
+      const viewBottom = -y / scale + H / (2 * scale);
+      const start = Math.max(0, Math.floor((viewTop - contentTop) / (pageH + GAP)) - BUFFER);
+      const end = Math.min(pdfPages - 1, Math.ceil((viewBottom - contentTop) / (pageH + GAP)) + BUFFER);
+      setVisibleRange((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+    }, [transform, pdfPages, pdfPageAspectRatio, containerWidth, fileType]);
 
     useEffect(() => {
       if (!sizeRef.current) return;
@@ -305,21 +312,42 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 <div ref={(el) => { contentItemRef.current = el; }} className="flex flex-col items-center gap-2">
                   <PdfDocument
                     file={fileUrl}
-                    onLoadSuccess={({ numPages }: { numPages: number }) => setPdfPages(numPages)}
+                    onLoadSuccess={({ numPages }: { numPages: number }) => {
+                      setPdfPages(numPages);
+                      setVisibleRange({ start: 0, end: Math.min(2, numPages - 1) });
+                    }}
                     options={pdfOptions}
                     className="flex flex-col items-center gap-2"
                   >
-                    {Array.from({ length: pdfPages }, (_, i) => (
-                      <PdfPage
-                        key={i + 1}
-                        pageNumber={i + 1}
-                        width={containerWidth * 0.9}
-                        scale={devicePixelRatio}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={true}
-                        onRenderSuccess={reportImageSize}
-                      />
-                    ))}
+                    {Array.from({ length: pdfPages }, (_, i) => {
+                      const pw = Math.round(containerWidth * 0.9);
+                      const ph = pdfFirstPageHeightRef.current || Math.round(pw * pdfPageAspectRatio);
+                      const isVisible = i >= visibleRange.start && i <= visibleRange.end;
+                      return (
+                        <div key={i + 1} style={{ width: pw, height: ph, flexShrink: 0 }}>
+                          {isVisible ? (
+                            <PdfPage
+                              pageNumber={i + 1}
+                              width={pw}
+                              scale={devicePixelRatio}
+                              renderTextLayer={false}
+                              renderAnnotationLayer={false}
+                              onRenderSuccess={() => {
+                                if (i === 0 && pdfFirstPageHeightRef.current === 0) {
+                                  // Measure actual first-page height to correct placeholder sizes
+                                  const canvas = document.querySelector('.react-pdf__Page__canvas') as HTMLCanvasElement | null;
+                                  if (canvas) {
+                                    pdfFirstPageHeightRef.current = canvas.offsetHeight;
+                                    setPdfPageAspectRatio(canvas.offsetHeight / pw);
+                                  }
+                                }
+                                reportImageSize();
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </PdfDocument>
                 </div>
               </Suspense>
