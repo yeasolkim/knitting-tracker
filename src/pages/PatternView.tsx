@@ -921,6 +921,8 @@ function PatternViewerPage({ pattern }: Props) {
               showSettings={showCrochetSettings}
               isAdjusting={isAdjustingCrochetRadius}
               onDragStart={captureHistory}
+              onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); }}
+              onDeleteAllRings={() => { captureHistory(); setCompletedCrochetRings([]); }}
             />
           )}
 

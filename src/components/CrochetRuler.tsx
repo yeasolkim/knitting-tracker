@@ -15,6 +15,8 @@ interface Props {
   onComplete: () => void;
   onToggleSettings: () => void;
   onDragStart: () => void;
+  onDeleteRing: (index: number) => void;
+  onDeleteAllRings: () => void;
 }
 
 export default function CrochetRuler({
@@ -23,6 +25,7 @@ export default function CrochetRuler({
   showSettings = false,
   isAdjusting = false,
   onCenterChange, onRadiusChange, onComplete, onToggleSettings, onDragStart,
+  onDeleteRing, onDeleteAllRings,
 }: Props) {
   const { t } = useLanguage();
 
@@ -51,14 +54,14 @@ export default function CrochetRuler({
   const onCenterUp = () => { centerDragRef.current = null; };
 
   // Radius handle drag
-  const onRadiusDown = (e: React.PointerEvent<SVGCircleElement>) => {
+  const onRadiusDown = (e: React.PointerEvent<SVGGElement>) => {
     e.stopPropagation();
     onDragStart();
     e.currentTarget.setPointerCapture(e.pointerId);
     radiusDragRef.current = { sx: e.clientX, r };
     setIsRadiusDragging(true);
   };
-  const onRadiusMove = (e: React.PointerEvent<SVGCircleElement>) => {
+  const onRadiusMove = (e: React.PointerEvent<SVGGElement>) => {
     if (!radiusDragRef.current) return;
     const dx = (e.clientX - radiusDragRef.current.sx) / containerW * 100;
     onRadiusChange(Math.max(1, radiusDragRef.current.r + dx));
@@ -99,17 +102,30 @@ export default function CrochetRuler({
           fillRule="evenodd"
         />
 
-        {/* Completed rings — each fixed at its own center */}
+        {/* Completed rings — green, each fixed at its own center */}
         {completedRings.map((ring, i) => {
           const ringCxPx = (ring.cx / 100) * containerW;
           const ringCyPx = (ring.cy / 100) * containerH;
           const ringRPx = Math.max(4, (ring.r / 100) * containerW);
           return (
             <g key={i}>
-              <path d={arcPath(ringCxPx, ringCyPx, ringRPx)} fill="rgba(181,84,30,0.15)" fillRule="evenodd" />
+              <path d={arcPath(ringCxPx, ringCyPx, ringRPx)} fill="rgba(52,211,153,0.15)" fillRule="evenodd" />
               <circle cx={ringCxPx} cy={ringCyPx} r={ringRPx}
-                fill="none" stroke="rgba(181,84,30,0.45)"
+                fill="none" stroke="rgba(16,185,129,0.5)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
+              {/* Delete button at top of ring */}
+              <g
+                style={{ pointerEvents: 'all', cursor: 'pointer' }}
+                onClick={() => onDeleteRing(i)}
+              >
+                <circle cx={ringCxPx} cy={ringCyPx - ringRPx} r={9} fill="rgba(239,68,68,0.8)" />
+                <text
+                  x={ringCxPx} y={ringCyPx - ringRPx}
+                  textAnchor="middle" dominantBaseline="central"
+                  fill="white" fontSize={13} fontWeight="bold"
+                  style={{ userSelect: 'none' }}
+                >×</text>
+              </g>
             </g>
           );
         })}
@@ -147,15 +163,15 @@ export default function CrochetRuler({
           fill="none" stroke="#b5541e" strokeWidth={2} />
 
         {/* Center crosshair */}
-        <line x1={cxPx - 7} y1={cyPx} x2={cxPx + 7} y2={cyPx}
+        <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx}
           stroke="#b5541e" strokeWidth={1.5} />
-        <line x1={cxPx} y1={cyPx - 7} x2={cxPx} y2={cyPx + 7}
+        <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6}
           stroke="#b5541e" strokeWidth={1.5} />
 
-        {/* Center drag handle */}
+        {/* Center drag handle — small circle */}
         <circle
-          cx={cxPx} cy={cyPx} r={11}
-          fill="#b5541e" stroke="#fdf6e8" strokeWidth={2}
+          cx={cxPx} cy={cyPx} r={7}
+          fill="#b5541e" stroke="#fdf6e8" strokeWidth={1.5}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'move' }}
           onPointerDown={onCenterDown}
           onPointerMove={onCenterMove}
@@ -163,16 +179,21 @@ export default function CrochetRuler({
           onPointerCancel={onCenterUp}
         />
 
-        {/* Radius drag handle — at right edge of circle */}
-        <circle
-          cx={cxPx + rPx} cy={cyPx} r={9}
-          fill="#fdf6e8" stroke="#b5541e" strokeWidth={2.5}
+        {/* Radius drag handle — bidirectional arrow ↔ */}
+        <g
+          transform={`translate(${cxPx + rPx}, ${cyPx})`}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
           onPointerDown={onRadiusDown}
           onPointerMove={onRadiusMove}
           onPointerUp={onRadiusUp}
           onPointerCancel={onRadiusUp}
-        />
+        >
+          <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
+          <path
+            d="M -6 0 L -2.5 -3.5 M -6 0 L -2.5 3.5 M -6 0 L 6 0 M 6 0 L 2.5 -3.5 M 6 0 L 2.5 3.5"
+            stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
+          />
+        </g>
       </svg>
 
       {/* Floating buttons — left side, same layout as RowRuler */}
@@ -191,6 +212,20 @@ export default function CrochetRuler({
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </button>
+
+        {/* Delete all rings button — shown when there are completed rings */}
+        {completedRings.length > 0 && (
+          <button
+            onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
+            title={t('view.deleteAll')}
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
 
         {/* Settings button */}
         <button
