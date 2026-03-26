@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
@@ -24,6 +24,8 @@ interface Props {
   onReset: () => void;
 }
 
+const NUDGE = 0.3;
+
 export default function CrochetRuler({
   cx, cy, r, ry,
   shape = 'circle',
@@ -43,12 +45,7 @@ export default function CrochetRuler({
   const ryActual = ry ?? r;
   const ryPx = isEllipse ? Math.max(4, (ryActual / 100) * containerH) : rPx;
 
-  const [isRxDragging, setIsRxDragging] = useState(false);
-  const [isRyDragging, setIsRyDragging] = useState(false);
-
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
-  const rxDragRef = useRef<{ sx: number; r: number; dir: 1 | -1 } | null>(null);
-  const ryDragRef = useRef<{ sy: number; ry: number; dir: 1 | -1 } | null>(null);
 
   // Center drag
   const onCenterDown = (e: React.PointerEvent<SVGCircleElement>) => {
@@ -65,36 +62,6 @@ export default function CrochetRuler({
   };
   const onCenterUp = () => { centerDragRef.current = null; };
 
-  // Rx handle drag (right: dir=1, left: dir=-1)
-  const onRxDown = (e: React.PointerEvent<SVGGElement>, dir: 1 | -1) => {
-    e.stopPropagation();
-    onDragStart();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    rxDragRef.current = { sx: e.clientX, r, dir };
-    setIsRxDragging(true);
-  };
-  const onRxMove = (e: React.PointerEvent<SVGGElement>) => {
-    if (!rxDragRef.current) return;
-    const dx = (e.clientX - rxDragRef.current.sx) / containerW * 100;
-    onRadiusChange(Math.max(1, rxDragRef.current.r + dx * rxDragRef.current.dir));
-  };
-  const onRxUp = () => { rxDragRef.current = null; setIsRxDragging(false); };
-
-  // Ry handle drag (bottom: dir=1, top: dir=-1)
-  const onRyDown = (e: React.PointerEvent<SVGGElement>, dir: 1 | -1) => {
-    e.stopPropagation();
-    onDragStart();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    ryDragRef.current = { sy: e.clientY, ry: ryActual, dir };
-    setIsRyDragging(true);
-  };
-  const onRyMove = (e: React.PointerEvent<SVGGElement>) => {
-    if (!ryDragRef.current || !onRyChange) return;
-    const dy = (e.clientY - ryDragRef.current.sy) / containerH * 100;
-    onRyChange(Math.max(0.1, ryDragRef.current.ry + dy * ryDragRef.current.dir));
-  };
-  const onRyUp = () => { ryDragRef.current = null; setIsRyDragging(false); };
-
   // Ellipse path via two 180° arcs (compatible with fill-rule: evenodd)
   const ellipsePath = (ecx: number, ecy: number, erx: number, ery: number) =>
     `M ${ecx - erx} ${ecy} ` +
@@ -109,7 +76,7 @@ export default function CrochetRuler({
     : 0;
   const stepRx = Math.max(rPx - lastRPx, rPx * 0.3);
   const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
-  const showGhosts = isRxDragging || isRyDragging || isAdjusting || showSettings;
+  const showGhosts = isAdjusting || showSettings;
   const ghostRings: { rx: number; ry: number }[] = [];
   if (showGhosts) {
     for (let i = 1; i <= 10; i++) {
@@ -120,6 +87,13 @@ export default function CrochetRuler({
   }
 
   const MAX_R = 49;
+
+  // Nudge button positions (screen %, relative to container edges)
+  const rHPct = (rPx / containerH) * 100;  // r converted to % of containerH for circle
+  const nudgeTopY = cy - (isEllipse ? ryActual : rHPct);
+  const nudgeBottomY = cy + (isEllipse ? ryActual : rHPct);
+  const nudgeLeftX = cx - r;
+  const nudgeRightX = cx + r;
 
   return (
     <>
@@ -201,77 +175,68 @@ export default function CrochetRuler({
           onPointerUp={onCenterUp}
           onPointerCancel={onCenterUp}
         />
-
-        {/* Right rx handle */}
-        <g
-          transform={`translate(${cxPx + rPx}, ${cyPx})`}
-          style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
-          onPointerDown={(e) => onRxDown(e, 1)}
-          onPointerMove={onRxMove}
-          onPointerUp={onRxUp}
-          onPointerCancel={onRxUp}
-        >
-          <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
-          <path
-            d="M -6 0 L -2.5 -3.5 M -6 0 L -2.5 3.5 M -6 0 L 6 0 M 6 0 L 2.5 -3.5 M 6 0 L 2.5 3.5"
-            stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
-          />
-        </g>
-
-        {/* Left rx handle — ellipse only */}
-        {isEllipse && (
-          <g
-            transform={`translate(${cxPx - rPx}, ${cyPx})`}
-            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
-            onPointerDown={(e) => onRxDown(e, -1)}
-            onPointerMove={onRxMove}
-            onPointerUp={onRxUp}
-            onPointerCancel={onRxUp}
-          >
-            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
-            <path
-              d="M -6 0 L -2.5 -3.5 M -6 0 L -2.5 3.5 M -6 0 L 6 0 M 6 0 L 2.5 -3.5 M 6 0 L 2.5 3.5"
-              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
-            />
-          </g>
-        )}
-
-        {/* Bottom ry handle — ellipse only, visible when settings open */}
-        {isEllipse && showSettings && (
-          <g
-            transform={`translate(${cxPx}, ${cyPx + ryPx})`}
-            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
-            onPointerDown={(e) => onRyDown(e, 1)}
-            onPointerMove={onRyMove}
-            onPointerUp={onRyUp}
-            onPointerCancel={onRyUp}
-          >
-            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
-            <path
-              d="M 0 -6 L -3.5 -2.5 M 0 -6 L 3.5 -2.5 M 0 -6 L 0 6 M 0 6 L -3.5 2.5 M 0 6 L 3.5 2.5"
-              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
-            />
-          </g>
-        )}
-
-        {/* Top ry handle — ellipse only, visible when settings open */}
-        {isEllipse && showSettings && (
-          <g
-            transform={`translate(${cxPx}, ${cyPx - ryPx})`}
-            style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
-            onPointerDown={(e) => onRyDown(e, -1)}
-            onPointerMove={onRyMove}
-            onPointerUp={onRyUp}
-            onPointerCancel={onRyUp}
-          >
-            <circle r={13} fill="#fdf6e8" stroke="#b5541e" strokeWidth={2} />
-            <path
-              d="M 0 -6 L -3.5 -2.5 M 0 -6 L 3.5 -2.5 M 0 -6 L 0 6 M 0 6 L -3.5 2.5 M 0 6 L 3.5 2.5"
-              stroke="#b5541e" strokeWidth={1.8} strokeLinecap="round" fill="none"
-            />
-          </g>
-        )}
       </svg>
+
+      {/* Nudge buttons — visible when settings open */}
+      {showSettings && (
+        <>
+          {/* Up */}
+          <div className="absolute pointer-events-auto z-20"
+            style={{ left: `${cx}%`, top: `${nudgeTopY}%`, transform: 'translate(-50%, -100%)' }}>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onCenterChange(cx, cy - NUDGE)}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Down */}
+          <div className="absolute pointer-events-auto z-20"
+            style={{ left: `${cx}%`, top: `${nudgeBottomY}%`, transform: 'translate(-50%, 0%)' }}>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onCenterChange(cx, cy + NUDGE)}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Left */}
+          <div className="absolute pointer-events-auto z-20"
+            style={{ left: `${nudgeLeftX}%`, top: `${cy}%`, transform: 'translate(-100%, -50%)' }}>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onCenterChange(cx - NUDGE, cy)}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Right */}
+          <div className="absolute pointer-events-auto z-20"
+            style={{ left: `${nudgeRightX}%`, top: `${cy}%`, transform: 'translate(0%, -50%)' }}>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onCenterChange(cx + NUDGE, cy)}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Floating buttons — left side */}
       <div
