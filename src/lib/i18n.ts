@@ -176,6 +176,10 @@ const ko: Translations = {
   'guide.step2.desc': '진행선을 드래그해 현재 뜨고 있는 단에 맞춰 보세요.',
   'guide.start': '설정 시작하기',
   'guide.initial': "뜨개질을 시작할 위치로 가서 '진행선 가져오기' 버튼을 눌러 시작하세요.",
+  'crochet.shape.line': '직선',
+  'crochet.shape.circle': '원형',
+  'crochet.shape.ellipse': '타원형',
+  'crochet.shape.rect': '사각형',
 };
 
 const en: Translations = {
@@ -337,6 +341,10 @@ const en: Translations = {
   'guide.step2.desc': 'Drag the ruler to align it with the row you are currently knitting.',
   'guide.start': 'Start Setup',
   'guide.initial': "Scroll to where you want to start knitting, then tap 'Bring Here'.",
+  'crochet.shape.line': 'Linear',
+  'crochet.shape.circle': 'Circle',
+  'crochet.shape.ellipse': 'Ellipse',
+  'crochet.shape.rect': 'Rectangle',
 };
 
 const ja: Translations = {
@@ -498,6 +506,10 @@ const ja: Translations = {
   'guide.step2.desc': 'ルーラーをドラッグして、現在編んでいる段に合わせてください。',
   'guide.start': '設定を始める',
   'guide.initial': "編み始めの位置に移動して「ラインをここへ」ボタンを押してください。",
+  'crochet.shape.line': '直線',
+  'crochet.shape.circle': '円形',
+  'crochet.shape.ellipse': '楕円形',
+  'crochet.shape.rect': '四角形',
 };
 
 const zh: Translations = {
@@ -659,6 +671,10 @@ const zh: Translations = {
   'guide.step2.desc': '拖动进行线对准当前正在编织的行。',
   'guide.start': '开始设置',
   'guide.initial': "滚动到开始编织的位置，点击「移进度线到此处」按钮开始。",
+  'crochet.shape.line': '直线',
+  'crochet.shape.circle': '圆形',
+  'crochet.shape.ellipse': '椭圆形',
+  'crochet.shape.rect': '矩形',
 };
 
 const es: Translations = {
@@ -804,6 +820,10 @@ const es: Translations = {
   'guide.step2.desc': 'Arrastra la línea hasta la fila que estás tejiendo.',
   'guide.start': 'Empezar configuración',
   'guide.initial': "Ve a la fila inicial y pulsa «Traer aquí» para empezar.",
+  'crochet.shape.line': 'Línea',
+  'crochet.shape.circle': 'Círculo',
+  'crochet.shape.ellipse': 'Elipse',
+  'crochet.shape.rect': 'Rectángulo',
 };
 
 const fr: Translations = {
@@ -949,6 +969,10 @@ const fr: Translations = {
   'guide.step2.desc': 'Faites glisser la ligne pour l\'aligner sur le rang en cours.',
   'guide.start': 'Commencer la configuration',
   'guide.initial': "Allez à la rangée de départ et appuyez sur « Amener ici ».",
+  'crochet.shape.line': 'Ligne',
+  'crochet.shape.circle': 'Cercle',
+  'crochet.shape.ellipse': 'Ellipse',
+  'crochet.shape.rect': 'Rectangle',
 };
 
 const it: Translations = {
@@ -1094,6 +1118,10 @@ const it: Translations = {
   'guide.step2.desc': 'Trascina la riga per allinearla al punto che stai lavorando.',
   'guide.start': 'Inizia configurazione',
   'guide.initial': "Vai alla riga di partenza e premi «Porta qui» per iniziare.",
+  'crochet.shape.line': 'Linea',
+  'crochet.shape.circle': 'Cerchio',
+  'crochet.shape.ellipse': 'Ellisse',
+  'crochet.shape.rect': 'Rettangolo',
 };
 
 const de: Translations = {
@@ -1239,6 +1267,10 @@ const de: Translations = {
   'guide.step2.desc': 'Ziehe das Lineal auf die Reihe, die du gerade strickst.',
   'guide.start': 'Einrichtung starten',
   'guide.initial': "Gehe zur Startreihe und tippe auf «Hierher holen».",
+  'crochet.shape.line': 'Linie',
+  'crochet.shape.circle': 'Kreis',
+  'crochet.shape.ellipse': 'Ellipse',
+  'crochet.shape.rect': 'Rechteck',
 };
 
 const pt: Translations = {
@@ -1384,6 +1416,10 @@ const pt: Translations = {
   'guide.step2.desc': 'Arraste a linha para alinhar com a carreira que está a tricotar.',
   'guide.start': 'Iniciar configuração',
   'guide.initial': "Vai para a carreira inicial e toca em «Trazer aqui».",
+  'crochet.shape.line': 'Linha',
+  'crochet.shape.circle': 'Círculo',
+  'crochet.shape.ellipse': 'Elipse',
+  'crochet.shape.rect': 'Retângulo',
 };
 
 const ru: Translations = {
@@ -1529,6 +1565,10 @@ const ru: Translations = {
   'guide.step2.desc': 'Перетащите линейку на текущий ряд.',
   'guide.start': 'Начать настройку',
   'guide.initial': "Перейдите к начальному ряду и нажмите «Привести сюда».",
+  'crochet.shape.line': 'Линия',
+  'crochet.shape.circle': 'Круг',
+  'crochet.shape.ellipse': 'Эллипс',
+  'crochet.shape.rect': 'Прямоугольник',
 };
 
 const no: Translations = {
@@ -1674,6 +1714,10 @@ const no: Translations = {
   'guide.step2.desc': 'Dra linjalen til raden du strikker.',
   'guide.start': 'Start oppsett',
   'guide.initial': "Gå til startraden og trykk på «Hent hit».",
+  'crochet.shape.line': 'Linje',
+  'crochet.shape.circle': 'Sirkel',
+  'crochet.shape.ellipse': 'Ellipse',
+  'crochet.shape.rect': 'Rektangel',
 };
 
 const nl: Translations = {
@@ -1819,6 +1863,10 @@ const nl: Translations = {
   'guide.step2.desc': 'Sleep het lineaal naar de rij die je aan het breien bent.',
   'guide.start': 'Instellen starten',
   'guide.initial': "Ga naar de startrij en tik op «Hierheen halen».",
+  'crochet.shape.line': 'Lijn',
+  'crochet.shape.circle': 'Cirkel',
+  'crochet.shape.ellipse': 'Ellips',
+  'crochet.shape.rect': 'Rechthoek',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };

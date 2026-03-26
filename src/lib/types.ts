@@ -68,6 +68,7 @@ export interface PatternProgress {
   view_scale?: number | null;
   view_x?: number | null;
   view_y?: number | null;
+  crochet_ruler_data?: unknown;
   updated_at: string;
 }
 

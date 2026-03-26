@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
+import CrochetRuler from '@/components/CrochetRuler';
 import CompletedOverlay from '@/components/CompletedOverlay';
 import CrochetMarkers from '@/components/CrochetMarkers';
 import KnittingMarkers from '@/components/KnittingMarkers';
@@ -91,6 +92,10 @@ type Snapshot = {
   completedMarks: CompletedMark[];
   crochetMarks: CrochetMark[];
   knittingMarks: KnittingMark[];
+  crochetCx: number;
+  crochetCy: number;
+  crochetR: number;
+  completedCrochetRings: number[];
 };
 
 const MAX_HISTORY = 20;
@@ -132,6 +137,28 @@ function PatternViewerPage({ pattern }: Props) {
   const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 1.35));
   const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
   const [showRulerGuide, setShowRulerGuide] = useState(false);
+
+  // Crochet ruler state
+  const [crochetShape, setCrochetShape] = useState<'line' | 'circle'>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { shape?: string } | undefined;
+    return (saved?.shape ?? 'circle') as 'line' | 'circle';
+  });
+  const [crochetCx, setCrochetCx] = useState<number>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { cx?: number } | undefined;
+    return saved?.cx ?? 50;
+  });
+  const [crochetCy, setCrochetCy] = useState<number>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { cy?: number } | undefined;
+    return saved?.cy ?? 50;
+  });
+  const [crochetR, setCrochetR] = useState<number>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { r?: number } | undefined;
+    return saved?.r ?? 10;
+  });
+  const [completedCrochetRings, setCompletedCrochetRings] = useState<number[]>(() => {
+    const saved = pattern.progress?.crochet_ruler_data as { completedRings?: number[] } | undefined;
+    return saved?.completedRings ?? [];
+  });
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
@@ -175,10 +202,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW });
+  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW };
-  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW]);
+    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings };
+  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -204,6 +231,10 @@ function PatternViewerPage({ pattern }: Props) {
     completedMarks,
     crochetMarks: [],
     knittingMarks: [],
+    crochetCx,
+    crochetCy,
+    crochetR,
+    completedCrochetRings,
   });
 
   const captureHistory = useCallback(() => {
@@ -223,6 +254,10 @@ function PatternViewerPage({ pattern }: Props) {
     setCompletedMarks(snap.completedMarks);
     setCrochetMarks(snap.crochetMarks);
     setKnittingMarks(snap.knittingMarks);
+    setCrochetCx(snap.crochetCx);
+    setCrochetCy(snap.crochetCy);
+    setCrochetR(snap.crochetR);
+    setCompletedCrochetRings(snap.completedCrochetRings);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -270,6 +305,21 @@ function PatternViewerPage({ pattern }: Props) {
     return (screenY / H) * 100;
   };
 
+  // X-axis equivalents (for crochet circle center)
+  const contentToScreenX = (imagePct: number, t = viewTransform, W = containerW, iW = imgW) => {
+    const imgLeft = iW > 0 ? (W - iW) / 2 : 0;
+    const refW = iW > 0 ? iW : W;
+    const contentX = imgLeft + (imagePct / 100) * refW;
+    const screenX = (contentX - W / 2) * t.scale + W / 2 + t.x;
+    return (screenX / W) * 100;
+  };
+
+  // Radius: proportional size (no translation offset)
+  const contentToScreenR = (imagePct: number, t = viewTransform, W = containerW, iW = imgW) => {
+    const refW = iW > 0 ? iW : W;
+    return (imagePct / 100) * refW * t.scale / W * 100;
+  };
+
   // Convert screen % → image-relative %
   const screenToContentY = (screenPct: number, t = viewTransform, H = containerH, iH = imgH) => {
     const screenY = (screenPct / 100) * H;
@@ -303,6 +353,24 @@ function PatternViewerPage({ pattern }: Props) {
     setShowGuide(false);
   }, []);
 
+  const handleCrochetCenterChange = useCallback((screenCxPct: number, screenCyPct: number) => {
+    const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
+    const screenX = (screenCxPct / 100) * W;
+    const contentX = (screenX - W / 2 - t.x) / t.scale + W / 2;
+    const cx = iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+    const screenY = (screenCyPct / 100) * H;
+    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    const cy = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+    setCrochetCx(cx);
+    setCrochetCy(cy);
+  }, []);
+
+  const handleCrochetRadiusChange = useCallback((screenRPct: number) => {
+    const { viewTransform: t, containerW: W, imgW: iW } = latestRef.current;
+    const refW = iW > 0 ? iW : W;
+    setCrochetR(Math.max(0.5, (screenRPct / 100) * W / t.scale / refW * 100));
+  }, []);
+
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
     (pattern.progress?.crochet_marks as CrochetMark[]) || []
   );
@@ -317,8 +385,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
@@ -333,6 +401,16 @@ function PatternViewerPage({ pattern }: Props) {
       prev.map((s) => (s.id === activeSubId ? updater(s) : s))
     );
   }, [activeSubId]);
+
+  const handleCrochetCircleComplete = useCallback(() => {
+    captureHistory();
+    const { crochetR: cr, completedCrochetRings: rings } = latestRef.current;
+    const lastR = rings.length > 0 ? rings[rings.length - 1] : 0;
+    const step = Math.max(cr - lastR, cr * 0.3);
+    setCompletedCrochetRings(prev => [...prev, cr]);
+    setCrochetR(cr + step);
+    updateActiveSub(s => ({ ...s, current_row: s.current_row + 1 }));
+  }, [captureHistory, updateActiveSub]);
 
   const userIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -380,8 +458,9 @@ function PatternViewerPage({ pattern }: Props) {
       note_positions: notePositions,
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
+      crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, completedRings: completedCrochetRings },
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => saveFn({
@@ -399,7 +478,8 @@ function PatternViewerPage({ pattern }: Props) {
     view_scale: viewTransform.scale,
     view_x: viewTransform.x,
     view_y: viewTransform.y,
-  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform]);
+    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, completedRings: completedCrochetRings },
+  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, completedCrochetRings]);
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
@@ -786,7 +866,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          {!isCrochet && !showGuide && (
+          {(!isCrochet || crochetShape === 'line') && !showGuide && (
             <RowRuler
               positionY={screenRulerY}
               height={screenRulerHeight}
@@ -799,6 +879,21 @@ function PatternViewerPage({ pattern }: Props) {
               onComplete={handleComplete}
               onToggleDirection={() => { captureHistory(); setRulerDirection((d) => (d === 'up' ? 'down' : 'up')); }}
               onToggleSettings={() => setShowRulerSettings((v) => !v)}
+              onDragStart={captureHistory}
+            />
+          )}
+
+          {isCrochet && crochetShape === 'circle' && (
+            <CrochetRuler
+              cx={contentToScreenX(crochetCx)}
+              cy={contentToScreenY(crochetCy)}
+              r={contentToScreenR(crochetR)}
+              completedRings={completedCrochetRings.map(r => contentToScreenR(r))}
+              containerW={containerW}
+              containerH={containerH}
+              onCenterChange={handleCrochetCenterChange}
+              onRadiusChange={handleCrochetRadiusChange}
+              onComplete={handleCrochetCircleComplete}
               onDragStart={captureHistory}
             />
           )}
@@ -871,6 +966,33 @@ function PatternViewerPage({ pattern }: Props) {
                 {t('guide.start')}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Crochet shape selector */}
+        {isCrochet && (
+          <div className="absolute top-3 right-3 z-30 flex flex-col gap-1">
+            {([
+              { key: 'line', label: t('crochet.shape.line') },
+              { key: 'circle', label: t('crochet.shape.circle') },
+              { key: 'ellipse', label: t('crochet.shape.ellipse'), disabled: true },
+              { key: 'rect', label: t('crochet.shape.rect'), disabled: true },
+            ] as { key: string; label: string; disabled?: boolean }[]).map(({ key, label, disabled }) => (
+              <button
+                key={key}
+                disabled={disabled}
+                onClick={() => setCrochetShape(key as 'line' | 'circle')}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
+                  crochetShape === key
+                    ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] shadow-[1px_1px_0_#9a4318]'
+                    : disabled
+                    ? 'bg-[#fdf6e8]/60 text-[#c4a882] border-[#d4b896] cursor-not-allowed opacity-50'
+                    : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:border-[#b5541e]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
 
