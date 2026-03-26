@@ -869,7 +869,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          {!isCrochet && (
+          {(!isCrochet || crochetShape === 'line') && (
             <CompletedOverlay
               marks={screenCompletedMarks}
               onUpdate={handleCompletedMarkUpdate}
@@ -1124,7 +1124,7 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         )}
 
-        {!isCrochet && hasMarkSelection && completedMarks.length > 1 && (
+        {(!isCrochet || crochetShape === 'line') && hasMarkSelection && completedMarks.length > 1 && (
           <div className="absolute top-4 right-4 z-30">
             <button
               onClick={() => {
