@@ -135,6 +135,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       setXY(transform.x, -(contentY - H / 2) * transform.scale);
     }, [rulerYPercent, imageToContentY, transform.x, transform.scale, setXY]);
 
+    const fitWidth = useCallback(() => {
+      const W = sizeRef.current?.clientWidth || 1;
+      const imgW = contentItemRef.current?.offsetWidth || W;
+      const targetScale = Math.min(5, Math.max(0.5, W / imgW));
+      setFullTransform({ scale: targetScale, x: 0, y: 0 });
+    }, [setFullTransform]);
+
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
         const H = sizeRef.current?.clientHeight || 1;
@@ -315,16 +322,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Fixed overlays (ruler) */}
         {children}
 
-        {/* Vertical scrollbar — stops above zoom buttons (bottom ~112px) */}
+        {/* Vertical scrollbar — stops above zoom buttons (bottom ~160px) */}
         {showScrollbars && (
-          <div ref={vTrackRef} className="absolute right-1 top-2 bottom-28 w-3 z-25">
+          <div ref={vTrackRef} className="absolute right-1 top-2 bottom-40 w-6 z-25">
             <div className="relative w-full h-full">
               <div
-                className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/20"
+                className="absolute right-0 w-3 rounded-full bg-[#3d2b1f]/20"
                 style={{ top: 0, bottom: 0 }}
               />
               <div
-                className="absolute right-0 w-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                className="absolute right-0 w-3 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{ top: `${vThumbTop * 100}%`, height: `${vThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('v')}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -338,14 +345,14 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
         {/* Horizontal scrollbar — right edge avoids zoom buttons (right ~80px) */}
         {showScrollbars && (
-          <div ref={hTrackRef} className="absolute bottom-1 left-20 right-20 h-3 z-25">
+          <div ref={hTrackRef} className="absolute bottom-1 left-20 right-20 h-6 z-25">
             <div className="relative w-full h-full">
               <div
-                className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/20"
+                className="absolute bottom-0 h-3 rounded-full bg-[#3d2b1f]/20"
                 style={{ left: 0, right: 0 }}
               />
               <div
-                className="absolute bottom-0 h-1.5 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
+                className="absolute bottom-0 h-3 rounded-full bg-[#3d2b1f]/50 hover:bg-[#b5541e]/70 cursor-grab active:cursor-grabbing pointer-events-auto transition-colors"
                 style={{ left: `${hThumbLeft * 100}%`, width: `${hThumbFrac * 100}%` }}
                 onPointerDown={handleScrollThumbDown('h')}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -362,16 +369,26 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           <button
             onClick={zoomIn}
             className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="확대"
+            aria-label={t('viewer.zoomIn')}
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="축소"
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label={t('viewer.zoomOut')}
           >
             −
+          </button>
+          <button
+            onClick={fitWidth}
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#b07840] flex flex-col items-center justify-center gap-0.5 text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label={t('viewer.fitWidth')}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16M4 12l3-3m-3 3l3 3M20 12l-3-3m3 3l-3 3" />
+            </svg>
+            <span className="text-[8px] font-bold leading-none">{t('viewer.fitWidth')}</span>
           </button>
         </div>
 
