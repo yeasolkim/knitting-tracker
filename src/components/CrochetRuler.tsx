@@ -1,29 +1,36 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   cx: number;               // center X as % of containerW (screen space)
   cy: number;               // center Y as % of containerH (screen space)
   r: number;                // radius as % of containerW (screen space)
-  completedRings: number[]; // each completed ring radius as % of containerW
+  completedRings: number[]; // each completed ring radius as % of containerW (screen space)
   containerW: number;
   containerH: number;
+  showSettings?: boolean;
+  isAdjusting?: boolean;
   onCenterChange: (cx: number, cy: number) => void;
   onRadiusChange: (r: number) => void;
   onComplete: () => void;
+  onToggleSettings: () => void;
   onDragStart: () => void;
 }
 
 export default function CrochetRuler({
   cx, cy, r, completedRings,
   containerW, containerH,
-  onCenterChange, onRadiusChange, onComplete, onDragStart,
+  showSettings = false,
+  isAdjusting = false,
+  onCenterChange, onRadiusChange, onComplete, onToggleSettings, onDragStart,
 }: Props) {
   const { t } = useLanguage();
 
   const cxPx = (cx / 100) * containerW;
   const cyPx = (cy / 100) * containerH;
   const rPx = Math.max(4, (r / 100) * containerW);
+
+  const [isRadiusDragging, setIsRadiusDragging] = useState(false);
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
   const radiusDragRef = useRef<{ sx: number; r: number } | null>(null);
@@ -49,13 +56,14 @@ export default function CrochetRuler({
     onDragStart();
     e.currentTarget.setPointerCapture(e.pointerId);
     radiusDragRef.current = { sx: e.clientX, r };
+    setIsRadiusDragging(true);
   };
   const onRadiusMove = (e: React.PointerEvent<SVGCircleElement>) => {
     if (!radiusDragRef.current) return;
     const dx = (e.clientX - radiusDragRef.current.sx) / containerW * 100;
     onRadiusChange(Math.max(1, radiusDragRef.current.r + dx));
   };
-  const onRadiusUp = () => { radiusDragRef.current = null; };
+  const onRadiusUp = () => { radiusDragRef.current = null; setIsRadiusDragging(false); };
 
   // Full-circle path via two 180° arcs (compatible with fill-rule: evenodd)
   const arcPath = (radius: number) =>
@@ -63,8 +71,20 @@ export default function CrochetRuler({
     `a ${radius} ${radius} 0 1 0 ${radius * 2} 0 ` +
     `a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`;
 
-  // 단 완료 button: below the circle
-  const btnTopPct = ((cyPx + rPx + 12) / containerH) * 100;
+  // Ghost preview rings — shown when dragging radius or settings open
+  const lastCompletedPx = completedRings.length > 0
+    ? Math.max(4, (completedRings[completedRings.length - 1] / 100) * containerW)
+    : 0;
+  const stepPx = Math.max(rPx - lastCompletedPx, rPx * 0.3);
+  const showGhosts = isRadiusDragging || isAdjusting || showSettings;
+  const ghostRings: number[] = [];
+  if (showGhosts) {
+    for (let i = 1; i <= 10; i++) {
+      const gr = rPx + stepPx * i;
+      if (gr > Math.max(containerW, containerH) * 1.2) break;
+      ghostRings.push(gr);
+    }
+  }
 
   return (
     <>
@@ -72,6 +92,13 @@ export default function CrochetRuler({
         className="absolute inset-0"
         style={{ width: containerW, height: containerH, pointerEvents: 'none', overflow: 'visible' }}
       >
+        {/* Shadow overlay — outside current ring (like RowRuler's above/below shadow) */}
+        <path
+          d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${arcPath(rPx)}`}
+          fill="rgba(0,0,0,0.25)"
+          fillRule="evenodd"
+        />
+
         {/* Completed rings — shaded annular regions + dashed borders */}
         {completedRings.map((ringR, i) => {
           const outerPx = Math.max(4, (ringR / 100) * containerW);
@@ -81,9 +108,9 @@ export default function CrochetRuler({
             : arcPath(outerPx);
           return (
             <g key={i}>
-              <path d={d} fill="rgba(181,84,30,0.13)" fillRule="evenodd" />
+              <path d={d} fill="rgba(244,63,94,0.18)" fillRule="evenodd" />
               <circle cx={cxPx} cy={cyPx} r={outerPx}
-                fill="none" stroke="rgba(181,84,30,0.4)"
+                fill="none" stroke="rgba(244,63,94,0.45)"
                 strokeWidth={1.5} strokeDasharray="5 3" />
             </g>
           );
@@ -97,23 +124,48 @@ export default function CrochetRuler({
           const d = innerPx > 2
             ? arcPath(rPx) + ' ' + arcPath(innerPx)
             : arcPath(rPx);
-          return <path d={d} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />;
+          return <path d={d} fill="rgba(244,63,94,0.08)" fillRule="evenodd" />;
         })()}
+
+        {/* Ghost preview rings — future ring positions */}
+        {ghostRings.map((gr, i) => {
+          const opacity = Math.max(0.07, 0.6 - i * 0.06);
+          const prevGr = i === 0 ? rPx : ghostRings[i - 1];
+          const d = arcPath(gr) + ' ' + arcPath(prevGr);
+          return (
+            <g key={i} style={{ opacity }}>
+              <path d={d} fill="rgba(251,113,133,0.22)" fillRule="evenodd" />
+              <circle cx={cxPx} cy={cyPx} r={gr}
+                fill="none" stroke="rgba(251,113,133,0.7)"
+                strokeWidth={1} strokeDasharray="4 3" />
+              <text
+                x={cxPx + gr + 4}
+                y={cyPx + 4}
+                fontSize={10}
+                fill="rgba(244,63,94,0.8)"
+                fontWeight="600"
+                style={{ userSelect: 'none' }}
+              >
+                +{i + 1}
+              </text>
+            </g>
+          );
+        })}
 
         {/* Current ring border */}
         <circle cx={cxPx} cy={cyPx} r={rPx}
-          fill="none" stroke="#b5541e" strokeWidth={2} />
+          fill="none" stroke="rgb(244,63,94)" strokeWidth={2} />
 
         {/* Center crosshair */}
         <line x1={cxPx - 7} y1={cyPx} x2={cxPx + 7} y2={cyPx}
-          stroke="#b5541e" strokeWidth={1.5} />
+          stroke="rgb(244,63,94)" strokeWidth={1.5} />
         <line x1={cxPx} y1={cyPx - 7} x2={cxPx} y2={cyPx + 7}
-          stroke="#b5541e" strokeWidth={1.5} />
+          stroke="rgb(244,63,94)" strokeWidth={1.5} />
 
         {/* Center drag handle */}
         <circle
           cx={cxPx} cy={cyPx} r={11}
-          fill="#b5541e" stroke="#fdf6e8" strokeWidth={2}
+          fill="rgb(244,63,94)" stroke="white" strokeWidth={2}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'move' }}
           onPointerDown={onCenterDown}
           onPointerMove={onCenterMove}
@@ -124,7 +176,7 @@ export default function CrochetRuler({
         {/* Radius drag handle — at right edge of circle */}
         <circle
           cx={cxPx + rPx} cy={cyPx} r={9}
-          fill="#fdf6e8" stroke="#b5541e" strokeWidth={2.5}
+          fill="white" stroke="rgb(244,63,94)" strokeWidth={2.5}
           style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ew-resize' }}
           onPointerDown={onRadiusDown}
           onPointerMove={onRadiusMove}
@@ -133,21 +185,39 @@ export default function CrochetRuler({
         />
       </svg>
 
-      {/* 단 완료 button — positioned below the circle */}
-      <button
-        onClick={onComplete}
-        style={{
-          position: 'absolute',
-          left: `${cx}%`,
-          top: `${btnTopPct}%`,
-          transform: 'translateX(-50%)',
-          pointerEvents: 'all',
-          touchAction: 'manipulation',
-        }}
-        className="bg-[#b5541e] text-[#fdf6e8] px-4 py-2 rounded-lg text-xs font-bold border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] whitespace-nowrap select-none"
+      {/* Floating buttons — left side, same layout as RowRuler */}
+      <div
+        className="absolute left-1.5 pointer-events-auto z-20 flex items-center gap-1 sm:gap-1.5"
+        style={{ top: `${cy}%`, transform: 'translateY(-50%)' }}
       >
-        {t('ruler.complete')}
-      </button>
+        {/* Complete button */}
+        <button
+          onClick={onComplete}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 active:bg-rose-700 active:scale-95 transition-all"
+          title={t('ruler.complete')}
+        >
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+
+        {/* Settings button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
+            showSettings
+              ? 'bg-rose-500 border-rose-500 text-white'
+              : 'bg-white/90 border-rose-200 text-rose-400 hover:bg-rose-50 active:bg-rose-100'
+          }`}
+          title={t('ruler.heightSettings')}
+        >
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+        </button>
+      </div>
     </>
   );
 }

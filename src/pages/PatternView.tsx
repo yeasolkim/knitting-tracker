@@ -168,6 +168,8 @@ function PatternViewerPage({ pattern }: Props) {
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
   const [showRulerSettings, setShowRulerSettings] = useState(false);
+  const [showCrochetSettings, setShowCrochetSettings] = useState(false);
+  const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   // Current viewer transform — updated every frame during pan/zoom
   const [viewTransform, setViewTransform] = useState({ scale: 1, x: 0, y: 0 });
@@ -904,6 +906,9 @@ function PatternViewerPage({ pattern }: Props) {
               onCenterChange={handleCrochetCenterChange}
               onRadiusChange={handleCrochetRadiusChange}
               onComplete={handleCrochetCircleComplete}
+              onToggleSettings={() => setShowCrochetSettings(v => !v)}
+              showSettings={showCrochetSettings}
+              isAdjusting={isAdjustingCrochetRadius}
               onDragStart={captureHistory}
             />
           )}
@@ -1060,6 +1065,52 @@ function PatternViewerPage({ pattern }: Props) {
             {/* 수치 표시 */}
             <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
               {(rulerHeight / 1.35 * 100).toFixed(2)}%
+            </span>
+          </div>
+        )}
+
+        {/* Circle radius settings — vertical popup, same layout as height settings */}
+        {showCrochetSettings && isCrochet && crochetShape === 'circle' && (
+          <div
+            className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+            style={{ top: `${Math.max(4, Math.min(contentToScreenY(crochetCy), 80))}%`, transform: 'translateY(-50%)' }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {/* + 버튼 (위) */}
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onClick={() => handleCrochetRadiusChange(Math.min(49, contentToScreenR(crochetR) + 0.5))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-rose-200 bg-white text-rose-500 font-bold text-lg hover:bg-rose-50 active:scale-95 select-none leading-none"
+            >+</button>
+
+            {/* 세로 슬라이더 */}
+            <input
+              type="range"
+              min={0}
+              max={10000}
+              step={1}
+              value={Math.round(Math.min(contentToScreenR(crochetR), 49) / 49 * 10000)}
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onChange={(e) => {
+                setIsAdjustingCrochetRadius(true);
+                handleCrochetRadiusChange(Math.max(0.5, Number(e.target.value) / 10000 * 49));
+              }}
+              onPointerUp={() => setIsAdjustingCrochetRadius(false)}
+              onPointerCancel={() => setIsAdjustingCrochetRadius(false)}
+              className="accent-rose-500 cursor-pointer"
+              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+            />
+
+            {/* - 버튼 (아래) */}
+            <button
+              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+              onClick={() => handleCrochetRadiusChange(Math.max(0.5, contentToScreenR(crochetR) - 0.5))}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-rose-200 bg-white text-rose-500 font-bold text-lg hover:bg-rose-50 active:scale-95 select-none leading-none"
+            >−</button>
+
+            {/* 수치 표시 */}
+            <span className="text-[10px] text-rose-500 font-mono text-center leading-tight">
+              {contentToScreenR(crochetR).toFixed(1)}%
             </span>
           </div>
         )}
