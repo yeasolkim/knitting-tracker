@@ -236,8 +236,8 @@ export default function CrochetRuler({
           </g>
         )}
 
-        {/* Bottom ry handle — ellipse only */}
-        {isEllipse && (
+        {/* Bottom ry handle — ellipse only, visible when settings open */}
+        {isEllipse && showSettings && (
           <g
             transform={`translate(${cxPx}, ${cyPx + ryPx})`}
             style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
@@ -254,8 +254,8 @@ export default function CrochetRuler({
           </g>
         )}
 
-        {/* Top ry handle — ellipse only */}
-        {isEllipse && (
+        {/* Top ry handle — ellipse only, visible when settings open */}
+        {isEllipse && showSettings && (
           <g
             transform={`translate(${cxPx}, ${cyPx - ryPx})`}
             style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'ns-resize' }}
