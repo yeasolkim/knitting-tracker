@@ -199,7 +199,7 @@ const en: Translations = {
   'landing.feat.counter': 'Row Counter',
   'landing.feat.counterDesc': 'Tap to increment',
   'landing.feat.save': 'Auto Save',
-  'landing.feat.saveDesc': 'Always picks up where you left',
+  'landing.feat.saveDesc': 'Always picks up where you left off',
   // login
   'login.welcome': 'Welcome to Knitting in the Sauna',
   'login.subtitle': 'Sign in to manage your patterns',
