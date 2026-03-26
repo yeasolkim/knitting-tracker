@@ -147,10 +147,10 @@ const RowRuler = memo(function RowRuler({
         </div>
       </div>
 
-      {/* Fine position nudge buttons — centered vertically on ruler, right side */}
+      {/* Up nudge — horizontally centered, just above top edge */}
       <div
-        className="absolute right-3 pointer-events-auto z-20 flex flex-col items-center gap-1"
-        style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
+        className="absolute left-1/2 pointer-events-auto z-20"
+        style={{ top: `${positionY}%`, transform: 'translate(-50%, -100%)' }}
       >
         <button
           onPointerDown={(e) => e.stopPropagation()}
@@ -161,6 +161,12 @@ const RowRuler = memo(function RowRuler({
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
           </svg>
         </button>
+      </div>
+      {/* Down nudge — horizontally centered, just below bottom edge */}
+      <div
+        className="absolute left-1/2 pointer-events-auto z-20"
+        style={{ top: `${positionY + height}%`, transform: 'translate(-50%, 0%)' }}
+      >
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
