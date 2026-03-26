@@ -134,7 +134,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
-  const [rulerHeight, setRulerHeight] = useState(Math.min(pattern.progress?.ruler_height ?? 0.3, 1.35));
+  const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height ?? 0.3);
+  const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, pattern.progress?.ruler_height ?? 0));
   const [showGuide, setShowGuide] = useState(() => (pattern.progress?.ruler_height ?? -1) === 0);
   const [showRulerGuide, setShowRulerGuide] = useState(false);
 
@@ -351,9 +352,9 @@ function PatternViewerPage({ pattern }: Props) {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const contentH_px = (screenHPct / 100) * H / t.scale;
     const refH = iH > 0 ? iH : H;
-    setRulerHeight(Math.min(1.35, Math.max(0.001, (contentH_px / refH) * 100)));
+    setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentH_px / refH) * 100)));
     setShowGuide(false);
-  }, []);
+  }, [maxRulerHeight]);
 
   const handleCrochetCenterChange = useCallback((screenCxPct: number, screenCyPct: number) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
@@ -1030,10 +1031,18 @@ function PatternViewerPage({ pattern }: Props) {
             style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
             onPointerDown={(e) => e.stopPropagation()}
           >
+            {/* 최대높이 30% 확장 버튼 */}
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => setMaxRulerHeight((m) => m * 1.3)}
+              className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+              title="최대 높이 30% 확장"
+            >×1.3</button>
+
             {/* + 버튼 (위) */}
             <button
               onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => setRulerHeight((h) => Math.min(1.35, h + 1.35 / 10000))}
+              onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
             >+</button>
 
@@ -1043,11 +1052,11 @@ function PatternViewerPage({ pattern }: Props) {
               min={0}
               max={10000}
               step={1}
-              value={Math.round(Math.min(rulerHeight, 1.35) / 1.35 * 10000)}
+              value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
               onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
               onChange={(e) => {
                 setIsAdjustingRuler(true);
-                setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * 1.35));
+                setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
               }}
               onPointerUp={() => setIsAdjustingRuler(false)}
               onPointerCancel={() => setIsAdjustingRuler(false)}
@@ -1058,13 +1067,13 @@ function PatternViewerPage({ pattern }: Props) {
             {/* - 버튼 (아래) */}
             <button
               onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => setRulerHeight((h) => Math.max(0.001, h - 1.35 / 10000))}
+              onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
             >−</button>
 
             {/* 수치 표시 */}
             <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-              {(rulerHeight / 1.35 * 100).toFixed(2)}%
+              {(rulerHeight / maxRulerHeight * 100).toFixed(1)}%
             </span>
           </div>
         )}
