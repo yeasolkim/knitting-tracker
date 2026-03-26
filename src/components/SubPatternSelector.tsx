@@ -95,17 +95,26 @@ export default function SubPatternSelector({
               className={`px-3 py-2.5 sm:py-2 hover:bg-[#f5edd6] ${sub.id === activeId ? 'bg-[#f5edd6]' : ''}`}
             >
               {editingId === sub.id ? (
-                <input
-                  autoFocus
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onBlur={commitRename}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitRename();
-                    if (e.key === 'Escape') setEditingId(null);
-                  }}
-                  className="w-full text-sm border-2 border-[#b07840] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
-                />
+                <div className="flex items-center gap-1.5">
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    className="flex-1 text-sm border-2 border-[#b07840] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
+                  />
+                  <button
+                    onMouseDown={(e) => { e.preventDefault(); commitRename(); }}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <button

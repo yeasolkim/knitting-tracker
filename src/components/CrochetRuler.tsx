@@ -71,21 +71,28 @@ export default function CrochetRuler({
   const onCenterUp = () => { centerDragRef.current = null; };
 
   // Corner drag (bottom-right) — resize rx and ry simultaneously
+  const [isDraggingCorner, setIsDraggingCorner] = useState(false);
   const cornerDragRef = useRef<{ sx: number; sy: number; r: number; ry: number } | null>(null);
   const onCornerDown = (e: React.PointerEvent<SVGCircleElement>) => {
     e.stopPropagation();
     onDragStart();
     e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingCorner(true);
     cornerDragRef.current = { sx: e.clientX, sy: e.clientY, r, ry: ryActual };
   };
   const onCornerMove = (e: React.PointerEvent<SVGCircleElement>) => {
     if (!cornerDragRef.current) return;
     const dx = (e.clientX - cornerDragRef.current.sx) / containerW * 100;
     const dy = (e.clientY - cornerDragRef.current.sy) / containerH * 100;
-    onRadiusChange(Math.max(0.5, cornerDragRef.current.r + dx));
-    onRyChange?.(Math.max(0.5, cornerDragRef.current.ry + dy));
+    if (is2D) {
+      onRadiusChange(Math.max(0.5, cornerDragRef.current.r + dx));
+      onRyChange?.(Math.max(0.5, cornerDragRef.current.ry + dy));
+    } else {
+      // circle: average of x/y delta keeps resize intuitive when dragging diagonally
+      onRadiusChange(Math.max(0.5, cornerDragRef.current.r + (dx + dy) / 2));
+    }
   };
-  const onCornerUp = () => { cornerDragRef.current = null; };
+  const onCornerUp = () => { setIsDraggingCorner(false); cornerDragRef.current = null; };
 
   // Body drag (interior of shape)
   const onBodyDown = (e: React.PointerEvent<SVGPathElement>) => {
@@ -127,7 +134,7 @@ export default function CrochetRuler({
     : 0;
   const stepRx = Math.max(rPx - lastRPx, rPx * 0.3);
   const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
-  const showGhosts = isAdjusting || showSettings;
+  const showGhosts = isAdjusting || showSettings || isDraggingCorner;
   const ghostRings: { rx: number; ry: number }[] = [];
   if (showGhosts) {
     for (let i = 1; i <= 10; i++) {
@@ -190,18 +197,18 @@ export default function CrochetRuler({
 
         {/* Ghost preview rings */}
         {ghostRings.map(({ rx: grx, ry: gry }, i) => {
-          const opacity = Math.max(0.07, 0.6 - i * 0.06);
+          const opacity = Math.max(0.15, 0.85 - i * 0.08);
           const prevRx = i === 0 ? rPx : ghostRings[i - 1].rx;
           const prevRy = i === 0 ? ryPx : ghostRings[i - 1].ry;
           const gd = shapePath(cxPx, cyPx, grx, gry) + ' ' + shapePath(cxPx, cyPx, prevRx, prevRy);
           return (
             <g key={i} style={{ opacity }}>
-              <path d={gd} fill="rgba(181,84,30,0.12)" fillRule="evenodd" />
+              <path d={gd} fill="rgba(181,84,30,0.25)" fillRule="evenodd" />
               <path d={shapePath(cxPx, cyPx, grx, gry)}
-                fill="none" stroke="rgba(181,84,30,0.55)"
-                strokeWidth={1} strokeDasharray="4 3" />
+                fill="none" stroke="rgba(181,84,30,0.9)"
+                strokeWidth={1.5} strokeDasharray="4 3" />
               <text x={cxPx + grx + 4} y={cyPx + 4} fontSize={10}
-                fill="rgba(181,84,30,0.75)" fontWeight="600" style={{ userSelect: 'none' }}>
+                fill="rgba(181,84,30,1)" fontWeight="700" style={{ userSelect: 'none' }}>
                 +{i + 1}
               </text>
             </g>
@@ -236,8 +243,8 @@ export default function CrochetRuler({
           onPointerCancel={onCenterUp}
         />
 
-        {/* Bottom-right corner resize handle — 2D shapes only */}
-        {is2D && (
+        {/* Bottom-right corner resize handle — all shapes */}
+        {(
           <>
             <circle cx={cxPx + rPx} cy={cyPx + ryPx} r={9}
               fill="#b07840" stroke="#fdf6e8" strokeWidth={1.5}
