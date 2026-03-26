@@ -120,19 +120,11 @@ function EditForm() {
         const ext = newFile.name.split('.').pop();
         const path = `${session.user.id}/${id}/${Date.now()}.${ext}`;
 
-        const presignRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ path, contentType: newFile.type }),
-          }
-        );
-        if (!presignRes.ok) throw new Error(t('form.error.presign'));
-        const { presignedUrl, fileUrl: uploadedUrl } = await presignRes.json();
+        const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
+          body: { path, contentType: newFile.type },
+        });
+        if (presignError) throw new Error(t('form.error.presign'));
+        const { presignedUrl, fileUrl: uploadedUrl } = presignData;
 
         const uploadRes = await fetch(presignedUrl, {
           method: 'PUT',
@@ -149,19 +141,11 @@ function EditForm() {
           if (thumbBlob) {
             try {
               const thumbPath = `${session.user.id}/${id}/thumb_${Date.now()}.jpg`;
-              const thumbPresignRes = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({ path: thumbPath, contentType: 'image/jpeg' }),
-                }
-              );
-              if (thumbPresignRes.ok) {
-                const { presignedUrl: thumbPresigned, fileUrl: thumbFileUrl } = await thumbPresignRes.json();
+              const { data: thumbPresignData, error: thumbPresignError } = await supabase.functions.invoke('r2-presign', {
+                body: { path: thumbPath, contentType: 'image/jpeg' },
+              });
+              if (!thumbPresignError && thumbPresignData) {
+                const { presignedUrl: thumbPresigned, fileUrl: thumbFileUrl } = thumbPresignData;
                 const thumbUpload = await fetch(thumbPresigned, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'image/jpeg' },
