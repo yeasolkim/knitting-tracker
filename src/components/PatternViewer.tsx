@@ -60,11 +60,23 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
-    // Ensure PDF canvas is at least 1500px wide for crisp zoomed-in viewing
     const baseDpr = window.devicePixelRatio || 1;
-    const pdfDpr = containerWidth > 0
-      ? Math.min(Math.max(baseDpr, Math.ceil(1500 / (containerWidth * 0.9))), 6)
-      : baseDpr;
+
+    // Dynamic PDF render DPR: re-render at higher resolution when zoomed in
+    const [pdfRenderDpr, setPdfRenderDpr] = useState(baseDpr);
+    const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+      if (fileType !== 'pdf') return;
+      const pw = containerWidth * 0.9;
+      if (pw <= 0) return;
+      // Scale DPR proportionally to zoom level, capped by memory budget
+      // Cap canvas at ~3000px wide → ~36MB/page → ~108MB for 3 pages (within iOS 256MB limit)
+      const maxDpr = Math.min(3000 / pw, 10);
+      const targetDpr = Math.max(baseDpr, Math.min(baseDpr * transform.scale, maxDpr));
+      if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+      renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 300);
+      return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
+    }, [transform.scale, containerWidth, baseDpr, fileType]);
 
     // PDF virtual scrolling: only render visible pages
     const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
@@ -351,7 +363,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           key={i + 1}
                           pageNumber={i + 1}
                           width={pw}
-                          devicePixelRatio={pdfDpr}
+                          devicePixelRatio={pdfRenderDpr}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           onRenderSuccess={() => {
