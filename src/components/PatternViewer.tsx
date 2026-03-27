@@ -35,6 +35,7 @@ interface PatternViewerProps {
   onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number, containerW: number) => void;
   onImageSize?: (w: number, h: number) => void;
   onResetRuler?: () => void;
+  highlightBringRuler?: boolean;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
 }
@@ -42,7 +43,7 @@ interface PatternViewerProps {
 const GAP = 8; // px gap between PDF pages (matches gap-2 = 0.5rem = 8px)
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, highlightBringRuler = false, contentOverlay, children }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -672,7 +673,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         </div>
 
         {/* Ruler navigation — bottom-left */}
-        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1.5 z-20 w-16">
+        <div className={`absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1.5 ${highlightBringRuler ? 'z-50' : 'z-20'} w-16`}>
           <button
             onClick={goToRuler}
             className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
@@ -684,7 +685,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           {onResetRuler && (
             <button
               onClick={onResetRuler}
-              className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+              className={`h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 flex items-center justify-center text-[#7a5c46] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors ${
+                highlightBringRuler
+                  ? 'border-[#b5541e] animate-pulse shadow-[0_0_0_3px_rgba(181,84,30,0.3)]'
+                  : 'border-[#b07840] hover:border-[#b5541e]'
+              }`}
               aria-label={t('viewer.bringRuler')}
             >
               <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>

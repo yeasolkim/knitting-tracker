@@ -193,6 +193,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
+  // Track last reported image height so we can detect pre-parse estimate → actual DOM height changes
+  const lastReportedImgH = useRef(0);
+  // Track mount time: only apply goToRuler height-correction within 3s of mount
+  const mountTimeRef = useRef(Date.now());
   // 첫 오픈 판정: 코바늘 원형/타원/사각은 crochet_ruler_data.r 유무로, 나머지는 ruler_height 유무로 판단
   const isFirstOpenRef = useRef((() => {
     if (!pattern.progress) return true;
@@ -205,6 +209,8 @@ function PatternViewerPage({ pattern }: Props) {
   useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
 
   const handleImageSize = useCallback((w: number, h: number) => {
+    const prevH = lastReportedImgH.current;
+    lastReportedImgH.current = h;
     setImgW(w);
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
@@ -223,6 +229,16 @@ function PatternViewerPage({ pattern }: Props) {
           }
         });
       });
+    } else if (
+      h > 0 &&
+      Math.abs(h - prevH) > 0.5 &&
+      !isFirstOpenRef.current &&
+      !showGuideRef.current &&
+      Date.now() - mountTimeRef.current < 3000
+    ) {
+      // Height changed after initial goToRuler (pre-parse estimate → actual DOM height):
+      // re-run goToRuler once to correct the view position.
+      requestAnimationFrame(() => viewerRef.current?.goToRuler());
     }
   }, []);
 
@@ -361,6 +377,23 @@ function PatternViewerPage({ pattern }: Props) {
     return (contentY / H) * 100;
   };
 
+  const screenToContentX = (screenPct: number, t = viewTransform, W = containerW, iW = imgW) => {
+    const screenX = (screenPct / 100) * W;
+    const contentX = (screenX - W / 2 - t.x) / t.scale + W / 2;
+    if (iW > 0) return ((contentX - (W - iW) / 2) / iW) * 100;
+    return (contentX / W) * 100;
+  };
+
+  const screenToContentR = (screenPct: number, t = viewTransform, W = containerW, iW = imgW) => {
+    const refW = iW > 0 ? iW : W;
+    return (screenPct / 100) * W / (refW * t.scale) * 100;
+  };
+
+  const screenToContentRy = (screenPct: number, t = viewTransform, H = containerH, iH = imgH) => {
+    const refH = iH > 0 ? iH : H;
+    return (screenPct / 100) * H / (refH * t.scale) * 100;
+  };
+
   // Screen positions for RowRuler display (derived, not stored)
   const screenRulerY = contentToScreenY(rulerY);
   const screenRulerHeight = imgH > 0
@@ -401,13 +434,30 @@ function PatternViewerPage({ pattern }: Props) {
   const handleCrochetRadiusChange = useCallback((screenRPct: number) => {
     const { viewTransform: t, containerW: W, imgW: iW } = latestRef.current;
     const refW = iW > 0 ? iW : W;
-    setCrochetR(Math.max(0.5, (screenRPct / 100) * W / t.scale / refW * 100));
+    setCrochetR(Math.max(0.1, (screenRPct / 100) * W / t.scale / refW * 100));
   }, []);
 
   const handleCrochetRyChange = useCallback((screenRPct: number) => {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const refH = iH > 0 ? iH : H;
     setCrochetRy(Math.max(0.1, (screenRPct / 100) * H / t.scale / refH * 100));
+  }, []);
+
+  const handleCrochetRingUpdate = useCallback((i: number, ring: { cx: number; cy: number; r: number; ry?: number; shape?: string }) => {
+    const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
+    const refW = iW > 0 ? iW : W;
+    const refH = iH > 0 ? iH : H;
+    const screenX = (ring.cx / 100) * W;
+    const contentX = (screenX - W / 2 - t.x) / t.scale + W / 2;
+    const contentCx = iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+    const screenY = (ring.cy / 100) * H;
+    const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+    const contentCy = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+    const contentR = (ring.r / 100) * W / (refW * t.scale) * 100;
+    const contentRy = ring.ry != null ? (ring.ry / 100) * H / (refH * t.scale) * 100 : undefined;
+    setCompletedCrochetRings(prev => prev.map((r, idx) =>
+      idx === i ? { ...r, cx: contentCx, cy: contentCy, r: contentR, ry: contentRy } : r
+    ));
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
@@ -526,7 +576,7 @@ function PatternViewerPage({ pattern }: Props) {
     view_scale: viewTransform.scale,
     view_x: viewTransform.x,
     view_y: viewTransform.y,
-    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, completedRings: completedCrochetRings },
+    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
   }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   // Explicit "save view" button
@@ -858,6 +908,7 @@ function PatternViewerPage({ pattern }: Props) {
           rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : undefined}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
+          highlightBringRuler={showGuide}
           onResetRuler={isCrochet && crochetShape !== 'line' ? () => {
             const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
             const contentX = W / 2 - t.x / t.scale;
@@ -915,16 +966,14 @@ function PatternViewerPage({ pattern }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          {(!isCrochet || crochetShape === 'line') && (
-            <CompletedOverlay
-              marks={screenCompletedMarks}
-              onUpdate={handleCompletedMarkUpdate}
-              onDelete={handleCompletedMarkDelete}
-              onDeleteAll={handleCompletedMarkDeleteAll}
-              onSelectionChange={setHasMarkSelection}
-              onDragStart={captureHistory}
-            />
-          )}
+          <CompletedOverlay
+            marks={screenCompletedMarks}
+            onUpdate={handleCompletedMarkUpdate}
+            onDelete={handleCompletedMarkDelete}
+            onDeleteAll={handleCompletedMarkDeleteAll}
+            onSelectionChange={setHasMarkSelection}
+            onDragStart={captureHistory}
+          />
           {(!isCrochet || crochetShape === 'line') && !showGuide && (
             <RowRuler
               positionY={screenRulerY}
@@ -969,6 +1018,7 @@ function PatternViewerPage({ pattern }: Props) {
               onDragStart={captureHistory}
               onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); }}
               onDeleteAllRings={() => { captureHistory(); setCompletedCrochetRings([]); }}
+              onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
               onReset={() => {
                 captureHistory();
                 setCompletedCrochetRings([]);
@@ -982,6 +1032,24 @@ function PatternViewerPage({ pattern }: Props) {
                 setCrochetR(10);
                 setCrochetRy(10);
               }}
+            />
+          )}
+          {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && (
+            <CrochetRuler
+              ringsOnly
+              completedRings={completedCrochetRings.map(ring => ({
+                cx: contentToScreenX(ring.cx),
+                cy: contentToScreenY(ring.cy),
+                r: contentToScreenR(ring.r),
+                ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
+                shape: ring.shape,
+              }))}
+              containerW={containerW}
+              containerH={containerH}
+              onDragStart={captureHistory}
+              onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); }}
+              onDeleteAllRings={() => { captureHistory(); setCompletedCrochetRings([]); }}
+              onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
             />
           )}
 
@@ -1203,7 +1271,7 @@ function PatternViewerPage({ pattern }: Props) {
         )}
 
 
-        {(!isCrochet || crochetShape === 'line') && hasMarkSelection && completedMarks.length > 1 && (
+        {hasMarkSelection && completedMarks.length > 1 && (
           <div className="absolute top-4 right-4 z-30">
             <button
               onClick={() => {
@@ -1222,7 +1290,10 @@ function PatternViewerPage({ pattern }: Props) {
       {/* Bottom controls */}
       <div className="bg-[#fdf6e8] border-t-2 border-[#b07840] shrink-0 safe-bottom">
         {/* SubPattern selector is outside overflow container so its dropdown isn't clipped */}
-        <div className="px-3 sm:px-4 pt-2 sm:pt-3 flex items-center gap-2 sm:gap-3">
+        <div
+          className={`px-3 sm:px-4 pt-2 sm:pt-3 flex items-center gap-2 sm:gap-3 rounded-xl transition-all ${showSubPatternGuide ? 'animate-pulse' : ''}`}
+          style={showSubPatternGuide ? { outline: '2px dashed #b5541e', outlineOffset: '2px' } : {}}
+        >
           <SubPatternSelector
             subPatterns={subPatterns}
             activeId={activeSubId}
