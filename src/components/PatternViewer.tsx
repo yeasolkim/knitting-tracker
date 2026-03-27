@@ -100,6 +100,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // onRenderSuccess defers reportImageSize() until this is true so that
     // goToRuler() never fires with an incomplete total height.
     const preParseDoneRef = useRef(false);
+    // React state mirror of preParseDoneRef — setting this triggers a re-render
+    // so that the reportImageSize() effect runs AFTER pdfPages state is updated.
+    const [preParseDone, setPreParseDone] = useState(false);
 
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 });
 
@@ -109,6 +112,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       pageAspectRatiosRef.current = [];
       pageHeightsRef.current = [];
       preParseDoneRef.current = false;
+      setPreParseDone(false);
     }, [fileUrl]);
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
@@ -162,6 +166,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (w > 0 || h > 0) contentSizeRef.current = { w, h };
       if (onImageSizeRef.current && (w > 0 || h > 0)) onImageSizeRef.current(w, h);
     }, [getStableContentDims]);
+
+    // When pre-parsing finishes, report the image size using the updated pdfPages state.
+    // This effect runs AFTER React commits the render with the new pdfPages value,
+    // so getStableContentDims() sees the correct page count (not the stale closure value).
+    useEffect(() => {
+      if (preParseDone && pdfPages > 0) {
+        reportImageSize();
+      }
+    }, [preParseDone, pdfPages, reportImageSize]);
 
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
@@ -475,13 +488,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           pdfFirstPageHeightRef.current = ratios[0] * currentPw;
                           setPdfPageAspectRatio(ratios[0]);
                         }
-                        // 파싱 완료 표시 후 reportImageSize → 이 시점의 imgH가 정확하므로
-                        // handleImageSize에서 goToRuler()가 올바른 위치로 이동함.
+                        // 파싱 완료 표시 후 setPreParseDone(true) → React 재렌더링 후
+                        // preParseDone effect가 reportImageSize()를 호출한다.
+                        // (직접 reportImageSize() 호출하면 setPdfPages가 아직 커밋 안 돼서
+                        //  getStableContentDims()가 구버전 pdfPages를 사용하는 버그 발생)
                         preParseDoneRef.current = true;
-                        reportImageSize();
+                        setPreParseDone(true);
                       } catch {
-                        // 파싱 실패: onRenderSuccess가 reportImageSize를 직접 호출하도록 허용
+                        // 파싱 실패: preParseDone 상태를 true로 설정해
+                        // onRenderSuccess 또는 preParseDone effect가 reportImageSize를 호출하도록 허용
                         preParseDoneRef.current = true;
+                        setPreParseDone(true);
                       }
                     }}
                     options={pdfOptions}
