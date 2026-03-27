@@ -336,32 +336,30 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                     className="flex flex-col items-center gap-2"
                   >
                     {Array.from({ length: pdfPages }, (_, i) => {
-                      const pw = Math.round(containerWidth * 0.9);
+                      const pw = containerWidth * 0.9;
                       const ph = pdfFirstPageHeightRef.current || Math.round(pw * pdfPageAspectRatio);
                       const isVisible = i >= visibleRange.start && i <= visibleRange.end;
+                      if (!isVisible) {
+                        return <div key={i + 1} style={{ width: pw, height: ph, flexShrink: 0 }} />;
+                      }
                       return (
-                        <div key={i + 1} style={{ width: pw, height: ph, flexShrink: 0 }}>
-                          {isVisible ? (
-                            <PdfPage
-                              pageNumber={i + 1}
-                              width={pw}
-                              scale={devicePixelRatio}
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                              onRenderSuccess={() => {
-                                if (i === 0 && pdfFirstPageHeightRef.current === 0) {
-                                  // Measure actual first-page height to correct placeholder sizes
-                                  const canvas = document.querySelector('.react-pdf__Page__canvas') as HTMLCanvasElement | null;
-                                  if (canvas) {
-                                    pdfFirstPageHeightRef.current = canvas.offsetHeight;
-                                    setPdfPageAspectRatio(canvas.offsetHeight / pw);
-                                  }
-                                }
-                                reportImageSize();
-                              }}
-                            />
-                          ) : null}
-                        </div>
+                        <PdfPage
+                          key={i + 1}
+                          pageNumber={i + 1}
+                          width={pw}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                          onRenderSuccess={() => {
+                            if (i === 0 && pdfFirstPageHeightRef.current === 0) {
+                              const pageEl = document.querySelector('.react-pdf__Page') as HTMLElement | null;
+                              if (pageEl) {
+                                pdfFirstPageHeightRef.current = pageEl.offsetHeight;
+                                setPdfPageAspectRatio(pageEl.offsetHeight / pw);
+                              }
+                            }
+                            reportImageSize();
+                          }}
+                        />
                       );
                     })}
                   </PdfDocument>
