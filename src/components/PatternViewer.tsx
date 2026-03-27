@@ -347,6 +347,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           key={i + 1}
                           pageNumber={i + 1}
                           width={pw}
+                          devicePixelRatio={devicePixelRatio}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           onRenderSuccess={() => {
