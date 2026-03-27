@@ -40,7 +40,7 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 5);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 10);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
