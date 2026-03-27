@@ -120,20 +120,31 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
-      onTransformChange?.(transform, H, W);
 
-      // Pan bounds clamping — only when user is NOT actively interacting
-      // During pinch-zoom, clamping causes jarring position jumps
-      if (isPanning) return;
-      const { w: imgW, h: imgH } = getStableContentDims();
-      if (imgW === 0 || imgH === 0) return;
-      const { scale, x, y } = transform;
-      const maxTy = Math.max(0, (imgH * scale - H) / 2);
-      const maxTx = Math.max(0, (imgW * scale - W) / 2);
-      const cx = Math.max(-maxTx, Math.min(maxTx, x));
-      const cy = Math.max(-maxTy, Math.min(maxTy, y));
-      if (cx !== x || cy !== y) setXY(cx, cy);
-    }, [transform, onTransformChange, setXY, isPanning]);
+      // Pan bounds clamping — only when user is NOT actively interacting.
+      // IMPORTANT: compute clamped transform BEFORE notifying the parent so
+      // PatternView never renders with the pre-clamp (wrong) transform values,
+      // which would make the ruler jump to a wrong screen position.
+      if (!isPanning) {
+        const { w: imgW, h: imgH } = getStableContentDims();
+        if (imgW > 0 && imgH > 0) {
+          const { scale, x, y } = transform;
+          const maxTy = Math.max(0, (imgH * scale - H) / 2);
+          const maxTx = Math.max(0, (imgW * scale - W) / 2);
+          const cx = Math.max(-maxTx, Math.min(maxTx, x));
+          const cy = Math.max(-maxTy, Math.min(maxTy, y));
+          if (cx !== x || cy !== y) {
+            // Tell the parent the clamped position immediately so the ruler
+            // renders at the correct location on this very frame.
+            onTransformChange?.({ ...transform, x: cx, y: cy }, H, W);
+            setXY(cx, cy);
+            return;
+          }
+        }
+      }
+
+      onTransformChange?.(transform, H, W);
+    }, [transform, onTransformChange, setXY, isPanning, getStableContentDims]);
 
     // Recalculate visible PDF page range whenever transform changes
     useEffect(() => {
@@ -155,7 +166,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const start = Math.max(0, Math.floor((viewTop - contentTop) / (pageH + GAP)) - BUFFER);
       const end = Math.min(pdfPages - 1, Math.ceil((viewBottom - contentTop) / (pageH + GAP)) + BUFFER);
       setVisibleRange((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
-    }, [transform, pdfPages, pdfPageAspectRatio, containerWidth, fileType]);
+    }, [transform, pdfPages, pdfPageAspectRatio, containerWidth, fileType, effectivePdfDpr]);
 
     useEffect(() => {
       if (!sizeRef.current) return;
@@ -391,11 +402,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                             if (i === 0 && pdfFirstPageHeightRef.current === 0) {
                               const pageEl = document.querySelector('.react-pdf__Page') as HTMLElement | null;
                               if (pageEl) {
-                                // Use getBoundingClientRect for sub-pixel precision
-                                // offsetHeight rounds to integer → 0.3px error × 10x zoom = 3px jump
-                                const preciseH = pageEl.getBoundingClientRect().height;
-                                pdfFirstPageHeightRef.current = preciseH;
-                                setPdfPageAspectRatio(preciseH / pw);
+                                // Use offsetHeight (CSS px, transform-independent).
+                                // getBoundingClientRect includes ancestor CSS scale transforms,
+                                // so if scale != 1 at render time it returns cssH * scale,
+                                // which permanently corrupts all height calculations.
+                                const measuredH = pageEl.offsetHeight || pageEl.getBoundingClientRect().height;
+                                pdfFirstPageHeightRef.current = measuredH;
+                                setPdfPageAspectRatio(measuredH / pw);
                               }
                             }
                             reportImageSize();
