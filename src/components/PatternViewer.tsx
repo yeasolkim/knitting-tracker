@@ -40,7 +40,10 @@ interface PatternViewerProps {
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 10);
+    // Content size ref: kept up-to-date so useGestures can clamp pan bounds
+    // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
+    const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 10, contentSizeRef);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
@@ -108,9 +111,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const onImageSizeRef = useRef(onImageSize);
     useEffect(() => { onImageSizeRef.current = onImageSize; }, [onImageSize]);
     const reportImageSize = useCallback(() => {
-      if (!onImageSizeRef.current) return;
       const { w, h } = getStableContentDims();
-      if (w > 0 || h > 0) onImageSizeRef.current(w, h);
+      // Keep contentSizeRef in sync so useGestures can clamp during gestures
+      if (w > 0 || h > 0) contentSizeRef.current = { w, h };
+      if (onImageSizeRef.current && (w > 0 || h > 0)) onImageSizeRef.current(w, h);
     }, [getStableContentDims]);
 
     useEffect(() => {
@@ -122,7 +126,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       // During pinch-zoom, clamping causes jarring position jumps
       if (isPanning) return;
       const { w: imgW, h: imgH } = getStableContentDims();
-      if (imgW === 0 && imgH === 0) return;
+      if (imgW === 0 || imgH === 0) return;
       const { scale, x, y } = transform;
       const maxTy = Math.max(0, (imgH * scale - H) / 2);
       const maxTx = Math.max(0, (imgW * scale - W) / 2);
@@ -164,7 +168,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         requestAnimationFrame(() => {
           reportImageSize();
           const { w: iW, h: iH } = getStableContentDims();
-          if (iW === 0 && iH === 0) return;
+          if (iW === 0 || iH === 0) return;
           const s = transformRef.current.scale;
           const maxTy = Math.max(0, (iH * s - height) / 2);
           const maxTx = Math.max(0, (iW * s - width) / 2);

@@ -26,7 +26,16 @@ function applyZoom(prev: Transform, newScale: number, pivotX = 0, pivotY = 0): T
   };
 }
 
-export function useGestures(minScale = 0.5, maxScale = 5) {
+/**
+ * contentSizeRef: pass a ref to { w, h } of the content (at scale=1).
+ * When provided, pan/pinch are clamped to bounds DURING the gesture,
+ * preventing the end-of-gesture snap that makes the progress line jump.
+ */
+export function useGestures(
+  minScale = 0.5,
+  maxScale = 5,
+  contentSizeRef?: React.RefObject<{ w: number; h: number }>
+) {
   const [transform, setTransform] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const lastTouchDistance = useRef<number | null>(null);
@@ -39,6 +48,24 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
     (s: number) => Math.min(maxScale, Math.max(minScale, s)),
     [minScale, maxScale]
   );
+
+  /** Clamp (x,y) to pan bounds for the given scale, using current container size. */
+  const clampToBounds = useCallback((t: Transform): Transform => {
+    if (!contentSizeRef?.current) return t;
+    const el = containerRef.current;
+    if (!el) return t;
+    const H = el.clientHeight || 1;
+    const W = el.clientWidth || 1;
+    const { w: imgW, h: imgH } = contentSizeRef.current;
+    if (imgW === 0 || imgH === 0) return t;
+    const maxTy = Math.max(0, (imgH * t.scale - H) / 2);
+    const maxTx = Math.max(0, (imgW * t.scale - W) / 2);
+    return {
+      ...t,
+      x: Math.max(-maxTx, Math.min(maxTx, t.x)),
+      y: Math.max(-maxTy, Math.min(maxTy, t.y)),
+    };
+  }, [contentSizeRef]);
 
   // Wheel zoom — pivot at screen center
   useEffect(() => {
@@ -106,11 +133,12 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
         setTransform((prev) => {
           const newScale = clampScale(prev.scale * scaleRatio);
           const zoomed = applyZoom(prev, newScale, pivotX, pivotY);
-          return {
+          const result = {
             ...zoomed,
             x: zoomed.x + cx - prevCenter.x,
             y: zoomed.y + cy - prevCenter.y,
           };
+          return clampToBounds(result);
         });
 
         lastTouchDistance.current = distance;
@@ -118,11 +146,11 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
       } else if (e.touches.length === 1 && lastTouchCenter.current) {
         const dx = e.touches[0].clientX - lastTouchCenter.current.x;
         const dy = e.touches[0].clientY - lastTouchCenter.current.y;
-        setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+        setTransform((prev) => clampToBounds({ ...prev, x: prev.x + dx, y: prev.y + dy }));
         lastTouchCenter.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     },
-    [clampScale]
+    [clampScale, clampToBounds]
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -141,9 +169,9 @@ export function useGestures(minScale = 0.5, maxScale = 5) {
     if (!isDragging.current || !lastMouse.current) return;
     const dx = e.clientX - lastMouse.current.x;
     const dy = e.clientY - lastMouse.current.y;
-    setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+    setTransform((prev) => clampToBounds({ ...prev, x: prev.x + dx, y: prev.y + dy }));
     lastMouse.current = { x: e.clientX, y: e.clientY };
-  }, []);
+  }, [clampToBounds]);
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
