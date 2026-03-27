@@ -69,7 +69,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      const maxDpr = Math.floor(3500 / pw);
+      const maxDpr = Math.floor(6000 / pw);
       const idealDpr = Math.ceil(basePdfDpr * transform.scale / 2);
       const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
@@ -129,11 +129,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const totalH = pageH * pdfPages + GAP * Math.max(0, pdfPages - 1);
       const contentTop = -totalH / 2;
       const { scale, y } = transform;
-      // Dynamic buffer: reduce when DPR is high to stay within ~200MB memory budget
+      // Dynamic buffer: reduce when DPR is high to stay within ~220MB memory budget
       const canvasW = (containerWidth * 0.9) * effectivePdfDpr;
       const pageMemMB = (canvasW * canvasW * pdfPageAspectRatio * 4) / (1024 * 1024);
-      const maxPages = Math.max(3, Math.floor(200 / pageMemMB));
-      const BUFFER = Math.min(3, Math.max(1, Math.floor((maxPages - 1) / 2)));
+      const maxPages = Math.max(1, Math.floor(220 / pageMemMB));
+      const BUFFER = Math.min(3, Math.max(0, Math.floor((maxPages - 1) / 2)));
       const viewTop = -y / scale - H / (2 * scale);
       const viewBottom = -y / scale + H / (2 * scale);
       const start = Math.max(0, Math.floor((viewTop - contentTop) / (pageH + GAP)) - BUFFER);
