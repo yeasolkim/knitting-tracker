@@ -96,6 +96,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // pageHeightsRef: actual DOM-measured CSS heights, updated in onRenderSuccess.
     // More accurate than aspect-ratio × pw because react-pdf may round sub-pixel heights.
     const pageHeightsRef = useRef<number[]>([]);
+    // true once onLoadSuccess pre-parsing completes (or fails).
+    // onRenderSuccess defers reportImageSize() until this is true so that
+    // goToRuler() never fires with an incomplete total height.
+    const preParseDoneRef = useRef(false);
 
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 });
 
@@ -104,6 +108,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       pdfFirstPageHeightRef.current = 0;
       pageAspectRatiosRef.current = [];
       pageHeightsRef.current = [];
+      preParseDoneRef.current = false;
     }, [fileUrl]);
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
@@ -470,9 +475,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           pdfFirstPageHeightRef.current = ratios[0] * currentPw;
                           setPdfPageAspectRatio(ratios[0]);
                         }
+                        // 파싱 완료 표시 후 reportImageSize → 이 시점의 imgH가 정확하므로
+                        // handleImageSize에서 goToRuler()가 올바른 위치로 이동함.
+                        preParseDoneRef.current = true;
                         reportImageSize();
                       } catch {
-                        // 파싱 실패 시 onRenderSuccess 측정값으로 폴백 (기존 동작 유지)
+                        // 파싱 실패: onRenderSuccess가 reportImageSize를 직접 호출하도록 허용
+                        preParseDoneRef.current = true;
                       }
                     }}
                     options={pdfOptions}
@@ -510,7 +519,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                                 }
                               }
                             }
-                            reportImageSize();
+                            // 사전 파싱이 완료된 후에만 reportImageSize를 호출한다.
+                            // 파싱 전에 호출하면 부정확한 imgH로 goToRuler()가 실행되고,
+                            // 이후 imgH가 바뀔 때 진행선이 튀는 문제가 발생한다.
+                            // (파싱 실패 시 preParseDoneRef는 catch 블록에서 true로 설정됨)
+                            if (preParseDoneRef.current) {
+                              reportImageSize();
+                            }
                           }}
                         />
                       );
