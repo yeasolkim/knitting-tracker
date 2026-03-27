@@ -70,7 +70,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const containerWidthRef = useRef(containerWidth);
     useEffect(() => { containerWidthRef.current = containerWidth; }, [containerWidth]);
 
-    // PDF render DPR: base quality + higher when zoomed in (debounced)
+    // PDF render DPR: scale up quality proportionally with zoom level.
+    //
+    // For pixel-perfect quality at zoom S: canvas must cover the visible area
+    // at device resolution.
+    //   visible CSS px  = containerW / S
+    //   canvas px shown = pw * dpr * (containerW / S) / pw = dpr * containerW / S
+    //   physical px     = containerW * baseDpr
+    //   ideal dpr       = S * baseDpr  (1 canvas px per physical screen px)
+    //
+    // Canvas width cap: ~6000px keeps per-page memory ≤ ~200MB (A4 aspect).
+    // When DPR is high, the BUFFER calculation in the visible-range effect
+    // automatically reduces the number of rendered pages to stay within budget.
     const baseDpr = window.devicePixelRatio || 1;
     const pw = containerWidth * 0.9;
     const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
@@ -78,12 +89,14 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      const maxDpr = Math.floor(5000 / pw);
-      const targetDpr = transform.scale >= 2 ? maxDpr : Math.max(basePdfDpr, Math.min(Math.ceil(basePdfDpr * transform.scale / 1.2), maxDpr));
+      // Ideal: pixel-perfect for current zoom; cap at 6000px canvas width
+      const idealDpr = Math.ceil(transform.scale * baseDpr);
+      const maxDpr = Math.floor(6000 / pw);
+      const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
       renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
       return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
-    }, [transform.scale, pw, basePdfDpr, fileType]);
+    }, [transform.scale, pw, baseDpr, basePdfDpr, fileType]);
     const effectivePdfDpr = pdfRenderDpr || basePdfDpr;
 
     // PDF page dimensions
