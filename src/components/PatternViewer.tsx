@@ -72,36 +72,42 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
     // PDF render DPR: scale up quality proportionally with zoom level.
     //
-    // For pixel-perfect quality at zoom S: canvas must cover the visible area
-    // at device resolution.
-    //   visible CSS px  = containerW / S
-    //   canvas px shown = pw * dpr * (containerW / S) / pw = dpr * containerW / S
-    //   physical px     = containerW * baseDpr
-    //   ideal dpr       = S * baseDpr  (1 canvas px per physical screen px)
+    // For pixel-perfect quality at zoom S:
+    //   ideal dpr = S × baseDpr  (1 canvas px per physical screen px)
     //
-    // Canvas width cap: ~6000px keeps per-page memory ≤ ~200MB (A4 aspect).
-    // When DPR is high, the BUFFER calculation in the visible-range effect
-    // automatically reduces the number of rendered pages to stay within budget.
+    // Canvas size limits:
+    //   iOS Safari silently downsamples canvases that exceed ~16MP (4096²).
+    //   Exceeding this limit makes quality WORSE, not better — so we cap DPR
+    //   based on canvas area: maxWidth = sqrt(16MP / aspectRatio).
+    //   Desktop browsers have no practical canvas size limit (~32000px).
     const baseDpr = window.devicePixelRatio || 1;
     const pw = containerWidth * 0.9;
     const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
+    // true for iOS Safari (iPhone / iPad); Android/desktop are unconstrained.
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // PDF page dimensions — declared here so DPR effect can reference pdfPageAspectRatio.
+    // pdfPageAspectRatio: page-0 h/w ratio (for iOS canvas area cap and memory budget calc)
+    const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
+
     const [pdfRenderDpr, setPdfRenderDpr] = useState(0);
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      // Ideal: pixel-perfect for current zoom; cap at 6000px canvas width
       const idealDpr = Math.ceil(transform.scale * baseDpr);
-      const maxDpr = Math.floor(6000 / pw);
+      // iOS: area cap keeps canvas under ~16MP so Safari won't downsample it.
+      // Desktop/Android: use generous 8000px width cap (memory ~ 200MB/page).
+      const maxDpr = isIOS
+        ? Math.max(1, Math.floor(Math.sqrt(16 * 1024 * 1024 / Math.max(pdfPageAspectRatio, 0.1)) / pw))
+        : Math.max(1, Math.floor(8000 / pw));
       const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
       renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
       return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
-    }, [transform.scale, pw, baseDpr, basePdfDpr, fileType]);
+    }, [transform.scale, pw, baseDpr, basePdfDpr, pdfPageAspectRatio, isIOS, fileType]);
     const effectivePdfDpr = pdfRenderDpr || basePdfDpr;
 
-    // PDF page dimensions
-    // pdfPageAspectRatio: page-0 h/w ratio (for memory budget calc)
-    const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
+    // PDF page dimensions (pdfPageAspectRatio declared above near DPR code)
     // pdfFirstPageHeightRef: CSS px height of page 0 at current pw (fallback for unmeasured pages)
     const pdfFirstPageHeightRef = useRef(0);
     // pageAspectRatiosRef: h/w ratio for EVERY page, pre-parsed from PDF metadata in onLoadSuccess.
