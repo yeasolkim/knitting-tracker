@@ -60,7 +60,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
-    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 3);
 
     // PDF virtual scrolling: only render visible pages
     const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
