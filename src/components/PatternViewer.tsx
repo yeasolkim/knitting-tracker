@@ -83,7 +83,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // PDF virtual scrolling: only render visible pages
     const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
     const pdfFirstPageHeightRef = useRef(0);
+    // Per-page measured heights (CSS px at scale=1). Index = page index (0-based).
+    // Needed because PDFs can mix portrait and landscape pages — using only page-0
+    // height for all pages causes wrong total height and ruler jumps.
+    const pageHeightsRef = useRef<number[]>([]);
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 });
+
+    // Reset per-page heights when the PDF file changes so stale measurements
+    // from the previous file don't carry over.
+    useEffect(() => {
+      pdfFirstPageHeightRef.current = 0;
+      pageHeightsRef.current = [];
+    }, [fileUrl]);
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
     // being recreated on every pan/zoom frame.
@@ -94,15 +105,22 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const onTransformChangeRef = useRef(onTransformChange);
     useEffect(() => { onTransformChangeRef.current = onTransformChange; }, [onTransformChange]);
 
-    // Stable content dimensions: for PDFs, computed from first-page height to avoid
-    // virtual scroll page swaps causing offsetHeight fluctuations → ruler jumps.
+    // Stable content dimensions: for PDFs, sum of individually measured page heights
+    // to correctly handle PDFs that mix portrait and landscape pages.
+    // Falls back to page-0 height for pages not yet measured.
     // Used EVERYWHERE instead of raw contentItemRef.offsetHeight/offsetWidth.
     const getStableContentDims = useCallback(() => {
       const el = contentItemRef.current;
       const w = el?.offsetWidth || 0;
       let h = el?.offsetHeight || 0;
       if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
-        h = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
+        const fallback = pdfFirstPageHeightRef.current;
+        const heights = pageHeightsRef.current;
+        let total = 0;
+        for (let i = 0; i < pdfPages; i++) {
+          total += heights[i] || fallback;
+        }
+        h = total + 8 * Math.max(0, pdfPages - 1);
       }
       return { w, h };
     }, [fileType, pdfPages]);
@@ -385,7 +403,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                   >
                     {Array.from({ length: pdfPages }, (_, i) => {
                       const pw = containerWidth * 0.9;
-                      const ph = pdfFirstPageHeightRef.current || Math.round(pw * pdfPageAspectRatio);
+                      // Use individually measured height if available; fall back to
+                      // page-0 height or aspect-ratio estimate for unmeasured pages.
+                      const ph = pageHeightsRef.current[i]
+                        || pdfFirstPageHeightRef.current
+                        || Math.round(pw * pdfPageAspectRatio);
                       const isVisible = i >= visibleRange.start && i <= visibleRange.end;
                       if (!isVisible) {
                         return <div key={i + 1} style={{ width: pw, height: ph, flexShrink: 0 }} />;
@@ -399,16 +421,20 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           onRenderSuccess={() => {
-                            if (i === 0 && pdfFirstPageHeightRef.current === 0) {
-                              const pageEl = document.querySelector('.react-pdf__Page') as HTMLElement | null;
-                              if (pageEl) {
-                                // Use offsetHeight (CSS px, transform-independent).
-                                // getBoundingClientRect includes ancestor CSS scale transforms,
-                                // so if scale != 1 at render time it returns cssH * scale,
-                                // which permanently corrupts all height calculations.
-                                const measuredH = pageEl.offsetHeight || pageEl.getBoundingClientRect().height;
-                                pdfFirstPageHeightRef.current = measuredH;
-                                setPdfPageAspectRatio(measuredH / pw);
+                            // Measure this page's actual CSS height (offsetHeight is
+                            // transform-independent; getBoundingClientRect would include
+                            // ancestor scale and corrupt the measurement).
+                            const pageEl = document.querySelector(
+                              `.react-pdf__Page[data-page-number="${i + 1}"]`
+                            ) as HTMLElement | null;
+                            if (pageEl) {
+                              const measuredH = pageEl.offsetHeight || pageEl.getBoundingClientRect().height;
+                              if (measuredH > 0) {
+                                pageHeightsRef.current[i] = measuredH;
+                                if (i === 0 && pdfFirstPageHeightRef.current === 0) {
+                                  pdfFirstPageHeightRef.current = measuredH;
+                                  setPdfPageAspectRatio(measuredH / pw);
+                                }
                               }
                             }
                             reportImageSize();
