@@ -98,8 +98,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const reportImageSize = useCallback(() => {
       const el = contentItemRef.current;
       if (!el || !onImageSizeRef.current) return;
-      onImageSizeRef.current(el.offsetWidth, el.offsetHeight);
-    }, []);
+      // For PDFs, use computed height from measured first-page height to avoid
+      // virtual scroll page swaps causing offsetHeight fluctuations → ruler jumps
+      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
+        const GAP = 8;
+        const stableH = pdfFirstPageHeightRef.current * pdfPages + GAP * Math.max(0, pdfPages - 1);
+        onImageSizeRef.current(el.offsetWidth, stableH);
+      } else {
+        onImageSizeRef.current(el.offsetWidth, el.offsetHeight);
+      }
+    }, [fileType, pdfPages]);
 
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
@@ -112,7 +120,12 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const imgEl = contentItemRef.current;
       if (!imgEl) return;
       const { scale, x, y } = transform;
-      const maxTy = Math.max(0, (imgEl.offsetHeight * scale - H) / 2);
+      // Use stable computed height for PDFs to avoid virtual scroll fluctuations
+      let imgH = imgEl.offsetHeight;
+      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
+        imgH = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
+      }
+      const maxTy = Math.max(0, (imgH * scale - H) / 2);
       const maxTx = Math.max(0, (imgEl.offsetWidth * scale - W) / 2);
       const cx = Math.max(-maxTx, Math.min(maxTx, x));
       const cy = Math.max(-maxTy, Math.min(maxTy, y));
@@ -170,10 +183,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Convert image-relative % to container-absolute px (content space)
     const imageToContentY = useCallback((imageYPct: number) => {
       const H = sizeRef.current?.clientHeight || 1;
-      const imgH = contentItemRef.current?.offsetHeight || 0;
+      let imgH = contentItemRef.current?.offsetHeight || 0;
+      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
+        imgH = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
+      }
       if (imgH > 0) return (H - imgH) / 2 + (imageYPct / 100) * imgH;
       return (imageYPct / 100) * H;
-    }, []);
+    }, [fileType, pdfPages]);
 
     const goToRuler = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
