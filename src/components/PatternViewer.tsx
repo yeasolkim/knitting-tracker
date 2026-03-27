@@ -92,22 +92,27 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const onTransformChangeRef = useRef(onTransformChange);
     useEffect(() => { onTransformChangeRef.current = onTransformChange; }, [onTransformChange]);
 
+    // Stable content dimensions: for PDFs, computed from first-page height to avoid
+    // virtual scroll page swaps causing offsetHeight fluctuations → ruler jumps.
+    // Used EVERYWHERE instead of raw contentItemRef.offsetHeight/offsetWidth.
+    const getStableContentDims = useCallback(() => {
+      const el = contentItemRef.current;
+      const w = el?.offsetWidth || 0;
+      let h = el?.offsetHeight || 0;
+      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
+        h = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
+      }
+      return { w, h };
+    }, [fileType, pdfPages]);
+
     // Report rendered image size to parent so it can use image-relative coordinates
     const onImageSizeRef = useRef(onImageSize);
     useEffect(() => { onImageSizeRef.current = onImageSize; }, [onImageSize]);
     const reportImageSize = useCallback(() => {
-      const el = contentItemRef.current;
-      if (!el || !onImageSizeRef.current) return;
-      // For PDFs, use computed height from measured first-page height to avoid
-      // virtual scroll page swaps causing offsetHeight fluctuations → ruler jumps
-      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
-        const GAP = 8;
-        const stableH = pdfFirstPageHeightRef.current * pdfPages + GAP * Math.max(0, pdfPages - 1);
-        onImageSizeRef.current(el.offsetWidth, stableH);
-      } else {
-        onImageSizeRef.current(el.offsetWidth, el.offsetHeight);
-      }
-    }, [fileType, pdfPages]);
+      if (!onImageSizeRef.current) return;
+      const { w, h } = getStableContentDims();
+      if (w > 0 || h > 0) onImageSizeRef.current(w, h);
+    }, [getStableContentDims]);
 
     useEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
@@ -117,16 +122,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       // Pan bounds clamping — only when user is NOT actively interacting
       // During pinch-zoom, clamping causes jarring position jumps
       if (isPanning) return;
-      const imgEl = contentItemRef.current;
-      if (!imgEl) return;
+      const { w: imgW, h: imgH } = getStableContentDims();
+      if (imgW === 0 && imgH === 0) return;
       const { scale, x, y } = transform;
-      // Use stable computed height for PDFs to avoid virtual scroll fluctuations
-      let imgH = imgEl.offsetHeight;
-      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
-        imgH = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
-      }
       const maxTy = Math.max(0, (imgH * scale - H) / 2);
-      const maxTx = Math.max(0, (imgEl.offsetWidth * scale - W) / 2);
+      const maxTx = Math.max(0, (imgW * scale - W) / 2);
       const cx = Math.max(-maxTx, Math.min(maxTx, x));
       const cy = Math.max(-maxTy, Math.min(maxTy, y));
       if (cx !== x || cy !== y) setXY(cx, cy);
@@ -164,11 +164,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         // stays visible after orientation/resize changes.
         requestAnimationFrame(() => {
           reportImageSize();
-          const imgEl = contentItemRef.current;
-          if (!imgEl) return;
+          const { w: iW, h: iH } = getStableContentDims();
+          if (iW === 0 && iH === 0) return;
           const s = transformRef.current.scale;
-          const maxTy = Math.max(0, (imgEl.offsetHeight * s - height) / 2);
-          const maxTx = Math.max(0, (imgEl.offsetWidth * s - width) / 2);
+          const maxTy = Math.max(0, (iH * s - height) / 2);
+          const maxTx = Math.max(0, (iW * s - width) / 2);
           const cx = Math.max(-maxTx, Math.min(maxTx, transformRef.current.x));
           const cy = Math.max(-maxTy, Math.min(maxTy, transformRef.current.y));
           if (cx !== transformRef.current.x || cy !== transformRef.current.y) {
@@ -183,13 +183,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Convert image-relative % to container-absolute px (content space)
     const imageToContentY = useCallback((imageYPct: number) => {
       const H = sizeRef.current?.clientHeight || 1;
-      let imgH = contentItemRef.current?.offsetHeight || 0;
-      if (fileType === 'pdf' && pdfFirstPageHeightRef.current > 0 && pdfPages > 0) {
-        imgH = pdfFirstPageHeightRef.current * pdfPages + 8 * Math.max(0, pdfPages - 1);
-      }
+      const { h: imgH } = getStableContentDims();
       if (imgH > 0) return (H - imgH) / 2 + (imageYPct / 100) * imgH;
       return (imageYPct / 100) * H;
-    }, [fileType, pdfPages]);
+    }, [getStableContentDims]);
 
     const goToRuler = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
@@ -223,16 +220,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       fitWidthTop() {
         const W = sizeRef.current?.clientWidth || 1;
         const H = sizeRef.current?.clientHeight || 1;
-        const imgW = contentItemRef.current?.offsetWidth || W;
-        const imgH = contentItemRef.current?.offsetHeight || H;
-        const targetScale = Math.min(5, Math.max(0.5, W / imgW));
-        const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+        const { w: imgW, h: imgH } = getStableContentDims();
+        const targetScale = Math.min(5, Math.max(0.5, W / (imgW || W)));
+        const maxTy = Math.max(0, ((imgH || H) * targetScale - H) / 2);
         setFullTransform({ scale: targetScale, x: 0, y: maxTy });
       },
       restoreTransform(scale: number, x: number, y: number) {
         setFullTransform({ scale, x, y });
       },
-    }), [transform, setXY, imageToContentY, goToRuler, setFullTransform]);
+    }), [transform, setXY, imageToContentY, goToRuler, setFullTransform, getStableContentDims]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
@@ -259,9 +255,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         if (!trackEl) return;
         const trackSize = axis === 'v' ? trackEl.clientHeight : trackEl.clientWidth;
         const containerSize = axis === 'v' ? H : W;
-        const imgSize = axis === 'v'
-          ? (contentItemRef.current?.offsetHeight || containerSize)
-          : (contentItemRef.current?.offsetWidth || containerSize);
+        const { w: iW, h: iH } = getStableContentDims();
+        const imgSize = axis === 'v' ? (iH || containerSize) : (iW || containerSize);
         const maxOffset = Math.max(0, (imgSize * s - containerSize) / 2);
         const thumbFrac = Math.min(1, containerSize / Math.max(imgSize * s, containerSize));
         scrollDragRef.current = {
@@ -318,12 +313,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       };
     }, [isPanning]);
 
-    // Compute scrollbar thumb positions based on actual content (image) size
+    // Compute scrollbar thumb positions based on stable content size
     const H = sizeRef.current?.clientHeight || 1;
     const W = sizeRef.current?.clientWidth || 1;
     const s = transform.scale;
-    const cImgH = contentItemRef.current?.offsetHeight || H;
-    const cImgW = contentItemRef.current?.offsetWidth || W;
+    const { w: cImgW_raw, h: cImgH_raw } = getStableContentDims();
+    const cImgH = cImgH_raw || H;
+    const cImgW = cImgW_raw || W;
 
     const vMaxTy = Math.max(0, (cImgH * s - H) / 2);
     const vThumbFrac = Math.min(1, H / Math.max(cImgH * s, H));
