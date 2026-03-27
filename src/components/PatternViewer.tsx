@@ -69,9 +69,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      const maxDpr = Math.floor(6000 / pw);
-      const idealDpr = Math.ceil(basePdfDpr * transform.scale / 1.2);
-      const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
+      const maxDpr = Math.floor(5000 / pw);
+      const targetDpr = transform.scale >= 2 ? maxDpr : Math.max(basePdfDpr, Math.min(Math.ceil(basePdfDpr * transform.scale / 1.2), maxDpr));
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
       renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
       return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
