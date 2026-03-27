@@ -575,6 +575,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Fixed overlays (ruler) */}
         {children}
 
+        {/* Zoom level indicator — top-right, subtle */}
+        <div className="absolute top-2 right-2 z-20 pointer-events-none select-none">
+          <span className="text-[10px] font-mono text-[#3d2b1f]/30 tabular-nums">
+            {Math.round(transform.scale * 100)}%
+          </span>
+        </div>
+
         {/* Vertical scrollbar — stops above zoom buttons (bottom ~160px) */}
         {showScrollbars && (
           <div ref={vTrackRef} className="absolute right-1 top-2 bottom-40 w-6 z-25">
