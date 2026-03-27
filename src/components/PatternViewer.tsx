@@ -119,7 +119,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const totalH = pageH * pdfPages + GAP * Math.max(0, pdfPages - 1);
       const contentTop = -totalH / 2;
       const { scale, y } = transform;
-      const BUFFER = 1;
+      const BUFFER = 3;
       const viewTop = -y / scale - H / (2 * scale);
       const viewBottom = -y / scale + H / (2 * scale);
       const start = Math.max(0, Math.floor((viewTop - contentTop) / (pageH + GAP)) - BUFFER);
@@ -362,8 +362,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                             if (i === 0 && pdfFirstPageHeightRef.current === 0) {
                               const pageEl = document.querySelector('.react-pdf__Page') as HTMLElement | null;
                               if (pageEl) {
-                                pdfFirstPageHeightRef.current = pageEl.offsetHeight;
-                                setPdfPageAspectRatio(pageEl.offsetHeight / pw);
+                                // Use getBoundingClientRect for sub-pixel precision
+                                // offsetHeight rounds to integer → 0.3px error × 10x zoom = 3px jump
+                                const preciseH = pageEl.getBoundingClientRect().height;
+                                pdfFirstPageHeightRef.current = preciseH;
+                                setPdfPageAspectRatio(preciseH / pw);
                               }
                             }
                             reportImageSize();
