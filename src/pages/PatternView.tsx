@@ -855,6 +855,7 @@ function PatternViewerPage({ pattern }: Props) {
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
           rulerYPercent={isCrochet && crochetShape !== 'line' ? crochetCy : rulerY + rulerHeight / 2}
+          rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : undefined}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
           onResetRuler={isCrochet && crochetShape !== 'line' ? () => {

@@ -31,6 +31,7 @@ interface PatternViewerProps {
   fileUrl: string;
   fileType: 'image' | 'pdf';
   rulerYPercent?: number;
+  rulerXPercent?: number;
   onTransformChange?: (transform: { scale: number; x: number; y: number }, containerH: number, containerW: number) => void;
   onImageSize?: (w: number, h: number) => void;
   onResetRuler?: () => void;
@@ -41,7 +42,7 @@ interface PatternViewerProps {
 const GAP = 8; // px gap between PDF pages (matches gap-2 = 0.5rem = 8px)
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, contentOverlay, children }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -291,11 +292,26 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       return (imageYPct / 100) * H;
     }, [getStableContentDims]);
 
+    const imageToContentX = useCallback((imageXPct: number) => {
+      const W = sizeRef.current?.clientWidth || 1;
+      const { w: imgW } = getStableContentDims();
+      if (imgW > 0) return (W - imgW) / 2 + (imageXPct / 100) * imgW;
+      return (imageXPct / 100) * W;
+    }, [getStableContentDims]);
+
     const goToRuler = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
+      const W = sizeRef.current?.clientWidth || 1;
       const contentY = imageToContentY(rulerYPercent);
-      setXY(transform.x, -(contentY - H / 2) * transform.scale);
-    }, [rulerYPercent, imageToContentY, transform.x, transform.scale, setXY]);
+      const newY = -(contentY - H / 2) * transform.scale;
+      if (rulerXPercent !== undefined) {
+        const contentX = imageToContentX(rulerXPercent);
+        const newX = -(contentX - W / 2) * transform.scale;
+        setXY(newX, newY);
+      } else {
+        setXY(transform.x, newY);
+      }
+    }, [rulerYPercent, rulerXPercent, imageToContentY, imageToContentX, transform.x, transform.scale, setXY]);
 
     const fitWidth = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
