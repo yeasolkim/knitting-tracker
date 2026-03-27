@@ -62,10 +62,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const [containerWidth, setContainerWidth] = useState(600);
 
     // Fixed high-DPR: render once at high resolution, no re-render on zoom
-    // Target ~2000px canvas width for crisp quality up to ~5x zoom
+    // Target ~2500px canvas width for crisp quality up to ~7x zoom
     const baseDpr = window.devicePixelRatio || 1;
     const pdfRenderDpr = containerWidth > 0
-      ? Math.max(baseDpr, Math.ceil(2000 / (containerWidth * 0.9)))
+      ? Math.max(baseDpr, Math.ceil(2500 / (containerWidth * 0.9)))
       : baseDpr;
 
     // PDF virtual scrolling: only render visible pages
