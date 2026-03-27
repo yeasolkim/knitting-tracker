@@ -61,12 +61,22 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
 
-    // Fixed high-DPR: render once at high resolution, no re-render on zoom
-    // Target ~2500px canvas width for crisp quality up to ~7x zoom
+    // PDF render DPR: base quality + higher when zoomed in (debounced)
     const baseDpr = window.devicePixelRatio || 1;
-    const pdfRenderDpr = containerWidth > 0
-      ? Math.max(baseDpr, Math.ceil(2500 / (containerWidth * 0.9)))
-      : baseDpr;
+    const pw = containerWidth * 0.9;
+    const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
+    const [pdfRenderDpr, setPdfRenderDpr] = useState(0);
+    const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+      if (fileType !== 'pdf' || pw <= 0) return;
+      const maxDpr = Math.floor(3500 / pw);
+      const idealDpr = Math.ceil(basePdfDpr * transform.scale / 2);
+      const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
+      if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+      renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
+      return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
+    }, [transform.scale, pw, basePdfDpr, fileType]);
+    const effectivePdfDpr = pdfRenderDpr || basePdfDpr;
 
     // PDF virtual scrolling: only render visible pages
     const [pdfPageAspectRatio, setPdfPageAspectRatio] = useState(1.414); // A4 default
@@ -119,7 +129,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const totalH = pageH * pdfPages + GAP * Math.max(0, pdfPages - 1);
       const contentTop = -totalH / 2;
       const { scale, y } = transform;
-      const BUFFER = 3;
+      // Dynamic buffer: reduce when DPR is high to stay within ~200MB memory budget
+      const canvasW = (containerWidth * 0.9) * effectivePdfDpr;
+      const pageMemMB = (canvasW * canvasW * pdfPageAspectRatio * 4) / (1024 * 1024);
+      const maxPages = Math.max(3, Math.floor(200 / pageMemMB));
+      const BUFFER = Math.min(3, Math.max(1, Math.floor((maxPages - 1) / 2)));
       const viewTop = -y / scale - H / (2 * scale);
       const viewBottom = -y / scale + H / (2 * scale);
       const start = Math.max(0, Math.floor((viewTop - contentTop) / (pageH + GAP)) - BUFFER);
@@ -355,7 +369,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                           key={i + 1}
                           pageNumber={i + 1}
                           width={pw}
-                          devicePixelRatio={pdfRenderDpr}
+                          devicePixelRatio={effectivePdfDpr}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           onRenderSuccess={() => {
