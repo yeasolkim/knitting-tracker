@@ -424,6 +424,11 @@ export default function CrochetRuler({
                 onClick={() => onRadiusChange(Math.max(0.01, r - maxR / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >−</button>
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+              >÷1.3</button>
               <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
                 {r.toFixed(2)}%
               </span>
@@ -461,6 +466,11 @@ export default function CrochetRuler({
                   onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
                 >−</button>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                >÷1.3</button>
                 <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
                   {ryActual.toFixed(2)}%
                 </span>

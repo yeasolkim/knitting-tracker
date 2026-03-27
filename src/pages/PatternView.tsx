@@ -1186,6 +1186,14 @@ function PatternViewerPage({ pattern }: Props) {
               className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
             >−</button>
 
+            {/* 최대높이 30% 축소 버튼 */}
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+              className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+              title="최대 높이 30% 축소"
+            >÷1.3</button>
+
             {/* 수치 표시 */}
             <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
               {(rulerHeight / maxRulerHeight * 100).toFixed(2)}%
