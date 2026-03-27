@@ -106,7 +106,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const W = sizeRef.current?.clientWidth || 1;
       onTransformChange?.(transform, H, W);
 
-      // Pan bounds clamping — prevent image from being dragged fully off-screen
+      // Pan bounds clamping — only when user is NOT actively interacting
+      // During pinch-zoom, clamping causes jarring position jumps
+      if (isPanning) return;
       const imgEl = contentItemRef.current;
       if (!imgEl) return;
       const { scale, x, y } = transform;
@@ -115,7 +117,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const cx = Math.max(-maxTx, Math.min(maxTx, x));
       const cy = Math.max(-maxTy, Math.min(maxTy, y));
       if (cx !== x || cy !== y) setXY(cx, cy);
-    }, [transform, onTransformChange, setXY]);
+    }, [transform, onTransformChange, setXY, isPanning]);
 
     // Recalculate visible PDF page range whenever transform changes
     useEffect(() => {
