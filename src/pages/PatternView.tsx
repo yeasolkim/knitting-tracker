@@ -1279,7 +1279,7 @@ function PatternViewerPage({ pattern }: Props) {
                   setCompletedMarks([]);
                 }
               }}
-              className="px-3 py-1.5 text-xs font-medium bg-red-500/90 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
+              className="px-3 py-1.5 text-xs font-medium bg-[#9a4318]/90 text-[#fdf6e8] rounded-full hover:bg-[#9a4318] transition-colors shadow-md border border-[#7a3310]"
             >
               {t('view.deleteAll')}
             </button>

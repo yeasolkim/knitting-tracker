@@ -154,7 +154,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
                       setSelectedIndex(null);
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                    className="w-5 h-5 flex items-center justify-center bg-[#9a4318] text-[#fdf6e8] rounded-full hover:bg-[#7a3310] transition-colors shadow-sm"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
