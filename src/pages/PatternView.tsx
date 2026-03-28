@@ -193,10 +193,10 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
-  // Track last reported image height so we can detect pre-parse estimate → actual DOM height changes
+  // Track last reported image height so we can detect significant imgH changes
   const lastReportedImgH = useRef(0);
-  // Track mount time: only apply goToRuler height-correction within 3s of mount
-  const mountTimeRef = useRef(Date.now());
+  // Debounce timer for goToRuler correction after significant imgH changes
+  const goToRulerCorrectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 첫 오픈 판정: 코바늘 원형/타원/사각은 crochet_ruler_data.r 유무로, 나머지는 ruler_height 유무로 판단
   const isFirstOpenRef = useRef((() => {
     if (!pattern.progress) return true;
@@ -207,6 +207,11 @@ function PatternViewerPage({ pattern }: Props) {
   })());
   const showGuideRef = useRef(showCrochetShapeGuide || showGuide);
   useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
+
+  // Cleanup correction timer on unmount to prevent state updates on unmounted component
+  useEffect(() => () => {
+    if (goToRulerCorrectionTimerRef.current) clearTimeout(goToRulerCorrectionTimerRef.current);
+  }, []);
 
   const handleImageSize = useCallback((w: number, h: number) => {
     const prevH = lastReportedImgH.current;
@@ -231,14 +236,18 @@ function PatternViewerPage({ pattern }: Props) {
       });
     } else if (
       h > 0 &&
-      Math.abs(h - prevH) > 0.5 &&
+      Math.abs(h - prevH) > 50 &&
       !isFirstOpenRef.current &&
-      !showGuideRef.current &&
-      Date.now() - mountTimeRef.current < 3000
+      !showGuideRef.current
     ) {
-      // Height changed after initial goToRuler (pre-parse estimate → actual DOM height):
-      // re-run goToRuler once to correct the view position.
-      requestAnimationFrame(() => viewerRef.current?.goToRuler());
+      // imgH changed significantly (>50px) — this indicates the container width changed
+      // (device rotation, window resize) and imgH has been recalculated.
+      // DOM rounding differences between pages (<50px total) are intentionally ignored.
+      // Debounce 300ms to collapse rapid sequential ResizeObserver/render events.
+      if (goToRulerCorrectionTimerRef.current) clearTimeout(goToRulerCorrectionTimerRef.current);
+      goToRulerCorrectionTimerRef.current = setTimeout(() => {
+        requestAnimationFrame(() => viewerRef.current?.goToRuler());
+      }, 300);
     }
   }, []);
 

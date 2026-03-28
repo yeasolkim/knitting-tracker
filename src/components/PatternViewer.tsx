@@ -40,7 +40,11 @@ interface PatternViewerProps {
   children?: React.ReactNode;
 }
 
-const GAP = 8; // px gap between PDF pages (matches gap-2 = 0.5rem = 8px)
+/** Gap between PDF pages, proportional to page width.
+ *  This makes rulerY% device-independent: same % always refers to the same
+ *  PDF content row regardless of screen size.
+ *  Reference: 8px at pw=691 (= 768px container × 90%) */
+const getPdfGap = (currentPw: number) => Math.max(1, Math.round(8 * currentPw / 691));
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, highlightBringRuler = false, contentOverlay, children }, ref) {
@@ -167,13 +171,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const w = el?.offsetWidth || 0;
       let h = el?.offsetHeight || 0;
       if (fileType === 'pdf' && pdfPages > 0) {
-        // Use DOM offsetWidth as pw when available (accurate); fall back to containerWidth.
-        const currentPw = w || containerWidthRef.current * 0.9 || 540;
+        // Read container width directly from the DOM rather than containerWidthRef.
+        // containerWidthRef is updated via a React effect (one render cycle after the
+        // ResizeObserver fires), so for cached PDFs that parse before the first render
+        // the ref would still hold the initial value (600), giving a wrong imgH and
+        // mispositioned ruler on the first goToRuler() call.
+        const currentPw = w || (sizeRef.current?.clientWidth ?? 0) * 0.9 || 540;
+        const gap = getPdfGap(currentPw);
         let total = 0;
         for (let i = 0; i < pdfPages; i++) {
           total += getPageCssHeight(i, currentPw);
         }
-        if (total > 0) h = total + GAP * Math.max(0, pdfPages - 1);
+        if (total > 0) h = total + gap * Math.max(0, pdfPages - 1);
       }
       return { w, h };
     }, [fileType, pdfPages, getPageCssHeight]);
@@ -235,6 +244,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const currentPw = containerWidth * 0.9;
 
       // Build cumulative Y offsets for each page
+      const gap = getPdfGap(currentPw);
       const offsets: number[] = [];
       const heights: number[] = [];
       let totalH = 0;
@@ -242,7 +252,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         offsets[i] = totalH;
         const ph = getPageCssHeight(i, currentPw);
         heights[i] = ph;
-        totalH += ph + (i < pdfPages - 1 ? GAP : 0);
+        totalH += ph + (i < pdfPages - 1 ? gap : 0);
       }
       if (totalH <= 0) return;
 
@@ -331,7 +341,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (imgH > 0 && Math.abs(needed_ty) > maxTy + 0.5) {
         const distY = Math.abs(contentY - H / 2);
         const denom = imgH - 2 * distY;
-        targetScale = Math.min(5, Math.max(targetScale, denom > 0 ? H / denom : 1.5));
+        targetScale = Math.min(10, Math.max(targetScale, denom > 0 ? H / denom : 1.5));
       }
 
       const newY = -(contentY - H / 2) * targetScale;
@@ -349,7 +359,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const fitWidth = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
       const imgW = contentItemRef.current?.offsetWidth || W;
-      const targetScale = Math.min(5, Math.max(0.5, W / imgW));
+      const targetScale = Math.min(10, Math.max(0.5, W / imgW));
       setFullTransform({ scale: targetScale, x: 0, y: 0 });
     }, [setFullTransform]);
 
@@ -373,7 +383,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const W = sizeRef.current?.clientWidth || 1;
         const H = sizeRef.current?.clientHeight || 1;
         const { w: imgW, h: imgH } = getStableContentDims();
-        const targetScale = Math.min(5, Math.max(0.5, W / (imgW || W)));
+        const targetScale = Math.min(10, Math.max(0.5, W / (imgW || W)));
         const maxTy = Math.max(0, ((imgH || H) * targetScale - H) / 2);
         setFullTransform({ scale: targetScale, x: 0, y: maxTy });
       },
@@ -511,7 +521,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               />
             ) : (
               <Suspense fallback={<div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />}>
-                <div ref={(el) => { contentItemRef.current = el; }} className="flex flex-col items-center gap-2">
+                <div ref={(el) => { contentItemRef.current = el; }} className="flex flex-col items-center">
                   <PdfDocument
                     file={fileUrl}
                     onLoadSuccess={async (pdfDoc: any) => {
@@ -551,49 +561,53 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                       }
                     }}
                     options={pdfOptions}
-                    className="flex flex-col items-center gap-2"
+                    className="flex flex-col items-center"
                   >
                     {Array.from({ length: pdfPages }, (_, i) => {
                       const currentPw = containerWidth * 0.9;
                       // 페이지별 정확한 높이 사용 (혼합 크기 PDF 대응)
                       const ph = getPageCssHeight(i, currentPw);
                       const isVisible = i >= visibleRange.start && i <= visibleRange.end;
+                      // Gap is applied as marginBottom on each item (not flex gap) so that
+                      // the proportional gap value matches what getStableContentDims() calculates.
+                      const pageGap = i < pdfPages - 1 ? getPdfGap(currentPw) : 0;
                       if (!isVisible) {
-                        return <div key={i + 1} style={{ width: currentPw, height: ph, flexShrink: 0 }} />;
+                        return <div key={i + 1} style={{ width: currentPw, height: ph, flexShrink: 0, marginBottom: pageGap }} />;
                       }
                       return (
-                        <PdfPage
-                          key={i + 1}
-                          pageNumber={i + 1}
-                          width={currentPw}
-                          devicePixelRatio={effectivePdfDpr}
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
-                          onRenderSuccess={() => {
-                            // DOM 실측값으로 pageHeightsRef 갱신 (메타데이터보다 더 정확)
-                            // offsetHeight은 transform-independent라 scale 오염 없음.
-                            const pageEl = document.querySelector(
-                              `.react-pdf__Page[data-page-number="${i + 1}"]`
-                            ) as HTMLElement | null;
-                            if (pageEl) {
-                              const measuredH = pageEl.offsetHeight || pageEl.getBoundingClientRect().height;
-                              if (measuredH > 0) {
-                                pageHeightsRef.current[i] = measuredH;
-                                if (i === 0 && pdfFirstPageHeightRef.current === 0) {
-                                  pdfFirstPageHeightRef.current = measuredH;
-                                  setPdfPageAspectRatio(measuredH / currentPw);
+                        <div key={i + 1} style={{ marginBottom: pageGap }}>
+                          <PdfPage
+                            pageNumber={i + 1}
+                            width={currentPw}
+                            devicePixelRatio={effectivePdfDpr}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            onRenderSuccess={() => {
+                              // DOM 실측값으로 pageHeightsRef 갱신 (메타데이터보다 더 정확)
+                              // offsetHeight은 transform-independent라 scale 오염 없음.
+                              const pageEl = document.querySelector(
+                                `.react-pdf__Page[data-page-number="${i + 1}"]`
+                              ) as HTMLElement | null;
+                              if (pageEl) {
+                                const measuredH = pageEl.offsetHeight || pageEl.getBoundingClientRect().height;
+                                if (measuredH > 0) {
+                                  pageHeightsRef.current[i] = measuredH;
+                                  if (i === 0 && pdfFirstPageHeightRef.current === 0) {
+                                    pdfFirstPageHeightRef.current = measuredH;
+                                    setPdfPageAspectRatio(measuredH / currentPw);
+                                  }
                                 }
                               }
-                            }
-                            // 사전 파싱이 완료된 후에만 reportImageSize를 호출한다.
-                            // 파싱 전에 호출하면 부정확한 imgH로 goToRuler()가 실행되고,
-                            // 이후 imgH가 바뀔 때 진행선이 튀는 문제가 발생한다.
-                            // (파싱 실패 시 preParseDoneRef는 catch 블록에서 true로 설정됨)
-                            if (preParseDoneRef.current) {
-                              reportImageSize();
-                            }
-                          }}
-                        />
+                              // 사전 파싱이 완료된 후에만 reportImageSize를 호출한다.
+                              // 파싱 전에 호출하면 부정확한 imgH로 goToRuler()가 실행되고,
+                              // 이후 imgH가 바뀔 때 진행선이 튀는 문제가 발생한다.
+                              // (파싱 실패 시 preParseDoneRef는 catch 블록에서 true로 설정됨)
+                              if (preParseDoneRef.current) {
+                                reportImageSize();
+                              }
+                            }}
+                          />
+                        </div>
                       );
                     })}
                   </PdfDocument>
