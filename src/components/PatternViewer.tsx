@@ -323,15 +323,30 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
       const contentY = imageToContentY(rulerYPercent);
-      const newY = -(contentY - H / 2) * transform.scale;
+      const { h: imgH } = getStableContentDims();
+
+      // If current scale can't scroll ruler to center (image smaller than container),
+      // compute minimum scale needed so ruler can be centered.
+      let targetScale = transform.scale;
+      const needed_ty = -(contentY - H / 2) * targetScale;
+      const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+      if (imgH > 0 && Math.abs(needed_ty) > maxTy + 0.5) {
+        const distY = Math.abs(contentY - H / 2);
+        const denom = imgH - 2 * distY;
+        targetScale = Math.min(5, Math.max(targetScale, denom > 0 ? H / denom : 1.5));
+      }
+
+      const newY = -(contentY - H / 2) * targetScale;
       if (rulerXPercent !== undefined) {
         const contentX = imageToContentX(rulerXPercent);
-        const newX = -(contentX - W / 2) * transform.scale;
-        setXY(newX, newY);
+        const newX = -(contentX - W / 2) * targetScale;
+        setFullTransform({ scale: targetScale, x: newX, y: newY });
+      } else if (targetScale !== transform.scale) {
+        setFullTransform({ scale: targetScale, x: transform.x, y: newY });
       } else {
         setXY(transform.x, newY);
       }
-    }, [rulerYPercent, rulerXPercent, imageToContentY, imageToContentX, transform.x, transform.scale, setXY]);
+    }, [rulerYPercent, rulerXPercent, imageToContentY, imageToContentX, getStableContentDims, transform.x, transform.scale, setXY, setFullTransform]);
 
     const fitWidth = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
