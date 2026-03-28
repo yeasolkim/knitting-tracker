@@ -284,8 +284,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const { width, height } = entries[0].contentRect;
         setContainerWidth(width);
         onTransformChangeRef.current?.(transformRef.current, height, width);
-        // Re-measure image size after layout, then clamp pan offset so content
-        // stays visible after orientation/resize changes.
         requestAnimationFrame(() => {
           reportImageSize();
           const { w: iW, h: iH } = getStableContentDims();
