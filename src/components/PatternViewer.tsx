@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useGestures } from '@/hooks/useGestures';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -239,14 +239,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       }
     }, [preParseDone, pdfPages, reportImageSize]);
 
-    useEffect(() => {
+    // useLayoutEffect fires synchronously after DOM mutations but before the browser
+    // paints. This ensures the ruler (rendered in PatternView from viewTransform) is
+    // always updated in the same frame as the CSS transform on the content div,
+    // eliminating the one-frame lag that caused visible misalignment during zoom/pan.
+    useLayoutEffect(() => {
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
 
       // Pan bounds clamping — only when user is NOT actively interacting.
-      // IMPORTANT: compute clamped transform BEFORE notifying the parent so
-      // PatternView never renders with the pre-clamp (wrong) transform values,
-      // which would make the ruler jump to a wrong screen position.
       if (!isPanning) {
         const { w: imgW, h: imgH } = getStableContentDims();
         if (imgW > 0 && imgH > 0) {
@@ -256,8 +257,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           const cx = Math.max(-maxTx, Math.min(maxTx, x));
           const cy = Math.max(-maxTy, Math.min(maxTy, y));
           if (cx !== x || cy !== y) {
-            // Tell the parent the clamped position immediately so the ruler
-            // renders at the correct location on this very frame.
             onTransformChange?.({ ...transform, x: cx, y: cy }, H, W);
             setXY(cx, cy);
             return;
