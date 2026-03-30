@@ -449,7 +449,23 @@ function PatternViewerPage({ pattern }: Props) {
     //   RIGHT(horizontal+ down) → DOWN  (vertical   + down)
     //   DOWN (vertical  + down) → LEFT  (horizontal + up)
     //   LEFT (horizontal+ up)   → UP    (vertical   + up)
-    const { rulerOrientation: o, rulerDirection: d } = latestRef.current;
+    const { rulerOrientation: o, rulerDirection: d, rulerHeight: rh, imgH: iH, imgW: iW, containerH: H, containerW: W } = latestRef.current;
+
+    // Convert rulerHeight to preserve the same visual screen size after rotation.
+    // vertical rulerHeight is % of imgH; horizontal rulerHeight is % of imgW.
+    let newRulerHeight = rh;
+    if (iH > 0 && iW > 0 && H > 0 && W > 0) {
+      if (o === 'vertical') {
+        // vertical → horizontal: convert from %imgH to %imgW preserving screen px
+        newRulerHeight = rh * (iH / H) * (W / iW);
+      } else {
+        // horizontal → vertical: convert from %imgW to %imgH preserving screen px
+        newRulerHeight = rh * (iW / W) * (H / iH);
+      }
+      newRulerHeight = Math.max(0.001, Math.min(50, newRulerHeight));
+    }
+    setRulerHeight(newRulerHeight);
+
     if (o === 'vertical' && d === 'up') {
       setRulerOrientation('horizontal'); setRulerDirection('down');
     } else if (o === 'horizontal' && d === 'down') {
@@ -463,10 +479,16 @@ function PatternViewerPage({ pattern }: Props) {
   }, [captureHistory]);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
-    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
-    const contentH_px = (screenHPct / 100) * H / t.scale;
-    const refH = iH > 0 ? iH : H;
-    setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentH_px / refH) * 100)));
+    const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW, rulerOrientation: o } = latestRef.current;
+    if (o === 'horizontal') {
+      const contentW_px = (screenHPct / 100) * W / t.scale;
+      const refW = iW > 0 ? iW : W;
+      setRulerHeight(Math.max(0.001, (contentW_px / refW) * 100));
+    } else {
+      const contentH_px = (screenHPct / 100) * H / t.scale;
+      const refH = iH > 0 ? iH : H;
+      setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentH_px / refH) * 100)));
+    }
     setShowGuide(false);
   }, [maxRulerHeight]);
 
