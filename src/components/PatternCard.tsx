@@ -33,6 +33,12 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
               src={pattern.thumbnail_url || pattern.file_url}
               alt={pattern.title}
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+              onError={(e) => {
+                // thumbnail_url 로드 실패 시 file_url로 fallback
+                if (pattern.thumbnail_url && (e.target as HTMLImageElement).src !== pattern.file_url) {
+                  (e.target as HTMLImageElement).src = pattern.file_url;
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
