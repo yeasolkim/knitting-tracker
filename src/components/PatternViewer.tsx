@@ -292,6 +292,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (!sizeRef.current) return;
       const observer = new ResizeObserver((entries) => {
         const { width, height } = entries[0].contentRect;
+        // If containerWidth changed significantly, clear stale DOM-measured heights.
+        // getPageCssHeight() prefers pageHeightsRef (DOM measurements from old width)
+        // over pageAspectRatiosRef (always proportional/correct). Clearing forces it
+        // to use aspect ratios until pages re-render at the new width.
+        if (Math.abs(width - containerWidthRef.current) > 5) {
+          pageHeightsRef.current = [];
+        }
         setContainerWidth(width);
         onTransformChangeRef.current?.(transformRef.current, height, width);
         requestAnimationFrame(() => {
