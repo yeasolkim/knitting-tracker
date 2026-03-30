@@ -260,10 +260,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
+  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
-  }, [rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
+    latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
+  }, [rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -444,7 +444,22 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleRotateRuler = useCallback(() => {
     captureHistory();
-    setRulerOrientation(o => o === 'vertical' ? 'horizontal' : 'vertical');
+    // Clockwise 4-state cycle:
+    //   UP   (vertical  + up)   → RIGHT (horizontal + down)
+    //   RIGHT(horizontal+ down) → DOWN  (vertical   + down)
+    //   DOWN (vertical  + down) → LEFT  (horizontal + up)
+    //   LEFT (horizontal+ up)   → UP    (vertical   + up)
+    const { rulerOrientation: o, rulerDirection: d } = latestRef.current;
+    if (o === 'vertical' && d === 'up') {
+      setRulerOrientation('horizontal'); setRulerDirection('down');
+    } else if (o === 'horizontal' && d === 'down') {
+      setRulerOrientation('vertical'); // direction stays 'down'
+    } else if (o === 'vertical' && d === 'down') {
+      setRulerOrientation('horizontal'); setRulerDirection('up');
+    } else {
+      // horizontal + up → UP
+      setRulerOrientation('vertical'); setRulerDirection('up');
+    }
   }, [captureHistory]);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
