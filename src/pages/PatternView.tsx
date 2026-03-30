@@ -1101,7 +1101,6 @@ function PatternViewerPage({ pattern }: Props) {
               onChangePositionX={handleRulerPositionXChange}
               onChangeHeight={handleRulerHeightChange}
               onComplete={handleComplete}
-              onRotate={handleRotateRuler}
               onToggleSettings={() => setShowRulerSettings((v) => !v)}
               onDragStart={captureHistory}
             />
@@ -1325,67 +1324,108 @@ function PatternViewerPage({ pattern }: Props) {
         )}
 
         {/* Ruler height settings popup — layout depends on orientation */}
-        {showRulerSettings && (!isCrochet || crochetShape === 'line') && (
-          rulerOrientation === 'horizontal' ? (
-            /* Horizontal mode: row layout below ruler buttons */
-            <div
-              className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2.5 py-2 flex flex-row items-center gap-1.5"
-              style={{
-                top: '5.5rem',
-                left: `${screenRulerX + screenRulerWidth / 2}%`,
-                transform: 'translateX(-50%)',
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
+        {showRulerSettings && (!isCrochet || crochetShape === 'line') && (() => {
+          const facingDeg =
+            rulerOrientation === 'vertical' && rulerDirection === 'up' ? 0 :
+            rulerOrientation === 'horizontal' && rulerDirection === 'down' ? 90 :
+            rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
+          const directionArrow = ['↑', '→', '↓', '←'][facingDeg / 90];
+
+          const directionRow = (
+            <div className="flex items-center justify-between w-full gap-3">
+              {/* Current direction indicator */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#ede5cc] border border-[#d4b896] flex items-center justify-center flex-shrink-0">
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease' }}
+                  >
+                    <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
+                  </svg>
+                </div>
+                <span className="text-[13px] text-[#7a5c46] font-bold select-none leading-none">{directionArrow}</span>
+              </div>
+              {/* Rotate button */}
               <button
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                title="최대 너비 30% 축소"
-              >÷1.3</button>
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-              >−</button>
-              <input
-                type="range"
-                min={0}
-                max={10000}
-                step={1}
-                value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onChange={(e) => {
-                  setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
-                }}
-                onPointerUp={() => setIsAdjustingRuler(false)}
-                onPointerCancel={() => setIsAdjustingRuler(false)}
-                className="accent-[#b5541e] cursor-pointer"
-                style={{ width: '100px', height: '28px' }}
-              />
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-              >+</button>
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                title="최대 너비 30% 확장"
-              >×1.3</button>
-              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                {(rulerHeight / maxRulerHeight * 100).toFixed(1)}%
-              </span>
+                onClick={() => handleRotateRuler()}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[11px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none"
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {t('ruler.rotate')}
+              </button>
             </div>
-          ) : (
+          );
+
+          if (rulerOrientation === 'horizontal') {
+            return (
+              /* Horizontal mode: column layout, centered on ruler band */
+              <div
+                className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col gap-2"
+                style={{
+                  top: '5.5rem',
+                  left: `${screenRulerX + screenRulerWidth / 2}%`,
+                  transform: 'translateX(-50%)',
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                {directionRow}
+                <div className="border-t border-[#d4b896] -mx-3" />
+                {/* Height (= band width) controls */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                    title="최대 너비 30% 축소"
+                  >÷1.3</button>
+                  <button
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                  >−</button>
+                  <input
+                    type="range" min={0} max={10000} step={1}
+                    value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
+                    onPointerUp={() => setIsAdjustingRuler(false)}
+                    onPointerCancel={() => setIsAdjustingRuler(false)}
+                    className="accent-[#b5541e] cursor-pointer"
+                    style={{ width: '100px', height: '28px' }}
+                  />
+                  <button
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                  >+</button>
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setMaxRulerHeight((m) => m * 1.3)}
+                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                    title="최대 너비 30% 확장"
+                  >×1.3</button>
+                  <span className="text-[10px] text-[#b5541e] font-mono leading-tight">
+                    {(rulerHeight / maxRulerHeight * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          return (
             /* Vertical mode: column layout left of ⚙️ button */
             <div
-              className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+              className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col items-center gap-2"
               style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
               onPointerDown={(e) => e.stopPropagation()}
             >
+              {directionRow}
+              <div className="border-t border-[#d4b896] w-full" />
+              {/* Height controls */}
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setMaxRulerHeight((m) => m * 1.3)}
@@ -1398,16 +1438,10 @@ function PatternViewerPage({ pattern }: Props) {
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >+</button>
               <input
-                type="range"
-                min={0}
-                max={10000}
-                step={1}
+                type="range" min={0} max={10000} step={1}
                 value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
                 onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onChange={(e) => {
-                  setIsAdjustingRuler(true);
-                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
-                }}
+                onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
                 onPointerUp={() => setIsAdjustingRuler(false)}
                 onPointerCancel={() => setIsAdjustingRuler(false)}
                 className="accent-[#b5541e] cursor-pointer"
@@ -1428,8 +1462,8 @@ function PatternViewerPage({ pattern }: Props) {
                 {(rulerHeight / maxRulerHeight * 100).toFixed(2)}%
               </span>
             </div>
-          )
-        )}
+          );
+        })()}
 
 
         {hasMarkSelection && completedMarks.length > 1 && (
