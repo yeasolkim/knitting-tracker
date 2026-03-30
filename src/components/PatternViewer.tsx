@@ -359,14 +359,24 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     useEffect(() => {
       const canvas = overlayCanvasRef.current;
 
-      // Always cancel any in-flight render and hide the stale canvas immediately
+      // Helper: restore all react-pdf page canvases to visible.
+      const showPdfCanvases = () => {
+        document.querySelectorAll<HTMLElement>('.react-pdf__Page canvas').forEach((el) => {
+          el.style.visibility = '';
+        });
+      };
+
+      // Always cancel any in-flight render and hide the stale overlay immediately
       // so it never lingers at the wrong position while the user is panning/zooming.
+      // Also restore PDF canvases so the pattern is always visible while the overlay
+      // is not yet drawn.
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       if (overlayRenderTaskRef.current) {
         try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
         overlayRenderTaskRef.current = null;
       }
       if (canvas) canvas.style.display = 'none';
+      showPdfCanvases();
 
       if (!isIOS || fileType !== 'pdf' || transform.scale < 4 || !pdfDocRef.current || !canvas) {
         return;
@@ -425,24 +435,19 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const visPageTop   = (visTop   - screenTop)  / S;
         const visPageWidth = visW / S;
 
-        // Overlay canvas covers the visible page area on screen.
+        // Prepare canvas dimensions (still display:none — shown only after render succeeds).
         const canvasW = Math.round(visW * dpr);
         const canvasH = Math.round(visH * dpr);
         canvas.width  = canvasW;
         canvas.height = canvasH;
-        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:8;`;
 
         // PDF.js render scale: maps visible page CSS width → canvas pixel width.
-        // Because ratio = (naturalWidth / pw), this simplifies to:
-        //   renderScale = canvasW / (visPageWidth * naturalWidth / pw)
-        // The naturalWidth cancels in the offset formula below, giving device-native quality.
         let pdfPage: any;
         try { pdfPage = await pdfDocRef.current.getPage(pageIdx + 1); } catch (_) { return; }
         const naturalViewport = pdfPage.getViewport({ scale: 1 });
         const renderScale = canvasW * pw / (visPageWidth * naturalViewport.width);
 
-        // Viewport that renders the full page at renderScale, then shift so
-        // the visible region starts at canvas origin.
+        // Offset so the visible region starts at canvas origin.
         const offsetX = -(visPageLeft * naturalViewport.width / pw) * renderScale;
         const offsetY = -(visPageTop  * naturalViewport.width / pw) * renderScale;
 
@@ -462,9 +467,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         } catch (e: any) {
           if (e?.name !== 'RenderingCancelledException') console.warn('overlay render error', e);
           ctx.restore();
+          // Render failed — keep PDF canvas visible (showPdfCanvases already called above).
           return;
         }
         ctx.restore();
+
+        // Render succeeded: show overlay and hide the underlying PDF canvas so they
+        // don't overlap. PDF canvases are restored the next time the overlay hides.
+        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:8;`;
+        const pdfPageCanvas = document.querySelector<HTMLElement>(
+          `.react-pdf__Page[data-page-number="${pageIdx + 1}"] canvas`
+        );
+        if (pdfPageCanvas) pdfPageCanvas.style.visibility = 'hidden';
       }, 350);
 
       return () => {
@@ -472,12 +486,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       };
     }, [transform, fileType, pdfPages, containerWidth, isIOS, getPageCssHeight]);
 
-    // Cleanup overlay on unmount
+    // Cleanup overlay on unmount — restore PDF canvases so they're never stuck hidden.
     useEffect(() => () => {
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       if (overlayRenderTaskRef.current) {
         try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
       }
+      document.querySelectorAll<HTMLElement>('.react-pdf__Page canvas').forEach((el) => {
+        el.style.visibility = '';
+      });
     }, []);
 
     // Convert image-relative % to container-absolute px (content space)
