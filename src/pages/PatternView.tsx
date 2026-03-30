@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, CompletedMark, RulerDirection, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
+import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
 import CrochetRuler from '@/components/CrochetRuler';
@@ -91,6 +91,8 @@ type Snapshot = {
   rulerY: number;
   rulerHeight: number;
   rulerDirection: RulerDirection;
+  rulerOrientation: RulerOrientation;
+  rulerX: number;
   completedMarks: CompletedMark[];
   crochetMarks: CrochetMark[];
   knittingMarks: KnittingMark[];
@@ -174,6 +176,12 @@ function PatternViewerPage({ pattern }: Props) {
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
     (pattern.progress?.ruler_direction as RulerDirection) || 'up'
   );
+  const [rulerOrientation, setRulerOrientation] = useState<RulerOrientation>(
+    (pattern.progress?.ruler_orientation as RulerOrientation) ?? 'vertical'
+  );
+  const [rulerX, setRulerX] = useState<number>(
+    (pattern.progress?.ruler_position_x as number) ?? 50
+  );
   const [completedMarks, setCompletedMarks] = useState<CompletedMark[]>(
     (pattern.progress?.completed_marks as CompletedMark[]) || []
   );
@@ -252,10 +260,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
+  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
-  }, [rulerY, rulerHeight, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
+    latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
+  }, [rulerY, rulerHeight, rulerX, rulerOrientation, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -278,6 +286,8 @@ function PatternViewerPage({ pattern }: Props) {
     rulerY,
     rulerHeight,
     rulerDirection,
+    rulerOrientation,
+    rulerX,
     completedMarks,
     crochetMarks: [],
     knittingMarks: [],
@@ -302,6 +312,8 @@ function PatternViewerPage({ pattern }: Props) {
     setRulerY(snap.rulerY);
     setRulerHeight(snap.rulerHeight);
     setRulerDirection(snap.rulerDirection);
+    setRulerOrientation(snap.rulerOrientation);
+    setRulerX(snap.rulerX);
     setCompletedMarks(snap.completedMarks);
     setCrochetMarks(snap.crochetMarks);
     setKnittingMarks(snap.knittingMarks);
@@ -409,16 +421,31 @@ function PatternViewerPage({ pattern }: Props) {
     ? (rulerHeight / 100) * imgH * viewTransform.scale / containerH * 100
     : rulerHeight * viewTransform.scale;
 
+  // Horizontal ruler screen position (X-axis equivalent)
+  const screenRulerX = contentToScreenX(rulerX);
+  const screenRulerWidth = imgW > 0
+    ? (rulerHeight / 100) * imgW * viewTransform.scale / containerW * 100
+    : rulerHeight * viewTransform.scale;
+
   // When RowRuler reports drag (screen coords) → convert to image-relative coords
   const handleRulerPositionChange = useCallback((screenYPct: number) => {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
     const screenY = (screenYPct / 100) * H;
     const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-    // No clamp: RowRuler already clamps to screen-space [0, 100-height].
-    // Clamping here causes the ruler to snap to the image edge when dragged
-    // into letterbox areas, making the UI appear broken.
     setRulerY(iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100);
   }, []);
+
+  const handleRulerPositionXChange = useCallback((screenXPct: number) => {
+    const { viewTransform: t, containerW: W, imgW: iW } = latestRef.current;
+    const screenX = (screenXPct / 100) * W;
+    const contentX = (screenX - W / 2 - t.x) / t.scale + W / 2;
+    setRulerX(iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100);
+  }, []);
+
+  const handleRotateRuler = useCallback(() => {
+    captureHistory();
+    setRulerOrientation(o => o === 'vertical' ? 'horizontal' : 'vertical');
+  }, [captureHistory]);
 
   const handleRulerHeightChange = useCallback((screenHPct: number) => {
     const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
@@ -483,8 +510,8 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     (pattern.progress?.notes as Record<string, string>) || {}
@@ -558,6 +585,8 @@ function PatternViewerPage({ pattern }: Props) {
       ruler_position_y: rulerY,
       ruler_height: rulerHeight,
       ruler_direction: rulerDirection,
+      ruler_orientation: rulerOrientation,
+      ruler_position_x: rulerX,
       completed_marks: completedMarks,
       crochet_marks: crochetMarks,
       knitting_marks: knittingMarks,
@@ -567,7 +596,7 @@ function PatternViewerPage({ pattern }: Props) {
       active_sub_pattern_id: activeSubId,
       crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
+  }, [activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => saveFn({
@@ -575,6 +604,8 @@ function PatternViewerPage({ pattern }: Props) {
     ruler_position_y: rulerY,
     ruler_height: rulerHeight,
     ruler_direction: rulerDirection,
+    ruler_orientation: rulerOrientation,
+    ruler_position_x: rulerX,
     completed_marks: completedMarks,
     crochet_marks: crochetMarks,
     knitting_marks: knittingMarks,
@@ -586,7 +617,7 @@ function PatternViewerPage({ pattern }: Props) {
     view_x: viewTransform.x,
     view_y: viewTransform.y,
     crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
-  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
@@ -646,16 +677,26 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleComplete = useCallback(() => {
     captureHistory();
-    const { rulerY: ry, rulerHeight: rh } = latestRef.current;
-    const newMark: CompletedMark = { y: ry, height: rh };
+    const { rulerY: ry, rulerHeight: rh, rulerX: rx, rulerOrientation: orientation } = latestRef.current;
 
-    setCompletedMarks((prev) => [...prev, newMark]);
-    updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
-
-    if (rulerDirection === 'up') {
-      setRulerY(ry - rh);
+    if (orientation === 'horizontal') {
+      const newMark: CompletedMark = { y: rx, height: rh, orientation: 'horizontal' };
+      setCompletedMarks((prev) => [...prev, newMark]);
+      updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
+      if (rulerDirection === 'up') {
+        setRulerX(rx - rh);
+      } else {
+        setRulerX(rx + rh);
+      }
     } else {
-      setRulerY(ry + rh);
+      const newMark: CompletedMark = { y: ry, height: rh };
+      setCompletedMarks((prev) => [...prev, newMark]);
+      updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
+      if (rulerDirection === 'up') {
+        setRulerY(ry - rh);
+      } else {
+        setRulerY(ry + rh);
+      }
     }
   }, [captureHistory, rulerDirection, updateActiveSub]);
 
@@ -697,17 +738,31 @@ function PatternViewerPage({ pattern }: Props) {
   // CompletedOverlay is rendered outside the CSS transform (screen space),
   // so its y/height values are in screen % — convert back to image-relative % on update.
   const handleCompletedMarkUpdate = useCallback((index: number, screenMark: CompletedMark) => {
-    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
-    const toImagePct = (screenPct: number) => {
-      const screenY = (screenPct / 100) * H;
-      const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
-      return iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
-    };
-    const imageY = toImagePct(screenMark.y);
-    const imageBottom = toImagePct(screenMark.y + screenMark.height);
-    setCompletedMarks((prev) => prev.map((m, i) =>
-      i === index ? { y: imageY, height: imageBottom - imageY } : m
-    ));
+    if (screenMark.orientation === 'horizontal') {
+      const { viewTransform: t, containerW: W, imgW: iW } = latestRef.current;
+      const toImageXPct = (screenPct: number) => {
+        const screenX = (screenPct / 100) * W;
+        const contentX = (screenX - W / 2 - t.x) / t.scale + W / 2;
+        return iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+      };
+      const imageX = toImageXPct(screenMark.y);
+      const imageRight = toImageXPct(screenMark.y + screenMark.height);
+      setCompletedMarks((prev) => prev.map((m, i) =>
+        i === index ? { y: imageX, height: imageRight - imageX, orientation: 'horizontal' as const } : m
+      ));
+    } else {
+      const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
+      const toImagePct = (screenPct: number) => {
+        const screenY = (screenPct / 100) * H;
+        const contentY = (screenY - H / 2 - t.y) / t.scale + H / 2;
+        return iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+      };
+      const imageY = toImagePct(screenMark.y);
+      const imageBottom = toImagePct(screenMark.y + screenMark.height);
+      setCompletedMarks((prev) => prev.map((m, i) =>
+        i === index ? { y: imageY, height: imageBottom - imageY } : m
+      ));
+    }
   }, []);
 
   const handleCompletedMarkDelete = useCallback((index: number) => {
@@ -814,6 +869,11 @@ function PatternViewerPage({ pattern }: Props) {
   });
 
   const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
+    if (m.orientation === 'horizontal') {
+      const x = contentToScreenX(m.y);
+      const right = contentToScreenX(m.y + m.height);
+      return { y: x, height: right - x, orientation: 'horizontal' as const };
+    }
     const y = contentToScreenY(m.y);
     const bottom = contentToScreenY(m.y + m.height);
     return { y, height: bottom - y };
@@ -913,8 +973,8 @@ function PatternViewerPage({ pattern }: Props) {
           ref={viewerRef}
           fileUrl={pattern.file_url}
           fileType={pattern.file_type}
-          rulerYPercent={isCrochet && crochetShape !== 'line' ? crochetCy : rulerY + rulerHeight / 2}
-          rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : undefined}
+          rulerYPercent={isCrochet && crochetShape !== 'line' ? crochetCy : rulerOrientation === 'horizontal' ? 50 : rulerY + rulerHeight / 2}
+          rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : rulerOrientation === 'horizontal' ? rulerX + rulerHeight / 2 : undefined}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
           highlightBringRuler={showGuide}
@@ -931,11 +991,18 @@ function PatternViewerPage({ pattern }: Props) {
               setShowRulerGuide(true);
             }
           } : () => {
-            const { viewTransform: t, containerH: H, imgH: iH, rulerHeight: rh } = latestRef.current;
-            const contentY = H / 2 - t.y / t.scale;
-            const refH = iH > 0 ? iH : H;
-            const offset = iH > 0 ? (H - iH) / 2 : 0;
-            setRulerY((contentY - offset) / refH * 100 - rh / 2);
+            const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW, rulerHeight: rh, rulerOrientation: orientation } = latestRef.current;
+            if (orientation === 'horizontal') {
+              const contentX = W / 2 - t.x / t.scale;
+              const refW = iW > 0 ? iW : W;
+              const offsetX = iW > 0 ? (W - iW) / 2 : 0;
+              setRulerX((contentX - offsetX) / refW * 100 - rh / 2);
+            } else {
+              const contentY = H / 2 - t.y / t.scale;
+              const refH = iH > 0 ? iH : H;
+              const offset = iH > 0 ? (H - iH) / 2 : 0;
+              setRulerY((contentY - offset) / refH * 100 - rh / 2);
+            }
             if (showGuideRef.current) {
               setShowGuide(false);
               setShowRulerGuide(true);
@@ -986,15 +1053,18 @@ function PatternViewerPage({ pattern }: Props) {
           {(!isCrochet || crochetShape === 'line') && !showGuide && (
             <RowRuler
               positionY={screenRulerY}
-              height={screenRulerHeight}
+              height={rulerOrientation === 'horizontal' ? screenRulerWidth : screenRulerHeight}
               direction={rulerDirection}
+              orientation={rulerOrientation}
+              positionX={screenRulerX}
               isAdjusting={isAdjustingRuler}
               isPlacingMarker={isPlacingKnittingMarker}
               showSettings={showRulerSettings}
               onChangePosition={handleRulerPositionChange}
+              onChangePositionX={handleRulerPositionXChange}
               onChangeHeight={handleRulerHeightChange}
               onComplete={handleComplete}
-              onToggleDirection={() => { captureHistory(); setRulerDirection((d) => (d === 'up' ? 'down' : 'up')); }}
+              onRotate={handleRotateRuler}
               onToggleSettings={() => setShowRulerSettings((v) => !v)}
               onDragStart={captureHistory}
             />

@@ -18,11 +18,13 @@ export interface Pattern {
 }
 
 export interface CompletedMark {
-  y: number;      // position % (top of the mark)
-  height: number;  // height in %
+  y: number;      // position % along the primary axis (top for vertical, left for horizontal)
+  height: number; // size % along the primary axis
+  orientation?: 'horizontal'; // omitted = vertical (default)
 }
 
 export type RulerDirection = 'up' | 'down';
+export type RulerOrientation = 'vertical' | 'horizontal';
 
 export interface NotePosition {
   x: number;  // content % (0-100)
@@ -69,6 +71,8 @@ export interface PatternProgress {
   view_x?: number | null;
   view_y?: number | null;
   crochet_ruler_data?: unknown;
+  ruler_orientation?: string | null;
+  ruler_position_x?: number | null;
   updated_at: string;
 }
 
