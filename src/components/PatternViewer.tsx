@@ -87,7 +87,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     //   Desktop browsers have no practical canvas size limit (~32000px).
     const baseDpr = window.devicePixelRatio || 1;
     const pw = containerWidth * 0.9;
-    const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
+    // Target canvas width ≈ 3000px so basePdfDpr ≈ iOS maxDpr (9 for iPhone 15 A4).
+    // Previously 2000px gave DPR=6 on iPhone 15, leaving 33% of quality headroom unused.
+    const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(3000 / pw)) : baseDpr;
     // true for iOS Safari (iPhone / iPad); Android/desktop are unconstrained.
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -116,7 +118,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       const maxDpr = isIOS
         ? Math.max(1, Math.floor(Math.sqrt(16 * 1024 * 1024 / Math.max(pdfPageAspectRatio, 0.1)) / pw))
         : Math.max(1, Math.floor(8000 / pw));
-      const targetDpr = Math.max(basePdfDpr, Math.min(idealDpr, maxDpr));
+      // Correct formula: min(max(base, ideal), max) — always stays ≤ maxDpr.
+      // Old formula max(base, min(ideal, max)) could exceed maxDpr when basePdfDpr > maxDpr
+      // (e.g. tall/narrow PDF pages where measured aspectRatio raises maxDpr above default A4).
+      const targetDpr = Math.min(Math.max(basePdfDpr, idealDpr), maxDpr);
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
       renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
       return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
