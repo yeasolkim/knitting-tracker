@@ -1329,22 +1329,18 @@ function PatternViewerPage({ pattern }: Props) {
             rulerOrientation === 'vertical' && rulerDirection === 'up' ? 0 :
             rulerOrientation === 'horizontal' && rulerDirection === 'down' ? 90 :
             rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
-          const directionArrow = ['↑', '→', '↓', '←'][facingDeg / 90];
-
           const directionRow = (
             <div className="flex items-center justify-between w-full gap-3">
               {/* Current direction indicator */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#ede5cc] border border-[#d4b896] flex items-center justify-center flex-shrink-0">
-                  <svg
-                    width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease' }}
-                  >
-                    <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
-                  </svg>
-                </div>
-                <span className="text-[13px] text-[#7a5c46] font-bold select-none leading-none">{directionArrow}</span>
+              <div className="flex items-center gap-1.5">
+                <svg
+                  width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
+                >
+                  <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
+                </svg>
+                <span className="text-[11px] text-[#7a5c46] font-semibold select-none leading-none">{t('ruler.direction')}</span>
               </div>
               {/* Rotate button */}
               <button
