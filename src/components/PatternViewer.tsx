@@ -155,6 +155,14 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 });
 
+    // iOS high-quality overlay: renders only the visible portion of the page using
+    // PDF.js directly, bypassing the 16MP canvas limit that prevents DPR > 9.
+    // At scale ≥ 4, the canvas is used at device-native quality for the visible area.
+    const pdfDocRef = useRef<any>(null);
+    const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayRenderTaskRef = useRef<any>(null);
+    const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // Reset all page measurements when the PDF file changes.
     useEffect(() => {
       pdfFirstPageHeightRef.current = 0;
@@ -162,6 +170,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       pageHeightsRef.current = [];
       preParseDoneRef.current = false;
       setPreParseDone(false);
+      pdfDocRef.current = null;
     }, [fileUrl]);
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
@@ -341,6 +350,138 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       });
       observer.observe(sizeRef.current);
       return () => observer.disconnect();
+    }, []);
+
+    // iOS high-quality overlay effect.
+    // At scale >= 4, renders only the currently visible portion of the page using
+    // PDF.js directly at device-native DPR, achieving pixel-perfect quality that
+    // is otherwise blocked by iOS Safari's 16MP canvas area limit.
+    useEffect(() => {
+      const canvas = overlayCanvasRef.current;
+      const hide = () => {
+        if (canvas) {
+          canvas.style.display = 'none';
+          const ctx = canvas.getContext('2d');
+          ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (overlayRenderTaskRef.current) {
+          try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
+          overlayRenderTaskRef.current = null;
+        }
+      };
+
+      if (!isIOS || fileType !== 'pdf' || transform.scale < 4 || !pdfDocRef.current || !canvas) {
+        hide();
+        return;
+      }
+
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      overlayTimerRef.current = setTimeout(async () => {
+        if (!pdfDocRef.current || !canvas || !sizeRef.current) return;
+        const W = sizeRef.current.clientWidth;
+        const H = sizeRef.current.clientHeight;
+        const S = transform.scale;
+        const tx = transform.x;
+        const ty = transform.y;
+        const pw = containerWidthRef.current * 0.9;
+        const dpr = window.devicePixelRatio || 1;
+
+        // Compute total content height and page y-offsets (same as visibleRange logic).
+        const gap = Math.max(1, Math.round(8 * pw / 691));
+        const pageOffsets: number[] = [];
+        let totalH = 0;
+        for (let i = 0; i < pdfPages; i++) {
+          pageOffsets[i] = totalH;
+          totalH += getPageCssHeight(i, pw) + (i < pdfPages - 1 ? gap : 0);
+        }
+
+        // Find the page that covers the most screen area.
+        let bestPage = -1;
+        let bestVisArea = 0;
+        for (let i = 0; i < pdfPages; i++) {
+          const ph = getPageCssHeight(i, pw);
+          // Page top-left in screen coords (content origin = screen center + translate):
+          const screenLeft = W / 2 + tx - pw / 2 * S;
+          const screenTop  = H / 2 + ty + (-totalH / 2 + pageOffsets[i]) * S;
+          const visLeft   = Math.max(0, screenLeft);
+          const visRight  = Math.min(W, screenLeft + pw * S);
+          const visTop    = Math.max(0, screenTop);
+          const visBottom = Math.min(H, screenTop + ph * S);
+          const area = Math.max(0, visRight - visLeft) * Math.max(0, visBottom - visTop);
+          if (area > bestVisArea) { bestVisArea = area; bestPage = i; }
+        }
+        if (bestPage < 0 || bestVisArea < 1) { hide(); return; }
+
+        const pageIdx = bestPage;
+        const ph = getPageCssHeight(pageIdx, pw);
+        const screenLeft = W / 2 + tx - pw / 2 * S;
+        const screenTop  = H / 2 + ty + (-totalH / 2 + pageOffsets[pageIdx]) * S;
+        const visLeft   = Math.max(0, screenLeft);
+        const visRight  = Math.min(W, screenLeft + pw * S);
+        const visTop    = Math.max(0, screenTop);
+        const visBottom = Math.min(H, screenTop + ph * S);
+        const visW = visRight - visLeft;
+        const visH = visBottom - visTop;
+        if (visW < 1 || visH < 1) { hide(); return; }
+
+        // Visible region in page CSS coordinates (scale=1):
+        const visPageLeft  = (visLeft  - screenLeft) / S;
+        const visPageTop   = (visTop   - screenTop)  / S;
+        const visPageWidth = visW / S;
+
+        // Overlay canvas covers the visible page area on screen.
+        const canvasW = Math.round(visW * dpr);
+        const canvasH = Math.round(visH * dpr);
+        canvas.width  = canvasW;
+        canvas.height = canvasH;
+        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:15;`;
+
+        // PDF.js render scale: maps visible page CSS width → canvas pixel width.
+        // Because ratio = (naturalWidth / pw), this simplifies to:
+        //   renderScale = canvasW / (visPageWidth * naturalWidth / pw)
+        // The naturalWidth cancels in the offset formula below, giving device-native quality.
+        let pdfPage: any;
+        try { pdfPage = await pdfDocRef.current.getPage(pageIdx + 1); } catch (_) { hide(); return; }
+        const naturalViewport = pdfPage.getViewport({ scale: 1 });
+        const renderScale = canvasW * pw / (visPageWidth * naturalViewport.width);
+
+        // Viewport that renders the full page at renderScale, then shift so
+        // the visible region starts at canvas origin.
+        const offsetX = -(visPageLeft * naturalViewport.width / pw) * renderScale;
+        const offsetY = -(visPageTop  * naturalViewport.width / pw) * renderScale;
+
+        const viewport = pdfPage.getViewport({ scale: renderScale });
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvasW, canvasH);
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+
+        if (overlayRenderTaskRef.current) {
+          try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
+        }
+        overlayRenderTaskRef.current = pdfPage.render({ canvasContext: ctx, viewport });
+        try {
+          await overlayRenderTaskRef.current.promise;
+        } catch (e: any) {
+          if (e?.name !== 'RenderingCancelledException') console.warn('overlay render error', e);
+          ctx.restore();
+          return;
+        }
+        ctx.restore();
+      }, 350);
+
+      return () => {
+        if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      };
+    }, [transform, fileType, pdfPages, containerWidth, isIOS, getPageCssHeight]);
+
+    // Cleanup overlay on unmount
+    useEffect(() => () => {
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      if (overlayRenderTaskRef.current) {
+        try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
+      }
     }, []);
 
     // Convert image-relative % to container-absolute px (content space)
@@ -556,6 +697,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                   <PdfDocument
                     file={fileUrl}
                     onLoadSuccess={async (pdfDoc: any) => {
+                      pdfDocRef.current = pdfDoc;
                       const numPages: number = pdfDoc.numPages;
                       setPdfPages(numPages);
                       setVisibleRange({ start: 0, end: Math.min(2, numPages - 1) });
@@ -653,6 +795,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             {contentOverlay}
           </div>
         </div>
+
+        {/* iOS high-quality overlay canvas — rendered via PDF.js directly */}
+        <canvas ref={overlayCanvasRef} style={{ display: 'none' }} />
 
         {/* Fixed overlays (ruler) */}
         {children}
