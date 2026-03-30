@@ -153,10 +153,17 @@ export function useGestures(
     [clampScale, clampToBounds]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    lastTouchDistance.current = null;
-    lastTouchCenter.current = null;
-    setIsPanning(false);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // One finger remains after pinch — switch to pan mode so the user
+      // can immediately pan without lifting and re-tapping.
+      lastTouchDistance.current = null;
+      lastTouchCenter.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else {
+      lastTouchDistance.current = null;
+      lastTouchCenter.current = null;
+      setIsPanning(false);
+    }
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

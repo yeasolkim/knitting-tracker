@@ -358,24 +358,20 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // is otherwise blocked by iOS Safari's 16MP canvas area limit.
     useEffect(() => {
       const canvas = overlayCanvasRef.current;
-      const hide = () => {
-        if (canvas) {
-          canvas.style.display = 'none';
-          const ctx = canvas.getContext('2d');
-          ctx?.clearRect(0, 0, canvas.width, canvas.height);
-        }
-        if (overlayRenderTaskRef.current) {
-          try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
-          overlayRenderTaskRef.current = null;
-        }
-      };
+
+      // Always cancel any in-flight render and hide the stale canvas immediately
+      // so it never lingers at the wrong position while the user is panning/zooming.
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      if (overlayRenderTaskRef.current) {
+        try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
+        overlayRenderTaskRef.current = null;
+      }
+      if (canvas) canvas.style.display = 'none';
 
       if (!isIOS || fileType !== 'pdf' || transform.scale < 4 || !pdfDocRef.current || !canvas) {
-        hide();
         return;
       }
 
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       overlayTimerRef.current = setTimeout(async () => {
         if (!pdfDocRef.current || !canvas || !sizeRef.current) return;
         const W = sizeRef.current.clientWidth;
@@ -410,7 +406,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           const area = Math.max(0, visRight - visLeft) * Math.max(0, visBottom - visTop);
           if (area > bestVisArea) { bestVisArea = area; bestPage = i; }
         }
-        if (bestPage < 0 || bestVisArea < 1) { hide(); return; }
+        if (bestPage < 0 || bestVisArea < 1) { return; }
 
         const pageIdx = bestPage;
         const ph = getPageCssHeight(pageIdx, pw);
@@ -422,7 +418,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const visBottom = Math.min(H, screenTop + ph * S);
         const visW = visRight - visLeft;
         const visH = visBottom - visTop;
-        if (visW < 1 || visH < 1) { hide(); return; }
+        if (visW < 1 || visH < 1) { return; }
 
         // Visible region in page CSS coordinates (scale=1):
         const visPageLeft  = (visLeft  - screenLeft) / S;
@@ -434,14 +430,14 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const canvasH = Math.round(visH * dpr);
         canvas.width  = canvasW;
         canvas.height = canvasH;
-        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:15;`;
+        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:8;`;
 
         // PDF.js render scale: maps visible page CSS width → canvas pixel width.
         // Because ratio = (naturalWidth / pw), this simplifies to:
         //   renderScale = canvasW / (visPageWidth * naturalWidth / pw)
         // The naturalWidth cancels in the offset formula below, giving device-native quality.
         let pdfPage: any;
-        try { pdfPage = await pdfDocRef.current.getPage(pageIdx + 1); } catch (_) { hide(); return; }
+        try { pdfPage = await pdfDocRef.current.getPage(pageIdx + 1); } catch (_) { return; }
         const naturalViewport = pdfPage.getViewport({ scale: 1 });
         const renderScale = canvasW * pw / (visPageWidth * naturalViewport.width);
 
