@@ -114,12 +114,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       //
       // Using basePdfDpr as the multiplier instead of baseDpr would make DPR increase
       // far too aggressively on Android (272MB/page at 3× zoom), so we keep baseDpr.
-      const idealDpr = Math.ceil(transform.scale * baseDpr);
       // iOS: area cap keeps canvas under ~16MP so Safari won't downsample it.
       // Desktop/Android: use generous 8000px width cap (memory ~ 200MB/page).
       const maxDpr = isIOS
         ? Math.max(1, Math.floor(Math.sqrt(16 * 1024 * 1024 / Math.max(pdfPageAspectRatio, 0.1)) / pw))
         : Math.max(1, Math.floor(8000 / pw));
+      // At scale ≥ 5 (500%), snap to maxDpr for maximum quality (super-sampling beyond pixel-perfect).
+      // Memory impact: BUFFER drops to 0 at high DPR, so only 1 page stays in memory.
+      // iOS: already at maxDpr=9 from scale≈2.3×, so no change here.
+      // Android (pw=354): pixel-perfect DPR=15 → maxDpr=22 at 500% (canvas 7788px, ~343MB/page).
+      const idealDpr = transform.scale >= 5
+        ? maxDpr
+        : Math.ceil(transform.scale * baseDpr);
       // Correct formula: min(max(base, ideal), max) — always stays ≤ maxDpr.
       // Old formula max(base, min(ideal, max)) could exceed maxDpr when basePdfDpr > maxDpr
       // (e.g. tall/narrow PDF pages where measured aspectRatio raises maxDpr above default A4).
