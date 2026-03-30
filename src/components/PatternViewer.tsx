@@ -87,9 +87,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     //   Desktop browsers have no practical canvas size limit (~32000px).
     const baseDpr = window.devicePixelRatio || 1;
     const pw = containerWidth * 0.9;
-    // Target canvas width ≈ 3000px so basePdfDpr ≈ iOS maxDpr (9 for iPhone 15 A4).
-    // Previously 2000px gave DPR=6 on iPhone 15, leaving 33% of quality headroom unused.
-    const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(3000 / pw)) : baseDpr;
+    // Target canvas width ≈ 2000px at scale=1 (intentionally below maxDpr),
+    // leaving headroom so DPR can visibly step up as the user zooms in.
+    // e.g. iPhone 15 (pw=354): basePdfDpr=6 at scale=1 → steps to 9 at scale≈2.3×.
+    // Setting this too high (e.g. 3000→basePdfDpr=maxDpr=9) eliminates the step effect.
+    const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
     // true for iOS Safari (iPhone / iPad); Android/desktop are unconstrained.
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
