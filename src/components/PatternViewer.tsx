@@ -99,7 +99,12 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      const idealDpr = Math.ceil(transform.scale * baseDpr);
+      // idealDpr must be based on basePdfDpr, not baseDpr.
+      // basePdfDpr is already >> baseDpr (e.g. 6 on mobile).
+      // Using baseDpr here means DPR stays flat until scale > basePdfDpr/baseDpr
+      // (e.g. 2–3×), making zoom quality improvements invisible in normal use.
+      // Using basePdfDpr ensures the canvas stays at ~2000px-equivalent at all zoom levels.
+      const idealDpr = Math.ceil(transform.scale * basePdfDpr);
       // iOS: area cap keeps canvas under ~16MP so Safari won't downsample it.
       // Desktop/Android: use generous 8000px width cap (memory ~ 200MB/page).
       const maxDpr = isIOS
