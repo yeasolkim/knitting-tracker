@@ -542,10 +542,19 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
     const fitWidth = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
+      const H = sizeRef.current?.clientHeight || 1;
       const imgW = contentItemRef.current?.offsetWidth || W;
+      const { h: imgH } = getStableContentDims();
+      const s = transform.scale;
       const targetScale = Math.min(10, Math.max(0.5, W / imgW));
-      setFullTransform({ scale: targetScale, x: 0, y: 0 });
-    }, [setFullTransform]);
+      // Keep the same content point at the screen center — only scale changes.
+      // With transform-origin:center, content-center-Y = H/2 - ty/scale.
+      // Setting new ty so that content-center-Y is unchanged:
+      //   new_ty = transform.y * (targetScale / s)
+      const newTy = s > 0 ? transform.y * (targetScale / s) : 0;
+      const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+      setFullTransform({ scale: targetScale, x: 0, y: Math.max(-maxTy, Math.min(maxTy, newTy)) });
+    }, [transform, getStableContentDims, setFullTransform]);
 
     useImperativeHandle(ref, () => ({
       screenToContent(screenYPercent: number, screenHeightPercent: number) {
