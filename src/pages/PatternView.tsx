@@ -260,10 +260,10 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   // Ref for stable callbacks that need latest transform/ruler values
-  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
+  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
   useEffect(() => {
-    latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
-  }, [rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
+    latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
+  }, [rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings]);
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -449,22 +449,22 @@ function PatternViewerPage({ pattern }: Props) {
     //   RIGHT(horizontal+ down) → DOWN  (vertical   + down)
     //   DOWN (vertical  + down) → LEFT  (horizontal + up)
     //   LEFT (horizontal+ up)   → UP    (vertical   + up)
-    const { rulerOrientation: o, rulerDirection: d, rulerHeight: rh, imgH: iH, imgW: iW, containerH: H, containerW: W } = latestRef.current;
+    const { rulerOrientation: o, rulerDirection: d, rulerHeight: rh, maxRulerHeight: mh, imgH: iH, imgW: iW } = latestRef.current;
 
     // Convert rulerHeight to preserve the same visual screen size after rotation.
     // vertical rulerHeight is % of imgH; horizontal rulerHeight is % of imgW.
+    // screen_px = (h/100) * imgH * scale  (vertical)
+    // screen_px = (h/100) * imgW * scale  (horizontal)
+    // Preserving screen_px: newH = h * imgH/imgW  (vertical→horizontal)
     let newRulerHeight = rh;
-    if (iH > 0 && iW > 0 && H > 0 && W > 0) {
-      if (o === 'vertical') {
-        // vertical → horizontal: convert from %imgH to %imgW preserving screen px
-        newRulerHeight = rh * (iH / H) * (W / iW);
-      } else {
-        // horizontal → vertical: convert from %imgW to %imgH preserving screen px
-        newRulerHeight = rh * (iW / W) * (H / iH);
-      }
-      newRulerHeight = Math.max(0.001, Math.min(50, newRulerHeight));
+    let newMaxRulerHeight = mh;
+    if (iH > 0 && iW > 0) {
+      const factor = o === 'vertical' ? iH / iW : iW / iH;
+      newRulerHeight = Math.max(0.001, Math.min(100, rh * factor));
+      newMaxRulerHeight = Math.max(newRulerHeight, Math.min(100, mh * factor));
     }
     setRulerHeight(newRulerHeight);
+    setMaxRulerHeight(newMaxRulerHeight);
 
     if (o === 'vertical' && d === 'up') {
       setRulerOrientation('horizontal'); setRulerDirection('down');
@@ -1324,66 +1324,111 @@ function PatternViewerPage({ pattern }: Props) {
           </div>
         )}
 
-        {/* Ruler height settings — vertical popup above ⚙️ button */}
+        {/* Ruler height settings popup — layout depends on orientation */}
         {showRulerSettings && (!isCrochet || crochetShape === 'line') && (
-          <div
-            className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
-            style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {/* 최대높이 30% 확장 버튼 */}
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-              className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-              title="최대 높이 30% 확장"
-            >×1.3</button>
-
-            {/* + 버튼 (위) */}
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >+</button>
-
-            {/* 세로 슬라이더 */}
-            <input
-              type="range"
-              min={0}
-              max={10000}
-              step={1}
-              value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onChange={(e) => {
-                setIsAdjustingRuler(true);
-                setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
+          rulerOrientation === 'horizontal' ? (
+            /* Horizontal mode: row layout below ruler buttons */
+            <div
+              className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2.5 py-2 flex flex-row items-center gap-1.5"
+              style={{
+                top: '5.5rem',
+                left: `${screenRulerX + screenRulerWidth / 2}%`,
+                transform: 'translateX(-50%)',
               }}
-              onPointerUp={() => setIsAdjustingRuler(false)}
-              onPointerCancel={() => setIsAdjustingRuler(false)}
-              className="accent-[#b5541e] cursor-pointer"
-              style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-            />
-
-            {/* - 버튼 (아래) */}
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-              onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-            >−</button>
-
-            {/* 최대높이 30% 축소 버튼 */}
-            <button
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
-              className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-              title="최대 높이 30% 축소"
-            >÷1.3</button>
-
-            {/* 수치 표시 */}
-            <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-              {(rulerHeight / maxRulerHeight * 100).toFixed(2)}%
-            </span>
-          </div>
+            >
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                title="최대 너비 30% 축소"
+              >÷1.3</button>
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >−</button>
+              <input
+                type="range"
+                min={0}
+                max={10000}
+                step={1}
+                value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onChange={(e) => {
+                  setIsAdjustingRuler(true);
+                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
+                }}
+                onPointerUp={() => setIsAdjustingRuler(false)}
+                onPointerCancel={() => setIsAdjustingRuler(false)}
+                className="accent-[#b5541e] cursor-pointer"
+                style={{ width: '100px', height: '28px' }}
+              />
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >+</button>
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxRulerHeight((m) => m * 1.3)}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                title="최대 너비 30% 확장"
+              >×1.3</button>
+              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                {(rulerHeight / maxRulerHeight * 100).toFixed(1)}%
+              </span>
+            </div>
+          ) : (
+            /* Vertical mode: column layout left of ⚙️ button */
+            <div
+              className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex flex-col items-center gap-1.5"
+              style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxRulerHeight((m) => m * 1.3)}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                title="최대 높이 30% 확장"
+              >×1.3</button>
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + maxRulerHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >+</button>
+              <input
+                type="range"
+                min={0}
+                max={10000}
+                step={1}
+                value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onChange={(e) => {
+                  setIsAdjustingRuler(true);
+                  setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight));
+                }}
+                onPointerUp={() => setIsAdjustingRuler(false)}
+                onPointerCancel={() => setIsAdjustingRuler(false)}
+                className="accent-[#b5541e] cursor-pointer"
+                style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+              />
+              <button
+                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                onClick={() => setRulerHeight((h) => Math.max(0.001, h - maxRulerHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >−</button>
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                title="최대 높이 30% 축소"
+              >÷1.3</button>
+              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                {(rulerHeight / maxRulerHeight * 100).toFixed(2)}%
+              </span>
+            </div>
+          )
         )}
 
 
