@@ -238,7 +238,8 @@ function PatternViewerPage({ pattern }: Props) {
               setShowSubPatternGuide(true);
             }
           } else {
-            viewerRef.current?.goToRuler();
+            // 재방문: fit-width 배율로 진행선 중앙 정렬 (scale=1 초기값에서 zoom-in하는 문제 방지)
+            viewerRef.current?.fitWidthGoToRuler();
           }
         });
       });
@@ -254,7 +255,7 @@ function PatternViewerPage({ pattern }: Props) {
       // Debounce 300ms to collapse rapid sequential ResizeObserver/render events.
       if (goToRulerCorrectionTimerRef.current) clearTimeout(goToRulerCorrectionTimerRef.current);
       goToRulerCorrectionTimerRef.current = setTimeout(() => {
-        requestAnimationFrame(() => viewerRef.current?.goToRuler());
+        requestAnimationFrame(() => viewerRef.current?.fitWidthGoToRuler());
       }, 300);
     }
   }, []);

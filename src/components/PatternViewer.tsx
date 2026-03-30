@@ -23,6 +23,7 @@ export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
   scrollToContentY: (contentYPercent: number) => void;
   goToRuler: () => void;
+  fitWidthGoToRuler: () => void;
   fitWidthTop: () => void;
   restoreTransform: (scale: number, x: number, y: number) => void;
 }
@@ -572,6 +573,22 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       goToRuler() {
         goToRuler();
       },
+      fitWidthGoToRuler() {
+        const W = sizeRef.current?.clientWidth || 1;
+        const H = sizeRef.current?.clientHeight || 1;
+        const { w: imgW, h: imgH } = getStableContentDims();
+        const targetScale = Math.min(10, Math.max(0.5, W / (imgW || W)));
+        const contentY = imageToContentY(rulerYPercent);
+        const newY = -(contentY - H / 2) * targetScale;
+        const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+        if (rulerXPercent !== undefined) {
+          const contentX = imageToContentX(rulerXPercent);
+          const newX = -(contentX - W / 2) * targetScale;
+          setFullTransform({ scale: targetScale, x: Math.max(-maxTy, Math.min(maxTy, newX)), y: Math.max(-maxTy, Math.min(maxTy, newY)) });
+        } else {
+          setFullTransform({ scale: targetScale, x: 0, y: Math.max(-maxTy, Math.min(maxTy, newY)) });
+        }
+      },
       fitWidthTop() {
         const W = sizeRef.current?.clientWidth || 1;
         const H = sizeRef.current?.clientHeight || 1;
@@ -583,7 +600,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       restoreTransform(scale: number, x: number, y: number) {
         setFullTransform({ scale, x, y });
       },
-    }), [transform, setXY, imageToContentY, goToRuler, setFullTransform, getStableContentDims]);
+    }), [transform, setXY, imageToContentY, imageToContentX, goToRuler, setFullTransform, getStableContentDims, rulerYPercent, rulerXPercent]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
