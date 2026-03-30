@@ -224,6 +224,9 @@ function PatternViewerPage({ pattern }: Props) {
   const handleImageSize = useCallback((w: number, h: number) => {
     const prevH = lastReportedImgH.current;
     lastReportedImgH.current = h;
+    // Immediately mutate latestRef so ruler calculations use fresh image dimensions
+    latestRef.current.imgW = w;
+    latestRef.current.imgH = h;
     setImgW(w);
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
@@ -268,6 +271,11 @@ function PatternViewerPage({ pattern }: Props) {
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
+      // Immediately mutate latestRef so handleRulerPositionChange reads fresh values
+      // even before React re-renders (eliminates stale-scale cross-device mismatch)
+      latestRef.current.viewTransform = t;
+      latestRef.current.containerH = H;
+      latestRef.current.containerW = W;
       setViewTransform(t);
       setContainerH(H);
       setContainerW(W);
