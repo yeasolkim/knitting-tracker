@@ -600,7 +600,7 @@ function PatternViewerPage({ pattern }: Props) {
         userIdRef.current = uid;
       }
 
-      await supabase
+      const { error } = await supabase
         .from('pattern_progress')
         .upsert(
           {
@@ -610,6 +610,7 @@ function PatternViewerPage({ pattern }: Props) {
           },
           { onConflict: 'pattern_id,user_id' }
         );
+      if (error) throw new Error(error.message);
     },
     [supabase, pattern.id]
   );
