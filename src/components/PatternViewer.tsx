@@ -99,12 +99,18 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
       if (fileType !== 'pdf' || pw <= 0) return;
-      // idealDpr must be based on basePdfDpr, not baseDpr.
-      // basePdfDpr is already >> baseDpr (e.g. 6 on mobile).
-      // Using baseDpr here means DPR stays flat until scale > basePdfDpr/baseDpr
-      // (e.g. 2–3×), making zoom quality improvements invisible in normal use.
-      // Using basePdfDpr ensures the canvas stays at ~2000px-equivalent at all zoom levels.
-      const idealDpr = Math.ceil(transform.scale * basePdfDpr);
+      // idealDpr: the minimum DPR needed for pixel-perfect rendering at zoom S.
+      // At scale S, the page occupies pw*S CSS px = pw*S*baseDpr physical px on screen.
+      // Since the canvas width = pw*dpr, we need dpr >= S*baseDpr.
+      //
+      // basePdfDpr is already set >> baseDpr (e.g. 7 on mobile with baseDpr=3),
+      // so the canvas is over-sampled at scale=1 and quality stays fine up to
+      // scale = basePdfDpr/baseDpr (≈2.3×) without any DPR change.
+      // Beyond that threshold, idealDpr exceeds basePdfDpr and targetDpr increases.
+      //
+      // Using basePdfDpr as the multiplier instead of baseDpr would make DPR increase
+      // far too aggressively on Android (272MB/page at 3× zoom), so we keep baseDpr.
+      const idealDpr = Math.ceil(transform.scale * baseDpr);
       // iOS: area cap keeps canvas under ~16MP so Safari won't downsample it.
       // Desktop/Android: use generous 8000px width cap (memory ~ 200MB/page).
       const maxDpr = isIOS
@@ -587,7 +593,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                         return <div key={i + 1} style={{ width: currentPw, height: ph, flexShrink: 0, marginBottom: pageGap }} />;
                       }
                       return (
-                        <div key={i + 1} style={{ marginBottom: pageGap }}>
+                        // Include effectivePdfDpr in key so that when DPR changes,
+                        // PdfPage is remounted and the canvas re-renders at the new
+                        // resolution. Without this, react-pdf may not re-render the
+                        // canvas canvas when only devicePixelRatio prop changes.
+                        <div key={`${i + 1}-${effectivePdfDpr}`} style={{ marginBottom: pageGap }}>
                           <PdfPage
                             pageNumber={i + 1}
                             width={currentPw}
