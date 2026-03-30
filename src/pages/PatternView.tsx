@@ -1368,15 +1368,13 @@ function PatternViewerPage({ pattern }: Props) {
 
           if (rulerOrientation === 'horizontal') {
             return (
-              /* Horizontal mode: column layout, centered on ruler band.
-                 clamp() keeps popup fully inside the container horizontally. */
+              /* Horizontal mode: fixed top-left position */
               <div
                 className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col gap-2"
                 style={{
-                  top: '5.5rem',
-                  left: `clamp(155px, ${screenRulerX + screenRulerWidth / 2}%, calc(100% - 155px))`,
-                  transform: 'translateX(-50%)',
-                  maxHeight: 'calc(100% - 6rem)',
+                  top: '8px',
+                  left: '88px',
+                  maxHeight: 'calc(100% - 16px)',
                   overflowY: 'auto',
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -1426,13 +1424,12 @@ function PatternViewerPage({ pattern }: Props) {
           }
 
           return (
-            /* Vertical mode: column layout left of ⚙️ button.
-               top+bottom both set → element fills the clamped band and scrolls if needed. */
+            /* Vertical mode: fixed top-left position */
             <div
-              className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col items-center gap-2"
+              className="absolute z-30 left-[88px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col items-center gap-2"
               style={{
-                bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))`,
                 top: '8px',
+                maxHeight: 'calc(100% - 16px)',
                 overflowY: 'auto',
               }}
               onPointerDown={(e) => e.stopPropagation()}

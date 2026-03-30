@@ -45,13 +45,6 @@ const RowRuler = memo(function RowRuler({
 
   const isHorizontal = orientation === 'horizontal';
 
-  // Current advance direction: clockwise 4-state
-  // UP(vertical+up) RIGHT(horizontal+down) DOWN(vertical+down) LEFT(horizontal+up)
-  const facingDeg =
-    !isHorizontal && direction === 'up' ? 0 :
-    isHorizontal && direction === 'down' ? 90 :
-    !isHorizontal && direction === 'down' ? 180 : 270;
-
   const toPercentY = useCallback((clientY: number) => {
     if (!containerRef.current) return 0;
     const rect = containerRef.current.getBoundingClientRect();
@@ -183,17 +176,7 @@ const RowRuler = memo(function RowRuler({
           >
             <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
             <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-            {/* Direction indicator — centered on band */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none opacity-50">
-              <svg
-                width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="rgba(181,84,30,1)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease' }}
-              >
-                <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
-              </svg>
             </div>
-          </div>
         </div>
 
         {/* Left nudge */}
@@ -317,16 +300,6 @@ const RowRuler = memo(function RowRuler({
         >
           <div className="absolute top-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
           <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-          {/* Direction indicator — centered on band */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-            <svg
-              width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="rgba(181,84,30,1)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease' }}
-            >
-              <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
-            </svg>
-          </div>
         </div>
       </div>
 
