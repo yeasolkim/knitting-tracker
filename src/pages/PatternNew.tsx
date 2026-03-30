@@ -109,7 +109,7 @@ function UploadForm() {
 
       // 패턴 개수 한도 체크
       const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
-      if ((count ?? 0) >= 8) throw new Error(t('form.error.patternLimit'));
+      if ((count ?? 0) >= 20) throw new Error(t('form.error.patternLimit'));
 
       const isPdf = file.type === 'application/pdf';
 
