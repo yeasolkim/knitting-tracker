@@ -348,7 +348,7 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#b07840] space-y-1.5">
+      <footer className="py-5 text-center text-[11px] text-[#a08060] border-t-2 border-[#b07840] space-y-1.5 relative">
         <p>{t('footer.copyright')}</p>
         <p>
           <a
@@ -369,6 +369,9 @@ export default function Landing() {
             개인정보처리방침
           </Link>
         </p>
+        <span className="absolute bottom-1 right-2 text-[9px] text-[#c4a882]/40 select-none tabular-nums">
+          {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+        </span>
       </footer>
     </div>
   );
