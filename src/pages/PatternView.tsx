@@ -1358,13 +1358,16 @@ function PatternViewerPage({ pattern }: Props) {
 
           if (rulerOrientation === 'horizontal') {
             return (
-              /* Horizontal mode: column layout, centered on ruler band */
+              /* Horizontal mode: column layout, centered on ruler band.
+                 clamp() keeps popup fully inside the container horizontally. */
               <div
                 className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col gap-2"
                 style={{
                   top: '5.5rem',
-                  left: `${screenRulerX + screenRulerWidth / 2}%`,
+                  left: `clamp(155px, ${screenRulerX + screenRulerWidth / 2}%, calc(100% - 155px))`,
                   transform: 'translateX(-50%)',
+                  maxHeight: 'calc(100% - 6rem)',
+                  overflowY: 'auto',
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
               >
@@ -1413,10 +1416,15 @@ function PatternViewerPage({ pattern }: Props) {
           }
 
           return (
-            /* Vertical mode: column layout left of ⚙️ button */
+            /* Vertical mode: column layout left of ⚙️ button.
+               top+bottom both set → element fills the clamped band and scrolls if needed. */
             <div
               className="absolute z-30 left-[86px] sm:left-[110px] bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-3 py-2.5 flex flex-col items-center gap-2"
-              style={{ bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))` }}
+              style={{
+                bottom: `max(8px, calc(${100 - screenRulerY}% + 8px))`,
+                top: '8px',
+                overflowY: 'auto',
+              }}
               onPointerDown={(e) => e.stopPropagation()}
             >
               {directionRow}
