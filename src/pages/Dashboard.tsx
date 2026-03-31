@@ -22,6 +22,8 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const supabase = useMemo(() => createClient(), []);
   const [patterns, setPatterns] = useState<PatternWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   const fetchPatterns = useCallback(async () => {
     const { data, error } = await supabase
@@ -59,16 +61,17 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       supabase.from('patterns').delete().eq('id', id),
     ]);
 
-    // If DB delete failed, restore the pattern in UI
+    // If DB delete failed, restore the pattern in UI and show error
     if (deleteResult.error) {
       fetchPatterns();
+      setDeleteError(true);
+      setTimeout(() => setDeleteError(false), 3000);
     }
   }, [supabase, patterns, fetchPatterns]);
 
   const { t } = useLanguage();
 
   const handleLogout = async () => {
-    if (!confirm(t('nav.logoutConfirm'))) return;
     await supabase.auth.signOut();
     navigate('/');
   };
@@ -120,15 +123,39 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
               </span>
             )}
             <LanguageToggle />
-            <button
-              onClick={handleLogout}
-              className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
-            >
-              {t('nav.logout')}
-            </button>
+            {showLogoutConfirm ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-[#7a5c46] hidden sm:inline tracking-wide">{t('nav.logoutConfirm')}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors tracking-wide"
+                >
+                  {t('nav.logout')}
+                </button>
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1 tracking-wide"
+                >
+                  {t('card.cancel')}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
+              >
+                {t('nav.logout')}
+              </button>
+            )}
           </div>
         </div>
       </nav>
+
+      {deleteError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
+          {t('dashboard.deleteError')}
+        </div>
+      )}
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
@@ -212,14 +239,14 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
               to="/terms"
               className="hover:text-[#a08060] transition-colors underline underline-offset-2"
             >
-              이용약관
+              {t('footer.terms')}
             </Link>
             <span className="text-[#b07840]">·</span>
             <Link
               to="/privacy"
               className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold"
             >
-              개인정보처리방침
+              {t('footer.privacy')}
             </Link>
           </p>
         </div>

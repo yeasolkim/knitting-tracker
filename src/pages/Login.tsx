@@ -15,6 +15,7 @@ export default function Login() {
   const navigate = useNavigate();
   const inApp = isInAppBrowser();
   const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState(false);
   const [copied, setCopied] = useState(false);
   const siteUrl = 'https://kis.marihoworld.com';
 
@@ -57,11 +58,12 @@ export default function Login() {
 
   const handleGuestLogin = async () => {
     setGuestLoading(true);
+    setGuestError(false);
     const { error } = await supabase.auth.signInAnonymously();
     if (!error) {
       navigate('/dashboard', { replace: true });
     } else {
-      alert(t('login.guestFailed'));
+      setGuestError(true);
     }
     setGuestLoading(false);
   };
@@ -134,6 +136,7 @@ export default function Login() {
                 )}
                 {t('login.guestStart')}
               </button>
+              {guestError && <p className="text-xs text-[#b5541e] text-center font-medium">{t('login.guestFailed')}</p>}
               <p className="text-[10px] text-[#a08060] text-center leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{t('login.guestDataWarning')}</p>
             </div>
           ) : (
@@ -171,6 +174,7 @@ export default function Login() {
                 )}
                 {t('login.guestUse')}
               </button>
+              {guestError && <p className="text-xs text-[#b5541e] text-center font-medium">{t('login.guestFailed')}</p>}
               <p className="text-[10px] text-[#a08060] text-center leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{t('login.guestDataWarning')}</p>
             </div>
           )}

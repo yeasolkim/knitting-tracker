@@ -158,7 +158,7 @@ export default function PatternNotes({
               <span className="text-[10px] font-bold tracking-widest uppercase text-[#b5541e] bg-[#fdf6e8] border border-[#b07840] px-1.5 py-0.5 rounded">
                 {activeSubPattern.name}
               </span>
-              <span className="text-[10px] text-[#a08060]">{currentRow}단</span>
+              <span className="text-[10px] text-[#a08060]">{t('notes.rowLabel', { n: currentRow })}</span>
             </div>
             <textarea
               value={draftNote}
@@ -252,7 +252,7 @@ export default function PatternNotes({
                                   onClick={() => setEditingKey(null)}
                                   className="text-[10px] text-[#a08060] px-2 py-1"
                                 >
-                                  취소
+                                  {t('notes.cancel')}
                                 </button>
                                 <button
                                   onClick={() => handleSaveEditingNote(key)}
