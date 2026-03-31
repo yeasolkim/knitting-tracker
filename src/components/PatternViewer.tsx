@@ -94,7 +94,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Setting this too high (e.g. 3000→basePdfDpr=maxDpr=9) eliminates the step effect.
     const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
     // true for iOS Safari (iPhone / iPad); Android/desktop are unconstrained.
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // iPadOS 13+ spoofs desktop Safari UA — detect via touch support as well.
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     // PDF page dimensions — declared here so DPR effect can reference pdfPageAspectRatio.
     // pdfPageAspectRatio: page-0 h/w ratio (for iOS canvas area cap and memory budget calc)
@@ -378,7 +380,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (canvas) canvas.style.display = 'none';
       showPdfCanvases();
 
-      if (!isIOS || fileType !== 'pdf' || transform.scale < 4 || !pdfDocRef.current || !canvas) {
+      if (fileType !== 'pdf' || transform.scale < 4 || !pdfDocRef.current || !canvas) {
         return;
       }
 
@@ -484,7 +486,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       return () => {
         if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       };
-    }, [transform, fileType, pdfPages, containerWidth, isIOS, getPageCssHeight]);
+    }, [transform, fileType, pdfPages, containerWidth, getPageCssHeight]);
 
     // Cleanup overlay on unmount — restore PDF canvases so they're never stuck hidden.
     useEffect(() => () => {
