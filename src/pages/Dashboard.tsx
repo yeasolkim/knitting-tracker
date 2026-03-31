@@ -7,7 +7,7 @@ import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
-const PATTERN_LIMIT = 8;
+const PATTERN_LIMIT = 20;
 
 export default function Dashboard() {
   return (
