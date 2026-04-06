@@ -58,6 +58,27 @@ export interface SubPattern {
   current_row: number;
 }
 
+export interface ImagePerState {
+  ruler_position_y?: number;
+  ruler_height?: number;
+  ruler_position_x?: number;
+  ruler_direction?: RulerDirection;
+  ruler_orientation?: RulerOrientation;
+  completed_marks?: CompletedMark[];
+  knitting_marks?: KnittingMark[];
+  crochet_marks?: CrochetMark[];
+  crochet_ruler_data?: {
+    shape?: string;
+    cx?: number;
+    cy?: number;
+    r?: number;
+    ry?: number;
+    completedRings?: (number | { cx: number; cy: number; r: number; ry?: number; shape?: string })[];
+  };
+  notes?: Record<string, string>;
+  note_positions?: Record<string, NotePosition>;
+}
+
 export interface PatternProgress {
   id: string;
   pattern_id: string;
@@ -79,6 +100,7 @@ export interface PatternProgress {
   crochet_ruler_data?: unknown;
   ruler_orientation?: string | null;
   ruler_position_x?: number | null;
+  image_states?: ImagePerState[];
   updated_at: string;
 }
 

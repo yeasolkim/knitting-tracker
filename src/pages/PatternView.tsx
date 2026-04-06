@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark } from '@/lib/types';
+import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState } from '@/lib/types';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
 import CrochetRuler from '@/components/CrochetRuler';
@@ -123,6 +123,14 @@ function PatternViewerPage({ pattern }: Props) {
 
   const isCrochet = pattern.type === 'crochet';
 
+  // Per-image state storage. Persisted in DB as image_states JSONB array.
+  // imageStatesRef.current[i] holds the saved state for image index i.
+  const imageStatesRef = useRef<ImagePerState[]>(
+    (pattern.progress?.image_states as ImagePerState[]) || []
+  );
+  // Convenience shortcut: state for image 0, used for initial useState values below.
+  const img0 = imageStatesRef.current[0];
+
   const initSubPatterns = (): SubPattern[] => {
     const saved = pattern.progress?.sub_patterns as SubPattern[] | undefined;
     if (saved && saved.length > 0) {
@@ -147,52 +155,52 @@ function PatternViewerPage({ pattern }: Props) {
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
-  const [rulerY, setRulerY] = useState(pattern.progress?.ruler_position_y ?? 50);
-  const [rulerHeight, setRulerHeight] = useState(pattern.progress?.ruler_height ?? 0.3);
-  const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, pattern.progress?.ruler_height ?? 0));
+  const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 50);
+  const [rulerHeight, setRulerHeight] = useState(img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0.3);
+  const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0));
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showRulerGuide, setShowRulerGuide] = useState(false);
 
-  // Crochet ruler state
+  // Crochet ruler state — initialized from img0 (per-image) with top-level fallback
   const [crochetShape, setCrochetShape] = useState<'line' | 'circle' | 'ellipse' | 'rect'>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { shape?: string } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     return (saved?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect';
   });
   const [crochetCx, setCrochetCx] = useState<number>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { cx?: number } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cx?: number } | undefined;
     return saved?.cx ?? 50;
   });
   const [crochetCy, setCrochetCy] = useState<number>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { cy?: number } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cy?: number } | undefined;
     return saved?.cy ?? 50;
   });
   const [crochetR, setCrochetR] = useState<number>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { r?: number } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { r?: number } | undefined;
     return saved?.r ?? 3;
   });
   const [crochetRy, setCrochetRy] = useState<number>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { ry?: number; r?: number } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { ry?: number; r?: number } | undefined;
     return saved?.ry ?? saved?.r ?? 3;
   });
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
-    const saved = pattern.progress?.crochet_ruler_data as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
     const savedCx = saved?.cx ?? 50;
     const savedCy = saved?.cy ?? 50;
     return (saved?.completedRings ?? []).map(r => typeof r === 'number' ? { cx: savedCx, cy: savedCy, r } : r);
   });
   const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
-    (pattern.progress?.ruler_direction as RulerDirection) || 'up'
+    img0?.ruler_direction ?? (pattern.progress?.ruler_direction as RulerDirection) ?? 'up'
   );
   const [rulerOrientation, setRulerOrientation] = useState<RulerOrientation>(
-    (pattern.progress?.ruler_orientation as RulerOrientation) ?? 'vertical'
+    img0?.ruler_orientation ?? (pattern.progress?.ruler_orientation as RulerOrientation) ?? 'vertical'
   );
   const [rulerX, setRulerX] = useState<number>(
-    (pattern.progress?.ruler_position_x as number) ?? 50
+    img0?.ruler_position_x ?? (pattern.progress?.ruler_position_x as number) ?? 50
   );
   const [completedMarks, setCompletedMarks] = useState<CompletedMark[]>(
-    (pattern.progress?.completed_marks as CompletedMark[]) || []
+    img0?.completed_marks ?? (pattern.progress?.completed_marks as CompletedMark[]) ?? []
   );
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
@@ -206,6 +214,8 @@ function PatternViewerPage({ pattern }: Props) {
     return [{ url: pattern.file_url, file_type: pattern.file_type }, ...extras];
   }, [pattern.file_url, pattern.file_type, pattern.extra_image_urls]);
   const [activeFileIdx, setActiveFileIdx] = useState(0);
+  // Tracks previous image index so we can save its state before switching
+  const prevFileIdxRef = useRef(0);
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
@@ -562,12 +572,12 @@ function PatternViewerPage({ pattern }: Props) {
   }, []);
 
   const [crochetMarks, setCrochetMarks] = useState<CrochetMark[]>(
-    (pattern.progress?.crochet_marks as CrochetMark[]) || []
+    img0?.crochet_marks ?? (pattern.progress?.crochet_marks as CrochetMark[]) ?? []
   );
   const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
   const [knittingMarks, setKnittingMarks] = useState<KnittingMark[]>(
-    (pattern.progress?.knitting_marks as KnittingMark[]) || []
+    img0?.knitting_marks ?? (pattern.progress?.knitting_marks as KnittingMark[]) ?? []
   );
   const [isPlacingKnittingMarker, setIsPlacingKnittingMarker] = useState(false);
 
@@ -579,18 +589,91 @@ function PatternViewerPage({ pattern }: Props) {
   }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
-    (pattern.progress?.notes as Record<string, string>) || {}
+    img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
   );
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
-    (pattern.progress?.note_positions as Record<string, NotePosition>) || {}
+    img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
   const [prevRow, setPrevRow] = useState(activeSub?.current_row || 0);
+
+  // Always-current snapshot of all per-image state (updated in render, like latestRef).
+  // Used to save the current image's state before switching to another image.
+  const perImageStateLatest = useRef<ImagePerState>({});
+  perImageStateLatest.current = {
+    ruler_position_y: rulerY,
+    ruler_height: rulerHeight,
+    ruler_position_x: rulerX,
+    ruler_direction: rulerDirection,
+    ruler_orientation: rulerOrientation,
+    completed_marks: completedMarks,
+    knitting_marks: knittingMarks,
+    crochet_marks: crochetMarks,
+    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
+    notes,
+    note_positions: notePositions,
+  };
 
   const updateActiveSub = useCallback((updater: (sub: SubPattern) => SubPattern) => {
     setSubPatterns((prev) =>
       prev.map((s) => (s.id === activeSubId ? updater(s) : s))
     );
   }, [activeSubId]);
+
+  // When the user switches to a different image:
+  // 1. Save current image's per-image state into imageStatesRef
+  // 2. Restore the target image's saved state (or defaults for first visit)
+  useEffect(() => {
+    if (prevFileIdxRef.current === activeFileIdx) return;
+    const prevIdx = prevFileIdxRef.current;
+    prevFileIdxRef.current = activeFileIdx;
+
+    // Save current state for the image we're leaving
+    imageStatesRef.current[prevIdx] = { ...perImageStateLatest.current };
+
+    // Load state for the image we're switching to
+    const next = imageStatesRef.current[activeFileIdx];
+
+    setRulerY(next?.ruler_position_y ?? 50);
+    setRulerHeight(next?.ruler_height ?? 0.3);
+    setMaxRulerHeight(Math.max(1.35, next?.ruler_height ?? 0));
+    setRulerX(next?.ruler_position_x ?? 50);
+    setRulerDirection(next?.ruler_direction ?? 'up');
+    setRulerOrientation(next?.ruler_orientation ?? 'vertical');
+    setCompletedMarks(next?.completed_marks ?? []);
+    setKnittingMarks(next?.knitting_marks ?? []);
+    setCrochetMarks(next?.crochet_marks ?? []);
+
+    const crd = next?.crochet_ruler_data;
+    setCrochetShape((crd?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
+    setCrochetCx(crd?.cx ?? 50);
+    setCrochetCy(crd?.cy ?? 50);
+    setCrochetR(crd?.r ?? 3);
+    setCrochetRy(crd?.ry ?? crd?.r ?? 3);
+    const crdCx = crd?.cx ?? 50;
+    const crdCy = crd?.cy ?? 50;
+    setCompletedCrochetRings(
+      (crd?.completedRings ?? []).map(r =>
+        typeof r === 'number'
+          ? { cx: crdCx, cy: crdCy, r }
+          : { ...r, shape: r.shape as 'circle' | 'ellipse' | 'rect' | undefined }
+      )
+    );
+
+    setNotes(next?.notes ?? {});
+    setNotePositions(next?.note_positions ?? {});
+
+    // Reset undo/redo history for the new image
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
+
+    // Reset view so PatternViewer re-runs fit logic for the new image
+    initialScrollDoneRef.current = false;
+    // If this image has been visited before, go to ruler; otherwise fit from top
+    isFirstOpenRef.current = !next;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFileIdx]);
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
@@ -646,44 +729,57 @@ function PatternViewerPage({ pattern }: Props) {
   const { save, status } = useAutoSave(saveFn);
 
   useEffect(() => {
+    // Keep imageStatesRef in sync with current image state before saving
+    imageStatesRef.current[activeFileIdx] = { ...perImageStateLatest.current };
     save({
       current_row: activeSub?.current_row || 0,
-      ruler_position_y: rulerY,
-      ruler_height: rulerHeight,
-      ruler_direction: rulerDirection,
-      ruler_orientation: rulerOrientation,
-      ruler_position_x: rulerX,
-      completed_marks: completedMarks,
-      crochet_marks: crochetMarks,
-      knitting_marks: knittingMarks,
-      notes,
-      note_positions: notePositions,
+      // Keep top-level columns for backward compat (image 0 values)
+      ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
+      ruler_height: activeFileIdx === 0 ? rulerHeight : (imageStatesRef.current[0]?.ruler_height ?? rulerHeight),
+      ruler_direction: activeFileIdx === 0 ? rulerDirection : (imageStatesRef.current[0]?.ruler_direction ?? rulerDirection),
+      ruler_orientation: activeFileIdx === 0 ? rulerOrientation : (imageStatesRef.current[0]?.ruler_orientation ?? rulerOrientation),
+      ruler_position_x: activeFileIdx === 0 ? rulerX : (imageStatesRef.current[0]?.ruler_position_x ?? rulerX),
+      completed_marks: activeFileIdx === 0 ? completedMarks : (imageStatesRef.current[0]?.completed_marks ?? completedMarks),
+      crochet_marks: activeFileIdx === 0 ? crochetMarks : (imageStatesRef.current[0]?.crochet_marks ?? crochetMarks),
+      knitting_marks: activeFileIdx === 0 ? knittingMarks : (imageStatesRef.current[0]?.knitting_marks ?? knittingMarks),
+      notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
+      note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
+      crochet_ruler_data: activeFileIdx === 0
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
-      crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
+      image_states: imageStatesRef.current,
     });
-  }, [activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
+  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
-  const saveAll = useCallback(() => saveFn({
-    current_row: activeSub?.current_row || 0,
-    ruler_position_y: rulerY,
-    ruler_height: rulerHeight,
-    ruler_direction: rulerDirection,
-    ruler_orientation: rulerOrientation,
-    ruler_position_x: rulerX,
-    completed_marks: completedMarks,
-    crochet_marks: crochetMarks,
-    knitting_marks: knittingMarks,
-    notes,
-    note_positions: notePositions,
-    sub_patterns: subPatterns,
-    active_sub_pattern_id: activeSubId,
-    view_scale: viewTransform.scale,
-    view_x: viewTransform.x,
-    view_y: viewTransform.y,
-    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
-  }), [saveFn, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+  const saveAll = useCallback(() => {
+    // Ensure current image state is flushed to imageStatesRef before saving
+    imageStatesRef.current[activeFileIdx] = { ...perImageStateLatest.current };
+    return saveFn({
+      current_row: activeSub?.current_row || 0,
+      ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
+      ruler_height: activeFileIdx === 0 ? rulerHeight : (imageStatesRef.current[0]?.ruler_height ?? rulerHeight),
+      ruler_direction: activeFileIdx === 0 ? rulerDirection : (imageStatesRef.current[0]?.ruler_direction ?? rulerDirection),
+      ruler_orientation: activeFileIdx === 0 ? rulerOrientation : (imageStatesRef.current[0]?.ruler_orientation ?? rulerOrientation),
+      ruler_position_x: activeFileIdx === 0 ? rulerX : (imageStatesRef.current[0]?.ruler_position_x ?? rulerX),
+      completed_marks: activeFileIdx === 0 ? completedMarks : (imageStatesRef.current[0]?.completed_marks ?? completedMarks),
+      crochet_marks: activeFileIdx === 0 ? crochetMarks : (imageStatesRef.current[0]?.crochet_marks ?? crochetMarks),
+      knitting_marks: activeFileIdx === 0 ? knittingMarks : (imageStatesRef.current[0]?.knitting_marks ?? knittingMarks),
+      notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
+      note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
+      crochet_ruler_data: activeFileIdx === 0
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }),
+      sub_patterns: subPatterns,
+      active_sub_pattern_id: activeSubId,
+      view_scale: viewTransform.scale,
+      view_x: viewTransform.x,
+      view_y: viewTransform.y,
+      image_states: imageStatesRef.current,
+    });
+  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
