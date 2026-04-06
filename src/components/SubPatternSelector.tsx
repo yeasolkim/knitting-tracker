@@ -76,9 +76,9 @@ export default function SubPatternSelector({
       {/* Active sub-pattern tab */}
       <button
         onClick={() => { setIsExpanded(!isExpanded); if (isExpanded) setDeleteConfirmId(null); }}
-        className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#b07840] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
+        className="flex items-center gap-1 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#b07840] hover:border-[#b5541e] px-2.5 py-1 min-h-[36px] rounded-lg transition-colors shrink-0"
       >
-        <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
+        <span className="truncate max-w-[80px] sm:max-w-[110px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
         <svg
           className={`w-3 h-3 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
