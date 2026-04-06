@@ -216,6 +216,12 @@ function PatternViewerPage({ pattern }: Props) {
   const [activeFileIdx, setActiveFileIdx] = useState(0);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
+  // Set of image indices that have been visited (and thus have saved per-image state)
+  const [visitedImageIndices, setVisitedImageIndices] = useState<Set<number>>(() => {
+    const visited = new Set<number>([0]); // image 0 always considered visited
+    imageStatesRef.current.forEach((s, i) => { if (s) visited.add(i); });
+    return visited;
+  });
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
@@ -627,8 +633,10 @@ function PatternViewerPage({ pattern }: Props) {
     const prevIdx = prevFileIdxRef.current;
     prevFileIdxRef.current = activeFileIdx;
 
-    // Save current state for the image we're leaving
-    imageStatesRef.current[prevIdx] = { ...perImageStateLatest.current };
+    // Save current state for the image we're leaving (deep copy to prevent shared array refs)
+    imageStatesRef.current[prevIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+    // Mark both images as visited
+    setVisitedImageIndices(prev => new Set([...prev, prevIdx, activeFileIdx]));
 
     // Load state for the image we're switching to
     const next = imageStatesRef.current[activeFileIdx];
@@ -730,7 +738,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   useEffect(() => {
     // Keep imageStatesRef in sync with current image state before saving
-    imageStatesRef.current[activeFileIdx] = { ...perImageStateLatest.current };
+    imageStatesRef.current[activeFileIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
     save({
       current_row: activeSub?.current_row || 0,
       // Keep top-level columns for backward compat (image 0 values)
@@ -756,7 +764,7 @@ function PatternViewerPage({ pattern }: Props) {
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
     // Ensure current image state is flushed to imageStatesRef before saving
-    imageStatesRef.current[activeFileIdx] = { ...perImageStateLatest.current };
+    imageStatesRef.current[activeFileIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
     return saveFn({
       current_row: activeSub?.current_row || 0,
       ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
@@ -1140,20 +1148,27 @@ function PatternViewerPage({ pattern }: Props) {
       {/* Image tab strip (shown only when multiple images exist) */}
       {allFiles.length > 1 && (
         <div className="flex gap-1 px-2 pt-1 overflow-x-auto flex-shrink-0">
-          {allFiles.map((f, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setActiveFileIdx(i)}
-              className={`flex-shrink-0 px-3 py-1 rounded-t-lg text-xs font-semibold tracking-wide border-2 border-b-0 transition-colors ${
-                activeFileIdx === i
-                  ? 'border-[#b07840] bg-[#fdf6e8] text-[#3d2b1f]'
-                  : 'border-transparent bg-transparent text-[#a08060] hover:text-[#7a5c46]'
-              }`}
-            >
-              {t('form.imageN').replace('{n}', String(i + 1))}
-            </button>
-          ))}
+          {allFiles.map((_, i) => {
+            const isActive = activeFileIdx === i;
+            const hasProgress = visitedImageIndices.has(i) && imageStatesRef.current[i] != null;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setActiveFileIdx(i)}
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-t-lg text-xs font-semibold tracking-wide border-2 border-b-0 transition-colors ${
+                  isActive
+                    ? 'border-[#b07840] bg-[#fdf6e8] text-[#3d2b1f]'
+                    : 'border-transparent bg-transparent text-[#a08060] hover:text-[#7a5c46]'
+                }`}
+              >
+                {t('form.imageN').replace('{n}', String(i + 1))}
+                {hasProgress && !isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#b5541e] opacity-70 flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 

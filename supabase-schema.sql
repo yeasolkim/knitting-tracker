@@ -134,3 +134,7 @@ create index if not exists idx_pattern_progress_pattern_id on pattern_progress(p
 -- Migration: multiple images per pattern
 -- Run this if you already have an existing patterns table:
 alter table patterns add column if not exists extra_image_urls jsonb not null default '[]';
+
+-- Migration: per-image state isolation
+-- Stores ruler/marks/notes state for each image index independently
+alter table pattern_progress add column if not exists image_states jsonb not null default '[]';
