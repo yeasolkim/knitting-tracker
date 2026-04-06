@@ -196,6 +196,16 @@ function PatternViewerPage({ pattern }: Props) {
   );
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
+
+  // Multiple images: primary + extra
+  const allFiles = useMemo(() => {
+    const extras = (pattern.extra_image_urls ?? []).map((f) => ({
+      url: f.url,
+      file_type: 'image' as const,
+    }));
+    return [{ url: pattern.file_url, file_type: pattern.file_type }, ...extras];
+  }, [pattern.file_url, pattern.file_type, pattern.extra_image_urls]);
+  const [activeFileIdx, setActiveFileIdx] = useState(0);
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
@@ -677,6 +687,7 @@ function PatternViewerPage({ pattern }: Props) {
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
+  const [isSavingBack, setIsSavingBack] = useState(false);
   const saveViewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current); }, []);
 
@@ -942,14 +953,21 @@ function PatternViewerPage({ pattern }: Props) {
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             onClick={async () => {
+              if (isSavingBack) return;
+              setIsSavingBack(true);
               await saveAll();
               navigate('/dashboard');
             }}
-            className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+            disabled={isSavingBack}
+            className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors disabled:opacity-50"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            {isSavingBack ? (
+              <div className="w-4 h-4 border-2 border-[#b07840] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            )}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -1023,12 +1041,32 @@ function PatternViewerPage({ pattern }: Props) {
         </div>
       </div>
 
+      {/* Image tab strip (shown only when multiple images exist) */}
+      {allFiles.length > 1 && (
+        <div className="flex gap-1 px-2 pt-1 overflow-x-auto flex-shrink-0">
+          {allFiles.map((f, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActiveFileIdx(i)}
+              className={`flex-shrink-0 px-3 py-1 rounded-t-lg text-xs font-semibold tracking-wide border-2 border-b-0 transition-colors ${
+                activeFileIdx === i
+                  ? 'border-[#b07840] bg-[#fdf6e8] text-[#3d2b1f]'
+                  : 'border-transparent bg-transparent text-[#a08060] hover:text-[#7a5c46]'
+              }`}
+            >
+              {t('form.imageN').replace('{n}', String(i + 1))}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Viewer area */}
       <div className="flex-1 relative min-h-0 p-1 sm:p-2">
         <PatternViewer
           ref={viewerRef}
-          fileUrl={pattern.file_url}
-          fileType={pattern.file_type}
+          fileUrl={allFiles[activeFileIdx]?.url ?? pattern.file_url}
+          fileType={allFiles[activeFileIdx]?.file_type ?? pattern.file_type}
           rulerYPercent={isCrochet && crochetShape !== 'line' ? crochetCy : rulerOrientation === 'horizontal' ? 50 : rulerY + rulerHeight / 2}
           rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : rulerOrientation === 'horizontal' ? rulerX + rulerHeight / 2 : undefined}
           onTransformChange={handleTransformChange}

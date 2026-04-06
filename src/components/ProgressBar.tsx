@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProgressBarProps {
   current: number;
@@ -6,12 +7,13 @@ interface ProgressBarProps {
 }
 
 const ProgressBar = memo(function ProgressBar({ current, total }: ProgressBarProps) {
+  const { t } = useLanguage();
   const percent = total > 0 ? Math.min(100, (current / total) * 100) : 0;
 
   return (
     <div className="w-full">
       <div className="flex justify-between text-[10px] text-[#a08060] mb-1 tracking-wide">
-        <span>{current} / {total}단</span>
+        <span>{current} {t('counter.rowOf', { total })}</span>
         <span>{Math.round(percent)}%</span>
       </div>
       <div className="w-full h-1.5 bg-[#f5edd6] border border-[#b07840] rounded-full overflow-hidden">

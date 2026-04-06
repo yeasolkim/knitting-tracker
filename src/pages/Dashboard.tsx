@@ -50,7 +50,10 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
     // R2 파일 삭제 (fire-and-forget, DB 삭제를 막지 않음)
     if (pattern) {
-      const urls = [...new Set([pattern.file_url, pattern.thumbnail_url].filter(Boolean))] as string[];
+      const extraUrls = (pattern.extra_image_urls ?? []).flatMap((f) =>
+        [f.url, f.thumbnail_url].filter(Boolean)
+      ) as string[];
+      const urls = [...new Set([pattern.file_url, pattern.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
       if (urls.length > 0) {
         supabase.functions.invoke('r2-delete', { body: { urls } }).catch(() => {});
       }

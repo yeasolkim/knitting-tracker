@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternType } from '@/lib/types';
+import type { ExtraPatternFile, PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
@@ -34,6 +34,29 @@ async function generatePdfThumbnail(file: File): Promise<Blob> {
   });
 }
 
+async function uploadFile(
+  supabase: ReturnType<typeof createClient>,
+  file: File,
+  userId: string,
+  patternId: string,
+  t: (key: string) => string,
+): Promise<string> {
+  const ext = file.name.split('.').pop();
+  const path = `${userId}/${patternId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+  const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
+    body: { path, contentType: file.type },
+  });
+  if (presignError) throw new Error(t('form.error.presign'));
+  const { presignedUrl, fileUrl } = presignData;
+  const res = await fetch(presignedUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!res.ok) throw new Error(t('form.error.upload'));
+  return fileUrl as string;
+}
+
 export default function PatternEdit() {
   return (
     <AuthGuard>
@@ -64,12 +87,24 @@ function EditForm() {
   const [currentFileType, setCurrentFileType] = useState<'image' | 'pdf'>('image');
   const [currentThumbnailUrl, setCurrentThumbnailUrl] = useState<string | null>(null);
 
-  // New file (optional replacement)
+  // Existing extra images from DB
+  const [currentExtraFiles, setCurrentExtraFiles] = useState<ExtraPatternFile[]>([]);
+  // Extra files to delete (URLs)
+  const [extraToDelete, setExtraToDelete] = useState<string[]>([]);
+  // New extra files to upload
+  const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]);
+  const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]);
+
+  const extraInputRef = useRef<HTMLInputElement>(null);
+
+  // New primary file (optional replacement)
   const [newFile, setNewFile] = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
     supabase
@@ -86,17 +121,46 @@ function EditForm() {
         setCurrentFileUrl(data.file_url);
         setCurrentFileType(data.file_type as 'image' | 'pdf');
         setCurrentThumbnailUrl(data.thumbnail_url);
+        setCurrentExtraFiles((data.extra_image_urls as ExtraPatternFile[]) || []);
         setLoading(false);
       });
   }, [id, navigate, supabase]);
 
   const handleFileSelect = (selectedFile: File) => {
+    setIsDirty(true);
     setNewFile(selectedFile);
     if (selectedFile.type.startsWith('image/')) {
       setNewPreview(URL.createObjectURL(selectedFile));
     } else {
       setNewPreview(null);
     }
+  };
+
+  const handleExtraFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []).filter((f) =>
+      f.type.startsWith('image/')
+    );
+    if (selected.length === 0) return;
+    const newPreviews = selected.map((f) => URL.createObjectURL(f));
+    setNewExtraFiles((prev) => [...prev, ...selected]);
+    setNewExtraPreviews((prev) => [...prev, ...newPreviews]);
+    setIsDirty(true);
+    e.target.value = '';
+  };
+
+  const removeCurrentExtra = (index: number) => {
+    const removed = currentExtraFiles[index];
+    setExtraToDelete((prev) => [...prev, removed.url]);
+    if (removed.thumbnail_url && removed.thumbnail_url !== removed.url) {
+      setExtraToDelete((prev) => [...prev, removed.thumbnail_url!]);
+    }
+    setCurrentExtraFiles((prev) => prev.filter((_, i) => i !== index));
+    setIsDirty(true);
+  };
+
+  const removeNewExtra = (index: number) => {
+    setNewExtraFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewExtraPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,28 +175,14 @@ function EditForm() {
       let fileUrl = currentFileUrl;
       let fileType = currentFileType;
       let thumbnailUrl = currentThumbnailUrl;
+      const urlsToDelete: string[] = [...extraToDelete];
 
-      // If a new file was selected, upload it
+      // Upload new primary file if replaced
       if (newFile) {
         const isPdf = newFile.type === 'application/pdf';
         const thumbPromise = isPdf ? generatePdfThumbnail(newFile).catch(() => null) : null;
 
-        const ext = newFile.name.split('.').pop();
-        const path = `${session.user.id}/${id}/${Date.now()}.${ext}`;
-
-        const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
-          body: { path, contentType: newFile.type },
-        });
-        if (presignError) throw new Error(t('form.error.presign'));
-        const { presignedUrl, fileUrl: uploadedUrl } = presignData;
-
-        const uploadRes = await fetch(presignedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': newFile.type },
-          body: newFile,
-        });
-        if (!uploadRes.ok) throw new Error(t('form.error.upload'));
-
+        const uploadedUrl = await uploadFile(supabase, newFile, session.user.id, id!, t);
         fileUrl = uploadedUrl;
         fileType = isPdf ? 'pdf' : 'image';
 
@@ -160,30 +210,45 @@ function EditForm() {
         } else {
           thumbnailUrl = fileUrl;
         }
+
+        // Mark old primary file for deletion
+        const newUrls = new Set([fileUrl, thumbnailUrl].filter(Boolean));
+        [currentFileUrl, currentThumbnailUrl]
+          .filter((u): u is string => !!u && !newUrls.has(u))
+          .forEach((u) => urlsToDelete.push(u));
       }
+
+      // Upload new extra images
+      const uploadedExtraFiles: ExtraPatternFile[] = [];
+      for (const extraFile of newExtraFiles) {
+        const extraUrl = await uploadFile(supabase, extraFile, session.user.id, id!, t);
+        uploadedExtraFiles.push({ url: extraUrl, thumbnail_url: extraUrl });
+      }
+
+      const finalExtraImageUrls: ExtraPatternFile[] = [
+        ...currentExtraFiles,
+        ...uploadedExtraFiles,
+      ];
 
       const { error: updateError } = await supabase
         .from('patterns')
         .update({
           title, type, yarn, needle,
           file_url: fileUrl, file_type: fileType, thumbnail_url: thumbnailUrl,
+          extra_image_urls: finalExtraImageUrls,
           ...(newFile ? { file_size: newFile.size } : {}),
         })
         .eq('id', id!);
 
       if (updateError) throw updateError;
 
-      // 파일이 교체된 경우 기존 R2 파일 삭제
-      if (newFile) {
-        const newUrls = new Set([fileUrl, thumbnailUrl].filter(Boolean));
-        const oldUrls = [currentFileUrl, currentThumbnailUrl]
-          .filter((u): u is string => !!u && !newUrls.has(u));
-        const toDelete = [...new Set(oldUrls)];
-        if (toDelete.length > 0) {
-          supabase.functions.invoke('r2-delete', { body: { urls: toDelete } }).catch(() => {});
-        }
+      // Delete removed files (fire-and-forget)
+      const uniqueToDelete = [...new Set(urlsToDelete)].filter(Boolean);
+      if (uniqueToDelete.length > 0) {
+        supabase.functions.invoke('r2-delete', { body: { urls: uniqueToDelete } }).catch(() => {});
       }
 
+      setIsDirty(false);
       navigate(`/patterns/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('form.error.save'));
@@ -207,25 +272,51 @@ function EditForm() {
     );
   }
 
-  // Thumbnail to display: new preview > current thumbnail > current file (if image)
   const displayThumb = newPreview || (newFile ? null : (currentThumbnailUrl || (currentFileType === 'image' ? currentFileUrl : null)));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="mb-7">
-        <Link
-          to={`/patterns/${id}`}
-          className="inline-flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] min-h-[44px] transition-colors tracking-wide font-medium"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          {t('form.backToPattern')}
-        </Link>
+        {showLeaveConfirm ? (
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-xs text-[#7a5c46]">{t('edit.unsavedWarning')}</span>
+            <button
+              type="button"
+              onClick={() => navigate(`/patterns/${id}`)}
+              className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
+            >
+              {t('edit.unsavedLeave')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLeaveConfirm(false)}
+              className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1"
+            >
+              {t('card.cancel')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (isDirty) {
+                setShowLeaveConfirm(true);
+              } else {
+                navigate(`/patterns/${id}`);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] min-h-[44px] transition-colors tracking-wide font-medium"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {t('form.backToPattern')}
+          </button>
+        )}
         <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] mt-1 tracking-tight">{t('form.titleEdit')}</h1>
       </div>
 
-      {/* File section */}
+      {/* Primary file section */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.file')}
@@ -255,7 +346,6 @@ function EditForm() {
           </div>
         ) : (
           <div className="space-y-2.5">
-            {/* Current file preview */}
             <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#b07840]">
               {displayThumb ? (
                 <img src={displayThumb} alt="현재 파일" className="max-h-52 mx-auto rounded-lg object-contain" />
@@ -277,6 +367,76 @@ function EditForm() {
         )}
       </div>
 
+      {/* Extra images section */}
+      <div>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+          {t('form.extraImagesLabel')}
+        </label>
+
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {/* Existing extra images from DB */}
+          {currentExtraFiles.map((f, i) => (
+            <div key={`cur-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8]">
+              <img
+                src={f.thumbnail_url || f.url}
+                alt={`extra ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
+                {i + 1}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeCurrentExtra(i)}
+                className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {/* New extra images (not yet uploaded) */}
+          {newExtraFiles.map((_, i) => (
+            <div key={`new-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#b07840] bg-[#fdf6e8]">
+              <img
+                src={newExtraPreviews[i]}
+                alt={`new extra ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
+                {currentExtraFiles.length + i + 1}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeNewExtra(i)}
+                className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {/* Add more card */}
+          <button
+            type="button"
+            onClick={() => extraInputRef.current?.click()}
+            className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] flex flex-col items-center justify-center gap-1 bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors"
+          >
+            <span className="text-xl font-light text-[#b07840]">+</span>
+            <span className="text-[9px] text-[#a08060] tracking-wide">{t('form.addMoreImages')}</span>
+          </button>
+        </div>
+
+        <input
+          ref={extraInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleExtraFilesChange}
+        />
+      </div>
+
       {/* Title */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
@@ -285,7 +445,7 @@ function EditForm() {
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => { setTitle(e.target.value); setIsDirty(true); }}
           required
           className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.namePlaceholder')}
@@ -305,7 +465,7 @@ function EditForm() {
             <button
               key={option.value}
               type="button"
-              onClick={() => setType(option.value)}
+              onClick={() => { setType(option.value); setIsDirty(true); }}
               className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-semibold tracking-wide transition-all ${
                 type === option.value
                   ? 'border-[#b5541e] bg-[#b5541e] text-[#fdf6e8]'
@@ -326,7 +486,7 @@ function EditForm() {
         <input
           type="text"
           value={yarn}
-          onChange={(e) => setYarn(e.target.value)}
+          onChange={(e) => { setYarn(e.target.value); setIsDirty(true); }}
           className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.yarnPlaceholder')}
         />
@@ -340,7 +500,7 @@ function EditForm() {
         <input
           type="text"
           value={needle}
-          onChange={(e) => setNeedle(e.target.value)}
+          onChange={(e) => { setNeedle(e.target.value); setIsDirty(true); }}
           className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.needlePlaceholder')}
         />

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternType } from '@/lib/types';
+import type { ExtraPatternFile, PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
@@ -34,16 +34,37 @@ async function generatePdfThumbnail(file: File): Promise<Blob> {
   });
 }
 
+async function uploadFile(
+  supabase: ReturnType<typeof createClient>,
+  file: File,
+  userId: string,
+  patternId: string,
+  t: (key: string) => string,
+): Promise<string> {
+  const ext = file.name.split('.').pop();
+  const path = `${userId}/${patternId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+  const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
+    body: { path, contentType: file.type },
+  });
+  if (presignError) throw new Error(t('form.error.presign'));
+  const { presignedUrl, fileUrl } = presignData;
+  const res = await fetch(presignedUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!res.ok) throw new Error(t('form.error.upload'));
+  return fileUrl as string;
+}
+
 export default function PatternNew() {
   return (
     <AuthGuard>
       {(user) => (
         <div className="min-h-screen bg-[#faf9f7]">
           <Navbar userEmail={user.email} />
-
           <main className="max-w-lg mx-auto px-4 py-8 sm:py-12">
             <PatternNewHeader />
-
             <UploadForm />
           </main>
         </div>
@@ -71,33 +92,62 @@ function UploadForm() {
   const navigate = useNavigate();
   const supabase = createClient();
   const { t } = useLanguage();
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+
+  // All selected files: files[0] = primary, files[1+] = extras
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+
+  const addInputRef = useRef<HTMLInputElement>(null);
+
   const [title, setTitle] = useState('');
   const [type, setType] = useState<PatternType>('knitting');
   const [yarn, setYarn] = useState('');
   const [needle, setNeedle] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = (selectedFile: File) => {
-    setFile(selectedFile);
-    if (selectedFile.type.startsWith('image/')) {
-      setPreview(URL.createObjectURL(selectedFile));
-    } else {
-      setPreview(null);
-    }
-    if (!title) {
-      setTitle(selectedFile.name.replace(/\.[^.]+$/, ''));
-    }
+  const addFiles = (incoming: File[]) => {
+    const newPreviews = incoming.map((f) =>
+      f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
+    );
+    setFiles((prev) => {
+      const updated = [...prev, ...incoming];
+      if (updated.length === incoming.length && !title) {
+        // first batch — auto-fill title from first file
+        setTitle(incoming[0].name.replace(/\.[^.]+$/, ''));
+      }
+      return updated;
+    });
+    setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddMore = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length > 0) addFiles(selected);
+    e.target.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (files.length === 0) return;
 
     setUploading(true);
     setError(null);
+
+    // Total upload steps: primary + optional pdf thumb + extras
+    const primaryFile = files[0];
+    const extraFilesList = files.slice(1);
+    const isPdf = primaryFile.type === 'application/pdf';
+    const totalSteps = 1 + (isPdf ? 1 : 0) + extraFilesList.length;
+    setUploadTotal(totalSteps);
+    setUploadStep(0);
 
     let createdPatternId: string | null = null;
     let uploadedUrls: string[] = [];
@@ -107,13 +157,10 @@ function UploadForm() {
       if (!session?.user) throw new Error(t('form.error.login'));
       const user = session.user;
 
-      // 패턴 개수 한도 체크
       const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
       if ((count ?? 0) >= 20) throw new Error(t('form.error.patternLimit'));
 
-      const isPdf = file.type === 'application/pdf';
-
-      const thumbPromise = isPdf ? generatePdfThumbnail(file).catch(() => null) : null;
+      const thumbPromise = isPdf ? generatePdfThumbnail(primaryFile).catch(() => null) : null;
 
       const { data: pattern, error: insertError } = await supabase
         .from('patterns')
@@ -133,26 +180,13 @@ function UploadForm() {
       if (insertError) throw insertError;
       createdPatternId = pattern.id;
 
-      const ext = file.name.split('.').pop();
-      const path = `${user.id}/${pattern.id}/${Date.now()}.${ext}`;
+      // Upload primary file
+      const fileUrl = await uploadFile(supabase, primaryFile, user.id, pattern.id, t);
+      uploadedUrls.push(fileUrl);
+      setUploadStep(1);
 
-      // Get presigned URL from edge function, then upload directly to R2
-      const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
-        body: { path, contentType: file.type },
-      });
-      if (presignError) throw new Error(t('form.error.presign'));
-      const { presignedUrl, fileUrl } = presignData;
-
-      const uploadRes = await fetch(presignedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) throw new Error(t('form.error.upload'));
-      uploadedUrls.push(fileUrl); // track for cleanup on failure
-
+      // Primary thumbnail
       let thumbnailUrl: string | null = null;
-
       if (isPdf) {
         const thumbBlob = await thumbPromise;
         if (thumbBlob) {
@@ -170,15 +204,25 @@ function UploadForm() {
               });
               if (thumbUpload.ok) {
                 thumbnailUrl = thumbFileUrl;
-                uploadedUrls.push(thumbFileUrl); // track for cleanup on failure
+                uploadedUrls.push(thumbFileUrl);
               }
             }
           } catch {
-            // Thumbnail upload failed, proceed without
+            // thumbnail failed, proceed without
           }
         }
+        setUploadStep(2);
       } else {
         thumbnailUrl = fileUrl;
+      }
+
+      // Upload extra images
+      const extraImageUrls: ExtraPatternFile[] = [];
+      for (let i = 0; i < extraFilesList.length; i++) {
+        const extraUrl = await uploadFile(supabase, extraFilesList[i], user.id, pattern.id, t);
+        uploadedUrls.push(extraUrl);
+        extraImageUrls.push({ url: extraUrl, thumbnail_url: extraUrl });
+        setUploadStep((isPdf ? 2 : 1) + i + 1);
       }
 
       const [updateResult, progressResult] = await Promise.all([
@@ -187,7 +231,8 @@ function UploadForm() {
           .update({
             file_url: fileUrl,
             thumbnail_url: thumbnailUrl,
-            file_size: file.size,
+            file_size: primaryFile.size,
+            extra_image_urls: extraImageUrls,
           })
           .eq('id', pattern.id),
         supabase.from('pattern_progress').insert({
@@ -203,11 +248,10 @@ function UploadForm() {
       if (updateResult.error) throw updateResult.error;
       if (progressResult.error) throw progressResult.error;
 
-      createdPatternId = null; // 성공 — cleanup 불필요
+      createdPatternId = null;
       uploadedUrls = [];
       navigate(`/patterns/${pattern.id}`);
     } catch (err) {
-      // DB 레코드 정리
       if (createdPatternId) {
         const pid = createdPatternId;
         Promise.all([
@@ -215,7 +259,6 @@ function UploadForm() {
           supabase.from('patterns').delete().eq('id', pid),
         ]).catch(() => {});
       }
-      // R2 업로드된 파일 정리
       if (uploadedUrls.length > 0) {
         supabase.functions.invoke('r2-delete', { body: { urls: uploadedUrls } }).catch(() => {});
       }
@@ -225,46 +268,121 @@ function UploadForm() {
   };
 
   if (uploading) {
+    const progressText = uploadTotal > 1
+      ? t('form.uploadProgress')
+          .replace('{done}', String(uploadStep))
+          .replace('{total}', String(uploadTotal))
+      : t('form.uploading');
     return (
       <div className="flex flex-col items-center justify-center py-24">
-        <YarnLoader text={t('form.uploading')} />
+        <YarnLoader text={progressText} />
+        {uploadTotal > 1 && (
+          <div className="mt-4 w-48 h-1.5 bg-[#e8dcc8] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#b5541e] rounded-full transition-all duration-300"
+              style={{ width: `${(uploadStep / uploadTotal) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {!file ? (
-        <FileDropZone onFileSelect={handleFileSelect} />
+      {/* File picker section */}
+      {files.length === 0 ? (
+        <FileDropZone
+          multiple
+          accept="image/*,.pdf"
+          onFilesSelect={addFiles}
+          label={t('dropzone.labelMultiple')}
+          hint={t('dropzone.hintMultiple').replace('{max}', '10')}
+        />
       ) : (
-        <div className="space-y-2.5">
-          <div className="bg-[#fdf6e8] rounded-xl p-4 border-2 border-[#b07840]">
-            {preview ? (
-              <img
-                src={preview}
-                alt={t('form.previewAlt')}
-                className="max-h-52 mx-auto rounded-lg object-contain"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-28 gap-3">
-                <svg width="28" height="18" viewBox="0 0 28 18" fill="none">
-                  <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                </svg>
-                <p className="text-sm text-[#a08060] truncate max-w-[200px]">{file.name}</p>
+        <div className="space-y-3">
+          {/* Image grid */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {files.map((f, i) => (
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8] group">
+                {previews[i] ? (
+                  <img
+                    src={previews[i]}
+                    alt={f.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  /* PDF placeholder */
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 px-1">
+                    <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
+                      <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                      <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </svg>
+                    <span className="text-[9px] text-[#a08060] text-center leading-tight truncate w-full px-1 text-center">PDF</span>
+                  </div>
+                )}
+
+                {/* Number badge */}
+                <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
+                  {i + 1}
+                </div>
+
+                {/* Cover badge on first image */}
+                {i === 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-[#b5541e]/80 text-[#fdf6e8] text-[9px] font-bold text-center py-0.5 tracking-widest uppercase">
+                    {t('form.primaryBadge')}
+                  </div>
+                )}
+
+                {/* Remove button */}
+                <button
+                  type="button"
+                  onClick={() => removeFile(i)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+                  aria-label="remove"
+                >
+                  ×
+                </button>
               </div>
-            )}
+            ))}
+
+            {/* Add more card */}
+            <button
+              type="button"
+              onClick={() => addInputRef.current?.click()}
+              className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] flex flex-col items-center justify-center gap-1 bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors"
+            >
+              <span className="text-xl font-light text-[#b07840]">+</span>
+              <span className="text-[9px] text-[#a08060] tracking-wide">{t('form.addMoreImages')}</span>
+            </button>
           </div>
+
+          {/* Cover image hint */}
+          {files.length > 1 && (
+            <p className="text-[11px] text-[#a08060] tracking-wide">{t('form.coverImageHint')}</p>
+          )}
+
+          {/* Reset link */}
           <button
             type="button"
-            onClick={() => { setFile(null); setPreview(null); }}
+            onClick={() => { setFiles([]); setPreviews([]); }}
             className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
-            {t('form.fileChange')}
+            {t('form.resetFiles')}
           </button>
+
+          <input
+            ref={addInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleAddMore}
+          />
         </div>
       )}
 
+      {/* Pattern name */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.name')}
@@ -279,6 +397,7 @@ function UploadForm() {
         />
       </div>
 
+      {/* Type */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.type')}
@@ -304,6 +423,7 @@ function UploadForm() {
         </div>
       </div>
 
+      {/* Yarn */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.yarn')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
@@ -317,6 +437,7 @@ function UploadForm() {
         />
       </div>
 
+      {/* Needle */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.needle')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
@@ -334,7 +455,7 @@ function UploadForm() {
 
       <button
         type="submit"
-        disabled={!file || !title || uploading}
+        disabled={files.length === 0 || !title || uploading}
         className="w-full bg-[#b5541e] text-[#fdf6e8] py-3 min-h-[48px] rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#9a4318] disabled:opacity-40 disabled:cursor-not-allowed transition-all border-2 border-[#9a4318] shadow-[3px_3px_0_#9a4318] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
       >
         {uploading ? t('form.uploading') : t('form.save')}

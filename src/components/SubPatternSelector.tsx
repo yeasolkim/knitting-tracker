@@ -52,6 +52,7 @@ export default function SubPatternSelector({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { t } = useLanguage();
 
   const active = subPatterns.find((s) => s.id === activeId);
@@ -74,7 +75,7 @@ export default function SubPatternSelector({
     <div className="relative">
       {/* Active sub-pattern tab */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => { setIsExpanded(!isExpanded); if (isExpanded) setDeleteConfirmId(null); }}
         className="flex items-center gap-1.5 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#b07840] hover:border-[#b5541e] px-3 py-1.5 min-h-[44px] rounded-lg transition-colors"
       >
         <span className="truncate max-w-[100px] sm:max-w-[120px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
@@ -131,33 +132,50 @@ export default function SubPatternSelector({
                   </button>
 
                   <div className="flex gap-0.5 shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startRename(sub);
-                      }}
-                      className="text-[#b07840] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      title={t('sub.rename')}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                    {subPatterns.length > 1 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(t('sub.deleteConfirm').replace('{name}', sub.name))) {
-                            onDelete(sub.id);
-                          }
-                        }}
-                        className="text-[#b07840] hover:text-[#b5541e] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        title={t('sub.delete')}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                    {deleteConfirmId === sub.id ? (
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onMouseDown={(e) => { e.preventDefault(); onDelete(sub.id); setDeleteConfirmId(null); }}
+                          className="text-[10px] font-bold text-[#fdf6e8] bg-[#b5541e] border border-[#9a4318] rounded px-2 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
+                        >
+                          {t('sub.delete')}
+                        </button>
+                        <button
+                          onMouseDown={(e) => { e.preventDefault(); setDeleteConfirmId(null); }}
+                          className="text-[10px] text-[#a08060] hover:text-[#3d2b1f] px-1.5 py-1 min-h-[36px] transition-colors"
+                        >
+                          {t('card.cancel')}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startRename(sub);
+                          }}
+                          className="text-[#b07840] hover:text-[#7a5c46] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          title={t('sub.rename')}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        {subPatterns.length > 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmId(sub.id);
+                            }}
+                            className="text-[#b07840] hover:text-[#b5541e] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            title={t('sub.delete')}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

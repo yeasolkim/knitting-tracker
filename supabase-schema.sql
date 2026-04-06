@@ -130,3 +130,7 @@ create policy "Users can delete own pattern files"
 create index if not exists idx_patterns_user_updated on patterns(user_id, updated_at desc);
 -- pattern_progress is always accessed by (pattern_id, user_id) together via the unique constraint
 create index if not exists idx_pattern_progress_pattern_id on pattern_progress(pattern_id);
+
+-- Migration: multiple images per pattern
+-- Run this if you already have an existing patterns table:
+alter table patterns add column if not exists extra_image_urls jsonb not null default '[]';

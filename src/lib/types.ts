@@ -1,6 +1,11 @@
 export type PatternType = 'crochet' | 'knitting';
 export type FileType = 'image' | 'pdf';
 
+export interface ExtraPatternFile {
+  url: string;
+  thumbnail_url: string | null;
+}
+
 export interface Pattern {
   id: string;
   user_id: string;
@@ -9,6 +14,7 @@ export interface Pattern {
   file_url: string;
   file_type: FileType;
   thumbnail_url: string | null;
+  extra_image_urls?: ExtraPatternFile[];
   total_rows: number;
   yarn: string;
   needle: string;

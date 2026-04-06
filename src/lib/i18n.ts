@@ -214,6 +214,17 @@ const ko: Translations = {
   'guide.subPattern.next': '다음',
   'guide.crochetShape.title': '진행선 형태 선택',
   'guide.crochetShape.desc': '작업하는 코바늘 도안에 맞는 진행선 형태를 선택해주세요.',
+  'edit.unsavedWarning': '저장하지 않은 변경 사항이 있어요. 페이지를 떠나시겠어요?',
+  'edit.unsavedLeave': '나가기',
+  'form.addMoreImages': '이미지 더 추가하기',
+  'form.extraImagesLabel': '추가 이미지',
+  'form.imageN': '이미지 {n}',
+  'form.primaryBadge': '대표',
+  'form.uploadProgress': '{done}/{total} 업로드 중...',
+  'form.resetFiles': '다시 선택하기',
+  'form.coverImageHint': '첫 번째 이미지가 대표 이미지로 사용됩니다.',
+  'dropzone.labelMultiple': '도안 이미지를 여기 올리세요',
+  'dropzone.hintMultiple': '여러 장 한번에 선택 가능 · PDF · 최대 {max}MB',
 };
 
 const en: Translations = {
@@ -413,6 +424,17 @@ const en: Translations = {
   'guide.subPattern.next': 'Next',
   'guide.crochetShape.title': 'Select Ruler Type',
   'guide.crochetShape.desc': 'Choose the ruler type that matches your crochet pattern.',
+  'edit.unsavedWarning': 'You have unsaved changes. Leave anyway?',
+  'edit.unsavedLeave': 'Leave',
+  'form.addMoreImages': 'Add more images',
+  'form.extraImagesLabel': 'Additional images',
+  'form.imageN': 'Image {n}',
+  'form.primaryBadge': 'Cover',
+  'form.uploadProgress': 'Uploading {done} of {total}...',
+  'form.resetFiles': 'Start over',
+  'form.coverImageHint': 'The first image will be used as the cover.',
+  'dropzone.labelMultiple': 'Drop pattern images here',
+  'dropzone.hintMultiple': 'Select multiple at once · PDF · max {max} MB',
 };
 
 const ja: Translations = {
@@ -612,6 +634,11 @@ const ja: Translations = {
   'guide.subPattern.next': '次へ',
   'guide.crochetShape.title': '進行ラインの種類を選択',
   'guide.crochetShape.desc': '編み図に合った進行ラインの種類を選んでください。',
+  'edit.unsavedWarning': '保存されていない変更があります。ページを離れますか？',
+  'edit.unsavedLeave': '離れる',
+  'form.addMoreImages': '画像を追加',
+  'form.extraImagesLabel': '追加画像',
+  'form.imageN': '画像{n}',
 };
 
 const zh: Translations = {
@@ -811,6 +838,11 @@ const zh: Translations = {
   'guide.subPattern.next': '下一步',
   'guide.crochetShape.title': '选择进度线类型',
   'guide.crochetShape.desc': '请选择与您的钩针图案相符的进度线类型。',
+  'edit.unsavedWarning': '有未保存的更改，确定要离开吗？',
+  'edit.unsavedLeave': '离开',
+  'form.addMoreImages': '添加更多图片',
+  'form.extraImagesLabel': '附加图片',
+  'form.imageN': '图片{n}',
 };
 
 const es: Translations = {
@@ -994,6 +1026,11 @@ const es: Translations = {
   'guide.subPattern.next': 'Siguiente',
   'guide.crochetShape.title': 'Seleccionar tipo de marcador',
   'guide.crochetShape.desc': 'Elige el tipo de marcador que corresponda a tu patrón de ganchillo.',
+  'edit.unsavedWarning': 'Hay cambios sin guardar. ¿Salir de todas formas?',
+  'edit.unsavedLeave': 'Salir',
+  'form.addMoreImages': 'Añadir más imágenes',
+  'form.extraImagesLabel': 'Imágenes adicionales',
+  'form.imageN': 'Imagen {n}',
 };
 
 const fr: Translations = {
@@ -1177,6 +1214,11 @@ const fr: Translations = {
   'guide.subPattern.next': 'Suivant',
   'guide.crochetShape.title': 'Choisir le type de marqueur',
   'guide.crochetShape.desc': 'Choisissez le type de marqueur adapté à votre patron au crochet.',
+  'edit.unsavedWarning': 'Des modifications non sauvegardées existent. Quitter quand même?',
+  'edit.unsavedLeave': 'Quitter',
+  'form.addMoreImages': 'Ajouter des images',
+  'form.extraImagesLabel': 'Images supplémentaires',
+  'form.imageN': 'Image {n}',
 };
 
 const it: Translations = {
@@ -1360,6 +1402,11 @@ const it: Translations = {
   'guide.subPattern.next': 'Avanti',
   'guide.crochetShape.title': 'Scegli il tipo di righello',
   'guide.crochetShape.desc': 'Scegli il tipo di righello adatto al tuo schema all\'uncinetto.',
+  'edit.unsavedWarning': 'Hai modifiche non salvate. Vuoi uscire comunque?',
+  'edit.unsavedLeave': 'Esci',
+  'form.addMoreImages': 'Aggiungi immagini',
+  'form.extraImagesLabel': 'Immagini aggiuntive',
+  'form.imageN': 'Immagine {n}',
 };
 
 const de: Translations = {
@@ -1543,6 +1590,11 @@ const de: Translations = {
   'guide.subPattern.next': 'Weiter',
   'guide.crochetShape.title': 'Linientyp auswählen',
   'guide.crochetShape.desc': 'Wähle den Linientyp, der zu deinem Häkelmuster passt.',
+  'edit.unsavedWarning': 'Es gibt ungespeicherte Änderungen. Trotzdem verlassen?',
+  'edit.unsavedLeave': 'Verlassen',
+  'form.addMoreImages': 'Bilder hinzufügen',
+  'form.extraImagesLabel': 'Zusätzliche Bilder',
+  'form.imageN': 'Bild {n}',
 };
 
 const pt: Translations = {
@@ -1726,6 +1778,11 @@ const pt: Translations = {
   'guide.subPattern.next': 'Próximo',
   'guide.crochetShape.title': 'Escolher tipo de marcador',
   'guide.crochetShape.desc': 'Escolha o tipo de marcador adequado ao seu padrão de crochê.',
+  'edit.unsavedWarning': 'Há alterações não salvas. Sair mesmo assim?',
+  'edit.unsavedLeave': 'Sair',
+  'form.addMoreImages': 'Adicionar imagens',
+  'form.extraImagesLabel': 'Imagens adicionais',
+  'form.imageN': 'Imagem {n}',
 };
 
 const ru: Translations = {
@@ -1909,6 +1966,11 @@ const ru: Translations = {
   'guide.subPattern.next': 'Далее',
   'guide.crochetShape.title': 'Выберите тип линии',
   'guide.crochetShape.desc': 'Выберите тип линии, соответствующий вашей схеме вязания крючком.',
+  'edit.unsavedWarning': 'Есть несохранённые изменения. Покинуть страницу?',
+  'edit.unsavedLeave': 'Покинуть',
+  'form.addMoreImages': 'Добавить изображения',
+  'form.extraImagesLabel': 'Дополнительные изображения',
+  'form.imageN': 'Изображение {n}',
 };
 
 const no: Translations = {
@@ -2092,6 +2154,11 @@ const no: Translations = {
   'guide.subPattern.next': 'Neste',
   'guide.crochetShape.title': 'Velg type markør',
   'guide.crochetShape.desc': 'Velg markørtypen som passer til hekling-mønsteret ditt.',
+  'edit.unsavedWarning': 'Du har ulagrede endringer. Forlat likevel?',
+  'edit.unsavedLeave': 'Forlat',
+  'form.addMoreImages': 'Legg til bilder',
+  'form.extraImagesLabel': 'Ekstra bilder',
+  'form.imageN': 'Bilde {n}',
 };
 
 const nl: Translations = {
@@ -2275,6 +2342,11 @@ const nl: Translations = {
   'guide.subPattern.next': 'Volgende',
   'guide.crochetShape.title': 'Kies lijntype',
   'guide.crochetShape.desc': 'Kies het lijntype dat past bij jouw haakpatroon.',
+  'edit.unsavedWarning': 'Er zijn niet-opgeslagen wijzigingen. Toch verlaten?',
+  'edit.unsavedLeave': 'Verlaten',
+  'form.addMoreImages': 'Afbeeldingen toevoegen',
+  'form.extraImagesLabel': 'Extra afbeeldingen',
+  'form.imageN': 'Afbeelding {n}',
 };
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };
