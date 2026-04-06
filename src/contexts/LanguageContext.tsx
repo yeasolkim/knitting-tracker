@@ -14,6 +14,17 @@ function isValidLang(v: unknown): v is Lang {
   return VALID_LANGS.includes(v as Lang);
 }
 
+/** Detect the best matching Lang from the browser's language preference list. */
+function detectBrowserLang(): Lang {
+  const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const bLang of candidates) {
+    const code = bLang.toLowerCase().split('-')[0]; // 'en-US' → 'en', 'zh-TW' → 'zh'
+    if (isValidLang(code)) return code;
+    if (code === 'nb' || code === 'nn') return 'no'; // Norwegian Bokmål / Nynorsk → no
+  }
+  return 'ko';
+}
+
 const LanguageContext = createContext<LanguageContextValue>({
   lang: 'ko',
   setLang: () => {},
@@ -23,7 +34,9 @@ const LanguageContext = createContext<LanguageContextValue>({
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     const stored = localStorage.getItem('knitting_in_the_sauna_lang') as Lang | null;
-    return isValidLang(stored) ? stored : 'ko';
+    if (isValidLang(stored)) return stored;
+    // No stored preference → detect from browser/OS language settings
+    return detectBrowserLang();
   });
 
   const supabase = useMemo(() => createClient(), []);
