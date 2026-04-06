@@ -213,6 +213,10 @@ function PatternViewerPage({ pattern }: Props) {
     return [{ url: pattern.file_url, file_type: pattern.file_type }, ...extras];
   }, [pattern.file_url, pattern.file_type, pattern.extra_image_urls]);
   const [activeFileIdx, setActiveFileIdx] = useState(0);
+  // Keep a mutable ref so stable callbacks (handleImageSize) can read current index
+  const activeFileIdxRef = useRef(0);
+  activeFileIdxRef.current = activeFileIdx;
+  const [isImageLoading, setIsImageLoading] = useState(false);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
   // Set of image indices that have been visited (and thus have saved per-image state)
@@ -239,8 +243,12 @@ function PatternViewerPage({ pattern }: Props) {
   const lastReportedImgH = useRef(0);
   // Debounce timer for goToRuler correction after significant imgH changes
   const goToRulerCorrectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Safety timeout ref: clears isImageLoading if image never fires onImageSize (e.g., load error)
+  const imageLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 첫 오픈 판정: 코바늘 원형/타원/사각은 crochet_ruler_data.r 유무로, 나머지는 ruler_height 유무로 판단
+  // 가이드를 '다시 표시하지 않기' 설정한 경우에는 항상 false
   const isFirstOpenRef = useRef((() => {
+    if (localStorage.getItem('kis_guide_dismissed') === 'true') return false;
     if (!pattern.progress) return true;
     const savedCrochetData = pattern.progress.crochet_ruler_data as { r?: number; shape?: string } | undefined;
     const isCrochetNonLine = pattern.type === 'crochet' && (savedCrochetData?.shape ?? 'circle') !== 'line';
@@ -250,9 +258,10 @@ function PatternViewerPage({ pattern }: Props) {
   const showGuideRef = useRef(showCrochetShapeGuide || showGuide);
   useEffect(() => { showGuideRef.current = showCrochetShapeGuide || showGuide; }, [showCrochetShapeGuide, showGuide]);
 
-  // Cleanup correction timer on unmount to prevent state updates on unmounted component
+  // Cleanup timers on unmount to prevent state updates on unmounted component
   useEffect(() => () => {
     if (goToRulerCorrectionTimerRef.current) clearTimeout(goToRulerCorrectionTimerRef.current);
+    if (imageLoadingTimeoutRef.current) clearTimeout(imageLoadingTimeoutRef.current);
   }, []);
 
   const handleImageSize = useCallback((w: number, h: number) => {
@@ -265,13 +274,15 @@ function PatternViewerPage({ pattern }: Props) {
     setImgH(h);
     if (!initialScrollDoneRef.current && h > 0) {
       initialScrollDoneRef.current = true;
+      if (imageLoadingTimeoutRef.current) { clearTimeout(imageLoadingTimeoutRef.current); imageLoadingTimeoutRef.current = null; }
+      setIsImageLoading(false);
       // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (isFirstOpenRef.current || showGuideRef.current) {
             // 첫 방문 또는 가이드 중: 화면 맞춤 먼저, 그 다음 가이드 표시
             viewerRef.current?.fitWidthTop();
-            if (isFirstOpenRef.current) {
+            if (isFirstOpenRef.current && activeFileIdxRef.current === 0) {
               setShowSubPatternGuide(true);
             }
           } else {
@@ -632,6 +643,12 @@ function PatternViewerPage({ pattern }: Props) {
     const prevIdx = prevFileIdxRef.current;
     prevFileIdxRef.current = activeFileIdx;
 
+    // Show loading overlay while new image loads
+    setIsImageLoading(true);
+    // Safety: clear overlay after 8s in case image never reports dimensions (e.g., load error)
+    if (imageLoadingTimeoutRef.current) clearTimeout(imageLoadingTimeoutRef.current);
+    imageLoadingTimeoutRef.current = setTimeout(() => setIsImageLoading(false), 8000);
+
     // Save current state for the image we're leaving (deep copy to prevent shared array refs)
     imageStatesRef.current[prevIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
     // Mark both images as visited
@@ -679,6 +696,13 @@ function PatternViewerPage({ pattern }: Props) {
     initialScrollDoneRef.current = false;
     // If this image has been visited before, go to ruler; otherwise fit from top
     isFirstOpenRef.current = !next;
+    // Guides only show on image 0 — close them when switching to any other image
+    if (activeFileIdx !== 0) {
+      setShowSubPatternGuide(false);
+      setShowCrochetShapeGuide(false);
+      setShowGuide(false);
+      setShowRulerGuide(false);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFileIdx]);
 
@@ -1379,6 +1403,15 @@ function PatternViewerPage({ pattern }: Props) {
           )}
         </PatternViewer>
 
+        {/* Image loading overlay — shown while new image is loading after a tab switch */}
+        {isImageLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#fdf6e8]/70 backdrop-blur-[1px]">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 border-[3px] border-[#b07840] border-t-[#b5541e] rounded-full animate-spin" />
+            </div>
+          </div>
+        )}
+
         {/* Sub-pattern setup guide — shown on very first open */}
         {showSubPatternGuide && (
           <div className="absolute inset-0 z-40 flex items-start justify-center pt-4 bg-black/40 backdrop-blur-[2px]">
@@ -1395,6 +1428,22 @@ function PatternViewerPage({ pattern }: Props) {
               >
                 {t('guide.subPattern.next')}
               </button>
+              <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-[#b5541e] cursor-pointer"
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      localStorage.setItem('kis_guide_dismissed', 'true');
+                      setShowSubPatternGuide(false);
+                      setShowCrochetShapeGuide(false);
+                      setShowGuide(false);
+                      setShowRulerGuide(false);
+                    }
+                  }}
+                />
+                <span className="text-[11px] text-[#a08060]">{t('guide.dontShowAgain')}</span>
+              </label>
             </div>
           </div>
         )}
@@ -1472,6 +1521,19 @@ function PatternViewerPage({ pattern }: Props) {
               >
                 {t('guide.start')}
               </button>
+              <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-[#b5541e] cursor-pointer"
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      localStorage.setItem('kis_guide_dismissed', 'true');
+                      setShowRulerGuide(false);
+                    }
+                  }}
+                />
+                <span className="text-[11px] text-[#a08060]">{t('guide.dontShowAgain')}</span>
+              </label>
             </div>
           </div>
         )}
