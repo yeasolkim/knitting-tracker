@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
-import FileDropZone from '@/components/FileDropZone';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -291,96 +290,139 @@ function UploadForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* File picker section */}
-      {files.length === 0 ? (
-        <FileDropZone
-          multiple
-          accept="image/*,.pdf"
-          onFilesSelect={addFiles}
-          label={t('dropzone.labelMultiple')}
-          hint={t('dropzone.hintMultiple').replace('{max}', '10')}
-        />
-      ) : (
-        <div className="space-y-3">
-          {/* Image grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {files.map((f, i) => (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8] group">
-                {previews[i] ? (
-                  <img
-                    src={previews[i]}
-                    alt={f.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  /* PDF placeholder */
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 px-1">
-                    <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
-                      <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                      <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    </svg>
-                    <span className="text-[9px] text-[#a08060] text-center leading-tight truncate w-full px-1 text-center">PDF</span>
-                  </div>
-                )}
+      <div>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-1.5">
+          {t('form.file')}
+        </label>
+        <p className="text-xs text-[#a08060] mb-3">
+          앞판, 뒤판, 소매 등 도안 이미지를 여러 장 올릴 수 있어요
+        </p>
 
-                {/* Number badge */}
-                <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
-                  {i + 1}
-                </div>
+        {/* Grid: empty slots (before) OR filled cards (after) */}
+        <div
+          className={`grid grid-cols-3 sm:grid-cols-4 gap-2 ${files.length === 0 ? 'cursor-pointer' : ''}`}
+          onDragOver={files.length === 0 ? (e) => e.preventDefault() : undefined}
+          onDrop={files.length === 0 ? (e) => {
+            e.preventDefault();
+            const dropped = Array.from(e.dataTransfer.files).filter(f =>
+              f.type.startsWith('image/') || f.type === 'application/pdf'
+            );
+            if (dropped.length > 0) addFiles(dropped);
+          } : undefined}
+        >
+          {files.length === 0 ? (
+            /* ── Empty state: placeholder slots ── */
+            <>
+              {/* Slot 1 – primary (active, clickable) */}
+              <button
+                type="button"
+                onClick={() => addInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors flex flex-col items-center justify-center gap-1.5"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 21"/>
+                </svg>
+                <span className="text-[9px] font-bold text-[#b07840] tracking-wide">대표</span>
+              </button>
 
-                {/* Cover badge on first image */}
-                {i === 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-[#b5541e]/80 text-[#fdf6e8] text-[9px] font-bold text-center py-0.5 tracking-widest uppercase">
-                    {t('form.primaryBadge')}
-                  </div>
-                )}
-
-                {/* Remove button */}
+              {/* Slots 2–4 – extras (greyed out, clickable) */}
+              {[2, 3, 4].map((n) => (
                 <button
+                  key={n}
                   type="button"
-                  onClick={() => removeFile(i)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
-                  aria-label="remove"
+                  onClick={() => addInputRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-[#d4c4a8] bg-[#faf9f7] hover:border-[#b07840] hover:bg-[#fdf6e8] transition-colors flex flex-col items-center justify-center gap-1.5 opacity-60 hover:opacity-100"
                 >
-                  ×
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c4a882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="M21 15l-5-5L5 21"/>
+                  </svg>
+                  <span className="text-[9px] text-[#c4a882]">{n}</span>
                 </button>
-              </div>
-            ))}
+              ))}
+            </>
+          ) : (
+            /* ── Filled state: actual images ── */
+            <>
+              {files.map((f, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8]">
+                  {previews[i] ? (
+                    <img src={previews[i]} alt={f.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                      <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
+                        <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                        <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                      </svg>
+                      <span className="text-[9px] text-[#a08060]">PDF</span>
+                    </div>
+                  )}
+                  {/* Number badge */}
+                  <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
+                    {i + 1}
+                  </div>
+                  {/* Cover badge */}
+                  {i === 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#b5541e]/80 text-[#fdf6e8] text-[9px] font-bold text-center py-0.5 tracking-widest uppercase">
+                      {t('form.primaryBadge')}
+                    </div>
+                  )}
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+                    aria-label="remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
 
-            {/* Add more card */}
-            <button
-              type="button"
-              onClick={() => addInputRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] flex flex-col items-center justify-center gap-1 bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors"
-            >
-              <span className="text-xl font-light text-[#b07840]">+</span>
-              <span className="text-[9px] text-[#a08060] tracking-wide">{t('form.addMoreImages')}</span>
-            </button>
-          </div>
-
-          {/* Cover image hint */}
-          {files.length > 1 && (
-            <p className="text-[11px] text-[#a08060] tracking-wide">{t('form.coverImageHint')}</p>
+              {/* Add more card */}
+              <button
+                type="button"
+                onClick={() => addInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] flex flex-col items-center justify-center gap-1 bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors"
+              >
+                <span className="text-xl font-light text-[#b07840]">+</span>
+                <span className="text-[9px] text-[#a08060] tracking-wide">{t('form.addMoreImages')}</span>
+              </button>
+            </>
           )}
+        </div>
 
-          {/* Reset link */}
+        {/* Helper text below grid */}
+        {files.length === 0 && (
+          <p className="text-[11px] text-[#a08060] text-center mt-2.5">
+            탭하거나 이미지를 끌어다 놓으세요
+          </p>
+        )}
+        {files.length > 1 && (
+          <p className="text-[11px] text-[#a08060] mt-2">{t('form.coverImageHint')}</p>
+        )}
+        {files.length > 0 && (
           <button
             type="button"
             onClick={() => { setFiles([]); setPreviews([]); }}
-            className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
+            className="mt-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             {t('form.resetFiles')}
           </button>
+        )}
 
-          <input
-            ref={addInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleAddMore}
-          />
-        </div>
-      )}
+        <input
+          ref={addInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          multiple
+          className="hidden"
+          onChange={handleAddMore}
+        />
+      </div>
 
       {/* Pattern name */}
       <div>
