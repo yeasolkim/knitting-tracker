@@ -1077,14 +1077,27 @@ function PatternViewerPage({ pattern }: Props) {
             <div className="flex items-center gap-2">
               <h1 className="font-semibold text-[#3d2b1f] truncate text-sm sm:text-base tracking-tight">{pattern.title}</h1>
               <span className="hidden sm:inline text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded shrink-0">
-                {isCrochet ? '코바늘' : '대바늘'}
+                {isCrochet ? t('card.type.crochet') : t('card.type.knitting')}
               </span>
             </div>
-            {(pattern.yarn || pattern.needle) && (
-              <p className="hidden sm:block text-[11px] text-[#a08060] truncate mt-0.5">
-                {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
-              </p>
-            )}
+            <div className="flex items-center gap-2 min-h-[14px]">
+              {(pattern.yarn || pattern.needle) && (
+                <p className="hidden sm:block text-[11px] text-[#a08060] truncate">
+                  {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              {status === 'saving' && (
+                <span className="flex items-center gap-1 text-[10px] text-[#a08060] shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#b07840] animate-pulse" />
+                  {t('form.saving')}
+                </span>
+              )}
+              {status === 'error' && (
+                <span className="text-[10px] text-[#b5541e] font-medium shrink-0">
+                  {t('view.autoSaveError')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">

@@ -69,6 +69,7 @@ const ko: Translations = {
   'card.edit': '수정',
   'card.rowCurrent': '{n}단',
   'card.rowTotal': '/ {n}단',
+  'card.imageCount': '+{n}장',
   // pattern new/edit form
   'form.backToList': '내 도안',
   'form.backToPattern': '도안으로 돌아가기',
@@ -93,6 +94,8 @@ const ko: Translations = {
   'form.save': '저장하기',
   'form.uploading': '올리는 중...',
   'form.saving': '저장 중...',
+  'form.fileUploadTip': '앞판, 뒤판, 소매 등 도안 이미지를 여러 장 올릴 수 있어요',
+  'form.tapOrDrag': '탭하거나 이미지를 끌어다 놓으세요',
   'form.error.login': '로그인이 필요합니다.',
   'form.error.presign': '파일 업로드 준비에 실패했습니다.',
   'form.error.upload': '파일 업로드에 실패했습니다.',
@@ -115,6 +118,7 @@ const ko: Translations = {
   'view.redo': '다시 실행 (Ctrl+Shift+Z)',
   'view.saveView': '현재 화면 저장',
   'view.saveViewDone': '저장됨',
+  'view.autoSaveError': '저장 실패 — 재시도 중...',
   'view.deleteAllMarks': '모든 완료 표시를 삭제하시겠습니까?',
   'view.deleteAll': '전체 삭제',
   // ruler
@@ -279,6 +283,7 @@ const en: Translations = {
   'card.edit': 'Edit',
   'card.rowCurrent': 'R{n}',
   'card.rowTotal': '/ {n} rows',
+  'card.imageCount': '+{n}',
   // pattern new/edit form
   'form.backToList': 'My Patterns',
   'form.backToPattern': 'Back to pattern',
@@ -303,6 +308,8 @@ const en: Translations = {
   'form.save': 'Save',
   'form.uploading': 'Uploading...',
   'form.saving': 'Saving...',
+  'form.fileUploadTip': 'Upload front, back, sleeve, and other views of your pattern',
+  'form.tapOrDrag': 'Tap or drag images here',
   'form.error.login': 'Please log in to continue.',
   'form.error.presign': 'Failed to prepare file upload.',
   'form.error.upload': 'File upload failed.',
@@ -325,6 +332,7 @@ const en: Translations = {
   'view.redo': 'Redo (Ctrl+Shift+Z)',
   'view.saveView': 'Save view',
   'view.saveViewDone': 'Saved',
+  'view.autoSaveError': 'Save failed — retrying...',
   'view.deleteAllMarks': 'Delete all completed marks?',
   'view.deleteAll': 'Delete all',
   // ruler

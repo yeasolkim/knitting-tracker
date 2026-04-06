@@ -55,7 +55,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete }: PatternCard
           {/* Extra image count badge */}
           {(pattern.extra_image_urls?.length ?? 0) > 0 && (
             <span className="absolute top-2 right-2 text-[9px] font-bold bg-[#b07840]/80 text-[#fdf6e8] px-1.5 py-0.5 rounded">
-              +{pattern.extra_image_urls!.length}장
+              {t('card.imageCount').replace('{n}', String(pattern.extra_image_urls!.length))}
             </span>
           )}
         </div>

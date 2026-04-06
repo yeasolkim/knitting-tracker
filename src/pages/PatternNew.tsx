@@ -295,7 +295,7 @@ function UploadForm() {
           {t('form.file')}
         </label>
         <p className="text-xs text-[#a08060] mb-3">
-          앞판, 뒤판, 소매 등 도안 이미지를 여러 장 올릴 수 있어요
+          {t('form.fileUploadTip')}
         </p>
 
         {/* Grid: empty slots (before) OR filled cards (after) */}
@@ -398,7 +398,7 @@ function UploadForm() {
         {/* Helper text below grid */}
         {files.length === 0 && (
           <p className="text-[11px] text-[#a08060] text-center mt-2.5">
-            탭하거나 이미지를 끌어다 놓으세요
+            {t('form.tapOrDrag')}
           </p>
         )}
         {files.length > 1 && (
