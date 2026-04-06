@@ -1528,6 +1528,9 @@ function PatternViewerPage({ pattern }: Props) {
                   onChange={(e) => {
                     if (e.target.checked) {
                       localStorage.setItem('kis_guide_dismissed', 'true');
+                      setShowSubPatternGuide(false);
+                      setShowCrochetShapeGuide(false);
+                      setShowGuide(false);
                       setShowRulerGuide(false);
                     }
                   }}
