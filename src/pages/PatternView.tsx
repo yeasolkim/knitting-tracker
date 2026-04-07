@@ -765,7 +765,14 @@ function PatternViewerPage({ pattern }: Props) {
           },
           { onConflict: 'pattern_id,user_id' }
         );
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Network dropped during save — queue instead of surfacing error
+        if (!isOnlineRef.current) {
+          enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+          return;
+        }
+        throw new Error(error.message);
+      }
     },
     [supabase, pattern.id]
   );
