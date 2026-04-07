@@ -16,6 +16,8 @@ import RowCounter from '@/components/RowCounter';
 import PatternNotes from '@/components/PatternNotes';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWakeLock } from '@/hooks/useWakeLock';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { enqueueOfflineUpdate } from '@/lib/offlineQueue';
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
@@ -732,6 +734,11 @@ function PatternViewerPage({ pattern }: Props) {
     });
   }, [supabase]);
 
+  const isOnline = useOnlineStatus();
+  // Keep a ref so saveFn (useCallback) can read the latest value without stale closure
+  const isOnlineRef = useRef(isOnline);
+  isOnlineRef.current = isOnline;
+
   const saveFn = useCallback(
     async (data: Record<string, unknown>) => {
       let uid = userIdRef.current;
@@ -740,6 +747,12 @@ function PatternViewerPage({ pattern }: Props) {
         if (!session?.user) return;
         uid = session.user.id;
         userIdRef.current = uid;
+      }
+
+      // Offline: queue locally and return without error (optimistic)
+      if (!isOnlineRef.current) {
+        enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+        return;
       }
 
       const { error } = await supabase
@@ -1109,13 +1122,19 @@ function PatternViewerPage({ pattern }: Props) {
                   {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
                 </p>
               )}
-              {status === 'saving' && (
+              {!isOnline && (
+                <span className="flex items-center gap-1 text-[10px] text-[#b07840] shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#b07840]" />
+                  {t('offline.saving')}
+                </span>
+              )}
+              {isOnline && status === 'saving' && (
                 <span className="flex items-center gap-1 text-[10px] text-[#a08060] shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#b07840] animate-pulse" />
                   {t('form.saving')}
                 </span>
               )}
-              {status === 'error' && (
+              {isOnline && status === 'error' && (
                 <span className="text-[10px] text-[#b5541e] font-medium shrink-0">
                   {t('view.autoSaveError')}
                 </span>

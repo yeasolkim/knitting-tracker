@@ -12,8 +12,10 @@ import Privacy from './pages/Privacy';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { createClient } from './lib/supabase/client';
+import { useOfflineSync } from './hooks/useOfflineSync';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 // Handles OAuth callback for HashRouter:
 // - PKCE flow: detectSessionInUrl:true 가 자동으로 code 교환 → SIGNED_IN 이벤트 수신
@@ -71,12 +73,43 @@ function OAuthHandler() {
   return null;
 }
 
+// Global offline banner + sync manager — renders nothing visible when online
+function OfflineManager() {
+  const isOnline = useOnlineStatus();
+  const syncStatus = useOfflineSync();
+  const { t } = useLanguage();
+
+  if (isOnline && syncStatus === 'idle') return null;
+
+  return (
+    <div className="fixed top-0 inset-x-0 z-[100] pointer-events-none">
+      {!isOnline && (
+        <div className="bg-[#3d2b1f] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
+          {t('offline.banner')}
+        </div>
+      )}
+      {isOnline && syncStatus === 'syncing' && (
+        <div className="bg-[#b07840] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#fdf6e8] animate-pulse" />
+          {t('offline.syncing')}
+        </div>
+      )}
+      {isOnline && syncStatus === 'done' && (
+        <div className="bg-[#5a8a5a] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
+          {t('offline.syncDone')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Passes current path as resetKey so ErrorBoundary resets on navigation
 function AppRoutes() {
   const location = useLocation();
   return (
     <ErrorBoundary resetKey={location.pathname}>
       <OAuthHandler />
+      <OfflineManager />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

@@ -73,6 +73,11 @@ const ko: Translations = {
   'dashboard.noResult.reset': '필터 초기화',
   'dashboard.duplicatePrefix': '복사본 - ',
   'dashboard.duplicateError': '복사에 실패했어요. 다시 시도해주세요.',
+  'offline.banner': '오프라인 상태예요.',
+  'offline.cacheNote': '저장된 도안 목록을 표시하고 있습니다.',
+  'offline.saving': '오프라인 저장됨',
+  'offline.syncing': '동기화 중...',
+  'offline.syncDone': '동기화 완료',
   // pattern card
   'card.type.knitting': '대바늘',
   'card.type.crochet': '코바늘',
@@ -301,6 +306,11 @@ const en: Translations = {
   'dashboard.noResult.reset': 'Clear filters',
   'dashboard.duplicatePrefix': 'Copy of ',
   'dashboard.duplicateError': 'Failed to duplicate. Please try again.',
+  'offline.banner': 'You are offline.',
+  'offline.cacheNote': 'Showing cached pattern list.',
+  'offline.saving': 'Saved offline',
+  'offline.syncing': 'Syncing...',
+  'offline.syncDone': 'Synced',
   // pattern card
   'card.type.knitting': 'Knitting',
   'card.type.crochet': 'Crochet',

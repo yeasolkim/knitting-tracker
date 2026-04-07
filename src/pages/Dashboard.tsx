@@ -6,6 +6,8 @@ import AuthGuard from '@/components/AuthGuard';
 import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
+import { cachePatterns, getCachedPatterns } from '@/lib/offlineQueue';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 const PATTERN_LIMIT = 20;
 
@@ -40,6 +42,8 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
   const [duplicateError, setDuplicateError] = useState(false);
+  const [isFromCache, setIsFromCache] = useState(false);
+  const isOnline = useOnlineStatus();
 
   // Filter & sort state
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -55,17 +59,38 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       .order('updated_at', { ascending: false });
 
     if (!error && data) {
-      setPatterns(
-        data.map((p: Record<string, unknown>) => ({
-          ...p,
-          progress: (p.progress as unknown[])?.[0] || null,
-        })) as PatternWithProgress[]
-      );
+      const mapped = data.map((p: Record<string, unknown>) => ({
+        ...p,
+        progress: (p.progress as unknown[])?.[0] || null,
+      })) as PatternWithProgress[];
+      setPatterns(mapped);
+      cachePatterns(mapped); // Save to localStorage for offline use
+      setIsFromCache(false);
     }
     setLoading(false);
   }, [supabase]);
 
-  useEffect(() => { fetchPatterns(); }, [fetchPatterns]);
+  useEffect(() => {
+    if (!navigator.onLine) {
+      // Offline: load from localStorage cache
+      const cached = getCachedPatterns();
+      if (cached) {
+        setPatterns(cached);
+        setIsFromCache(true);
+        setLoading(false);
+        return;
+      }
+    }
+    fetchPatterns();
+  }, [fetchPatterns]);
+
+  // When back online, refresh from server
+  useEffect(() => {
+    if (isOnline && isFromCache) {
+      setIsFromCache(false);
+      fetchPatterns();
+    }
+  }, [isOnline, isFromCache, fetchPatterns]);
 
   // Derived: filtered + sorted patterns
   const filteredPatterns = useMemo(() => {
@@ -248,6 +273,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
           {t('dashboard.mobileWarning')}
         </p>
+        {isFromCache && (
+          <p className="text-[11px] text-[#b07840] text-center mb-3 bg-[#fdf6e8] border border-[#d4b896] rounded-lg px-3 py-2">
+            {t('offline.cacheNote')}
+          </p>
+        )}
         {isAnonymous && (
           <p className="text-[11px] text-[#a08060] text-center mb-4">
             {t('dashboard.anonWarning')}
