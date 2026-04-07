@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress } from '@/lib/types';
+import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
 import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 
 const PATTERN_LIMIT = 20;
+
+type TypeFilter = 'all' | 'knitting' | 'crochet';
+type StatusFilter = 'all' | 'inProgress' | 'completed';
+type SortKey = 'updated' | 'created' | 'title' | 'progress';
+
+function getProgress(pattern: PatternWithProgress): number {
+  const subs = (pattern.progress?.sub_patterns as SubPattern[]) || [];
+  const total = subs.length > 0
+    ? subs.reduce((s, p) => s + (p.total_rows || 0), 0)
+    : pattern.total_rows;
+  const current = subs.length > 0
+    ? subs.reduce((s, p) => s + (p.current_row || 0), 0)
+    : pattern.progress?.current_row || 0;
+  return total > 0 ? (current / total) * 100 : 0;
+}
 
 export default function Dashboard() {
   return (
@@ -24,6 +39,14 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
+  const [duplicateError, setDuplicateError] = useState(false);
+
+  // Filter & sort state
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortBy, setSortBy] = useState<SortKey>('updated');
+
+  const { t } = useLanguage();
 
   const fetchPatterns = useCallback(async () => {
     const { data, error } = await supabase
@@ -44,11 +67,32 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
   useEffect(() => { fetchPatterns(); }, [fetchPatterns]);
 
+  // Derived: filtered + sorted patterns
+  const filteredPatterns = useMemo(() => {
+    let result = [...patterns];
+
+    if (typeFilter !== 'all') result = result.filter(p => p.type === typeFilter);
+
+    if (statusFilter === 'completed') result = result.filter(p => getProgress(p) >= 100);
+    else if (statusFilter === 'inProgress') result = result.filter(p => getProgress(p) < 100);
+
+    result.sort((a, b) => {
+      if (sortBy === 'updated') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      if (sortBy === 'created') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === 'title') return a.title.localeCompare(b.title);
+      if (sortBy === 'progress') return getProgress(b) - getProgress(a);
+      return 0;
+    });
+
+    return result;
+  }, [patterns, typeFilter, statusFilter, sortBy]);
+
+  const isFiltered = typeFilter !== 'all' || statusFilter !== 'all' || sortBy !== 'updated';
+
   const handleDelete = useCallback(async (id: string) => {
     const pattern = patterns.find((p) => p.id === id);
     setPatterns((prev) => prev.filter((p) => p.id !== id));
 
-    // R2 파일 삭제 (fire-and-forget, DB 삭제를 막지 않음)
     if (pattern) {
       const extraUrls = (pattern.extra_image_urls ?? []).flatMap((f) =>
         [f.url, f.thumbnail_url].filter(Boolean)
@@ -64,7 +108,6 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       supabase.from('patterns').delete().eq('id', id),
     ]);
 
-    // If DB delete failed, restore the pattern in UI and show error
     if (deleteResult.error) {
       fetchPatterns();
       setDeleteError(true);
@@ -72,7 +115,36 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
     }
   }, [supabase, patterns, fetchPatterns]);
 
-  const { t } = useLanguage();
+  const handleDuplicate = useCallback(async (id: string) => {
+    const pattern = patterns.find(p => p.id === id);
+    if (!pattern) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase.from('patterns').insert({
+      user_id: user.id,
+      title: t('dashboard.duplicatePrefix') + pattern.title,
+      type: pattern.type,
+      file_url: pattern.file_url,
+      file_type: pattern.file_type,
+      thumbnail_url: pattern.thumbnail_url,
+      extra_image_urls: pattern.extra_image_urls ?? [],
+      total_rows: pattern.total_rows,
+      yarn: pattern.yarn,
+      needle: pattern.needle,
+      file_size: pattern.file_size,
+    }).select().single();
+
+    if (error || !data) {
+      setDuplicateError(true);
+      setTimeout(() => setDuplicateError(false), 3000);
+      return;
+    }
+
+    await fetchPatterns();
+    navigate(`/patterns/${data.id}/edit`);
+  }, [supabase, patterns, t, navigate, fetchPatterns]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -85,6 +157,13 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       options: { redirectTo: window.location.origin },
     });
   };
+
+  const chipClass = (active: boolean) =>
+    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[28px] ${
+      active
+        ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+        : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
+    }`;
 
   if (loading) {
     return (
@@ -159,6 +238,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
           {t('dashboard.deleteError')}
         </div>
       )}
+      {duplicateError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
+          {t('dashboard.duplicateError')}
+        </div>
+      )}
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
@@ -170,7 +254,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
           </p>
         )}
         {patterns.length === 0 ? (
-          /* 빈 상태: 전체 중앙 정렬 */
+          /* 빈 상태 */
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight mb-8">{t('dashboard.title')}</h1>
             <div className="w-16 h-16 rounded-xl bg-[#fdf6e8] border-2 border-[#b07840] flex items-center justify-center mb-5 shadow-[3px_3px_0_#b07840]">
@@ -193,33 +277,100 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
           </div>
         ) : (
           <>
-          {/* 도안 있을 때: 기존 헤더 + 그리드 */}
-          <div className="flex items-center justify-between mb-7 sm:mb-9">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
-              <p className="text-xs text-[#a08060] mt-1 tracking-wide">{t('dashboard.count', { n: patterns.length })}</p>
+            {/* 헤더 */}
+            <div className="flex items-center justify-between mb-5 sm:mb-6">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
+                <p className="text-xs text-[#a08060] mt-1 tracking-wide">
+                  {filteredPatterns.length === patterns.length
+                    ? t('dashboard.count', { n: patterns.length })
+                    : t('dashboard.count.filtered', { shown: filteredPatterns.length, total: patterns.length })}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (patterns.length >= PATTERN_LIMIT) {
+                    alert(t('dashboard.patternLimitAlert'));
+                    return;
+                  }
+                  navigate('/patterns/new');
+                }}
+                className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                {t('dashboard.addBtn')}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                if (patterns.length >= PATTERN_LIMIT) {
-                  alert(t('dashboard.patternLimitAlert'));
-                  return;
-                }
-                navigate('/patterns/new');
-              }}
-              className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              {t('dashboard.addBtn')}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
-            {patterns.map((pattern) => (
-              <PatternCard key={pattern.id} pattern={pattern} onDelete={handleDelete} />
-            ))}
-          </div>
+
+            {/* 필터 & 정렬 바 */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5 sm:mb-6">
+              {/* 종류 필터 */}
+              <div className="flex items-center gap-1">
+                {(['all', 'knitting', 'crochet'] as TypeFilter[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setTypeFilter(f)}
+                    className={chipClass(typeFilter === f)}
+                  >
+                    {f === 'all' ? t('dashboard.filter.all') : t(`card.type.${f}`)}
+                  </button>
+                ))}
+              </div>
+              <div className="w-px h-4 bg-[#d4b896] hidden sm:block" />
+              {/* 상태 필터 */}
+              <div className="flex items-center gap-1">
+                {(['all', 'inProgress', 'completed'] as StatusFilter[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setStatusFilter(f)}
+                    className={chipClass(statusFilter === f)}
+                  >
+                    {t(`dashboard.filter.${f}`)}
+                  </button>
+                ))}
+              </div>
+              {/* 정렬 */}
+              <div className="ml-auto">
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value as SortKey)}
+                  className="text-[10px] font-semibold text-[#7a5c46] border border-[#b07840] rounded-lg px-2 py-1 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] min-h-[28px]"
+                >
+                  <option value="updated">{t('dashboard.sort.updated')}</option>
+                  <option value="created">{t('dashboard.sort.created')}</option>
+                  <option value="title">{t('dashboard.sort.title')}</option>
+                  <option value="progress">{t('dashboard.sort.progress')}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 그리드 or 필터 결과 없음 */}
+            {filteredPatterns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-sm font-semibold text-[#7a5c46] mb-3">{t('dashboard.noResult')}</p>
+                {isFiltered && (
+                  <button
+                    onClick={() => { setTypeFilter('all'); setStatusFilter('all'); setSortBy('updated'); }}
+                    className="text-xs text-[#b5541e] hover:underline font-semibold"
+                  >
+                    {t('dashboard.noResult.reset')}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
+                {filteredPatterns.map((pattern) => (
+                  <PatternCard
+                    key={pattern.id}
+                    pattern={pattern}
+                    onDelete={handleDelete}
+                    onDuplicate={handleDuplicate}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </main>
@@ -238,17 +389,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
             </a>
           </p>
           <p className="flex items-center gap-3 text-[10px] text-[#c4a882]">
-            <Link
-              to="/terms"
-              className="hover:text-[#a08060] transition-colors underline underline-offset-2"
-            >
+            <Link to="/terms" className="hover:text-[#a08060] transition-colors underline underline-offset-2">
               {t('footer.terms')}
             </Link>
             <span className="text-[#b07840]">·</span>
-            <Link
-              to="/privacy"
-              className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold"
-            >
+            <Link to="/privacy" className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold">
               {t('footer.privacy')}
             </Link>
           </p>
