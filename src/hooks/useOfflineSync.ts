@@ -56,8 +56,13 @@ export function useOfflineSync(): SyncStatus {
       }
     }
 
-    setSyncStatus('done');
-    setTimeout(() => setSyncStatus('idle'), 3000);
+    // Only show 'done' if queue is actually empty (all items synced or server-won)
+    if (!hasOfflineQueue()) {
+      setSyncStatus('done');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    } else {
+      setSyncStatus('idle');
+    }
   }, [supabase]);
 
   useEffect(() => {

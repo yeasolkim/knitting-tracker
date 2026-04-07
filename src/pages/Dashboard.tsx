@@ -42,6 +42,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
   const [duplicateError, setDuplicateError] = useState(false);
+  const [offlineActionError, setOfflineActionError] = useState(false);
   const [isFromCache, setIsFromCache] = useState(false);
   const isOnline = useOnlineStatus();
 
@@ -115,6 +116,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const isFiltered = typeFilter !== 'all' || statusFilter !== 'all' || sortBy !== 'updated';
 
   const handleDelete = useCallback(async (id: string) => {
+    if (!navigator.onLine) {
+      setOfflineActionError(true);
+      setTimeout(() => setOfflineActionError(false), 3000);
+      return;
+    }
     const pattern = patterns.find((p) => p.id === id);
     setPatterns((prev) => prev.filter((p) => p.id !== id));
 
@@ -141,6 +147,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   }, [supabase, patterns, fetchPatterns]);
 
   const handleDuplicate = useCallback(async (id: string) => {
+    if (!navigator.onLine) {
+      setOfflineActionError(true);
+      setTimeout(() => setOfflineActionError(false), 3000);
+      return;
+    }
     const pattern = patterns.find(p => p.id === id);
     if (!pattern) return;
 
@@ -258,6 +269,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         </div>
       </nav>
 
+      {offlineActionError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
+          {t('offline.actionBlocked')}
+        </div>
+      )}
       {deleteError && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
           {t('dashboard.deleteError')}
