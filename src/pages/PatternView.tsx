@@ -1233,7 +1233,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
       {/* Offline cache notice */}
       {isFromCache && (
-        <div className="bg-[#fdf6e8] border-b border-[#d4b896] px-3 py-1.5 text-[10px] text-[#b07840] font-medium text-center shrink-0">
+        <div className="bg-[#fdf6e8] border-b-2 border-[#d4b896] px-3 py-1.5 text-[10px] text-[#b07840] font-medium text-center shrink-0">
           {t('offline.cacheNote')}
         </div>
       )}
@@ -1441,14 +1441,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 handlePlaceNote(screenX, screenY);
               }}
             >
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-amber-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#b07840] text-[#fdf6e8] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"/>
                 </svg>
                 {t('notes.placeHint')}
               </div>
               <button
-                className="absolute top-3 right-3 pointer-events-auto bg-white/80 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center hover:bg-white shadow"
+                className="absolute top-3 right-3 pointer-events-auto bg-[#fdf6e8]/90 text-[#7a5c46] rounded-full w-9 h-9 flex items-center justify-center hover:bg-[#fdf6e8] border border-[#b07840] shadow"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setPlacingNoteKey(null)}
               >
@@ -1611,7 +1611,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 key={key}
                 disabled={disabled}
                 onClick={() => setCrochetShape(key as 'line' | 'circle' | 'ellipse' | 'rect')}
-                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
+                className={`px-2.5 py-1.5 min-h-[36px] rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
                   crochetShape === key
                     ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] shadow-[1px_1px_0_#9a4318]'
                     : disabled
@@ -1636,7 +1636,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setShowRulerSettings(false)}
-              className="flex items-center justify-center w-5 h-5 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-[10px] font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
               title="닫기"
             >×</button>
           );
@@ -1678,7 +1678,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   <button
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
-                    className="flex items-center justify-center w-7 h-5 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[8px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
+                    className="flex items-center justify-center min-w-[44px] h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
                     title="최대 너비 30% 축소"
                   >÷1.3</button>
                   <button
@@ -1704,7 +1704,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   <button
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                    className="flex items-center justify-center w-7 h-5 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[8px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
+                    className="flex items-center justify-center min-w-[44px] h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
                     title="최대 너비 30% 확장"
                   >×1.3</button>
                   <span className="text-[10px] text-[#b5541e] font-mono leading-tight flex-shrink-0">
@@ -1750,7 +1750,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                className="flex items-center justify-center w-7 h-5 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[8px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                className="flex items-center justify-center w-11 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
                 title="최대 높이 30% 확장"
               >×1.3</button>
               <button
@@ -1776,7 +1776,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
-                className="flex items-center justify-center w-7 h-5 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[8px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                className="flex items-center justify-center w-11 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
                 title="최대 높이 30% 축소"
               >÷1.3</button>
               <span className="text-[9px] text-[#b5541e] font-mono text-center leading-tight">

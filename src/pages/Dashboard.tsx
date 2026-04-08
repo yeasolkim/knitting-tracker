@@ -40,10 +40,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [patterns, setPatterns] = useState<PatternWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
-  const [duplicateError, setDuplicateError] = useState(false);
-  const [offlineActionError, setOfflineActionError] = useState(false);
-  const [patternLimitError, setPatternLimitError] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
   const isOnline = useOnlineStatus();
 
@@ -53,6 +50,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [sortBy, setSortBy] = useState<SortKey>('updated');
 
   const { t } = useLanguage();
+
+  const showToast = useCallback((msg: string, ms = 3000) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), ms);
+  }, []);
 
   const fetchPatterns = useCallback(async () => {
     const { data, error } = await supabase
@@ -118,8 +120,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
   const handleDelete = useCallback(async (id: string) => {
     if (!navigator.onLine) {
-      setOfflineActionError(true);
-      setTimeout(() => setOfflineActionError(false), 3000);
+      showToast(t('offline.actionBlocked'));
       return;
     }
     const pattern = patterns.find((p) => p.id === id);
@@ -142,15 +143,13 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
     if (deleteResult.error) {
       fetchPatterns();
-      setDeleteError(true);
-      setTimeout(() => setDeleteError(false), 3000);
+      showToast(t('dashboard.deleteError'));
     }
-  }, [supabase, patterns, fetchPatterns]);
+  }, [supabase, patterns, fetchPatterns, showToast, t]);
 
   const handleDuplicate = useCallback(async (id: string) => {
     if (!navigator.onLine) {
-      setOfflineActionError(true);
-      setTimeout(() => setOfflineActionError(false), 3000);
+      showToast(t('offline.actionBlocked'));
       return;
     }
     const pattern = patterns.find(p => p.id === id);
@@ -174,14 +173,13 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
     }).select().single();
 
     if (error || !data) {
-      setDuplicateError(true);
-      setTimeout(() => setDuplicateError(false), 3000);
+      showToast(t('dashboard.duplicateError'));
       return;
     }
 
     await fetchPatterns();
     navigate(`/patterns/${data.id}/edit`);
-  }, [supabase, patterns, t, navigate, fetchPatterns]);
+  }, [supabase, patterns, t, navigate, fetchPatterns, showToast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -270,33 +268,15 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         </div>
       </nav>
 
-      {patternLimitError && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center">
-          {t('dashboard.patternLimitAlert')}
-        </div>
-      )}
-      {offlineActionError && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
-          {t('offline.actionBlocked')}
-        </div>
-      )}
-      {deleteError && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
-          {t('dashboard.deleteError')}
-        </div>
-      )}
-      {duplicateError && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
-          {t('dashboard.duplicateError')}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center pointer-events-none">
+          {toast}
         </div>
       )}
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <p className="text-[11px] text-[#a08060] text-center mb-4 sm:hidden">
-          {t('dashboard.mobileWarning')}
-        </p>
         {isFromCache && (
-          <p className="text-[11px] text-[#b07840] text-center mb-3 bg-[#fdf6e8] border border-[#d4b896] rounded-lg px-3 py-2">
+          <p className="text-[11px] text-[#b07840] text-center mb-3 bg-[#fdf6e8] border-2 border-[#d4b896] rounded-lg px-3 py-2">
             {t('offline.cacheNote')}
           </p>
         )}
@@ -342,8 +322,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
               <button
                 onClick={() => {
                   if (patterns.length >= PATTERN_LIMIT) {
-                    setPatternLimitError(true);
-                    setTimeout(() => setPatternLimitError(false), 4000);
+                    showToast(t('dashboard.patternLimitAlert'), 4000);
                     return;
                   }
                   navigate('/patterns/new');
@@ -356,6 +335,10 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
                 {t('dashboard.addBtn')}
               </button>
             </div>
+
+            <p className="text-[11px] text-[#a08060] text-center mb-3 sm:hidden">
+              {t('dashboard.mobileWarning')}
+            </p>
 
             {/* 필터 & 정렬 바 */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5 sm:mb-6">
@@ -385,17 +368,23 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
                 ))}
               </div>
               {/* 정렬 */}
-              <div className="ml-auto">
+              <div className="ml-auto relative">
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value as SortKey)}
-                  className="text-[10px] font-semibold text-[#7a5c46] border border-[#b07840] rounded-lg px-2 py-1 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] min-h-[28px]"
+                  className="appearance-none text-[10px] font-semibold text-[#7a5c46] border-2 border-[#b07840] rounded-full pl-2.5 pr-6 py-1 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] focus:text-[#b5541e] min-h-[28px] transition-colors"
                 >
                   <option value="updated">{t('dashboard.sort.updated')}</option>
                   <option value="created">{t('dashboard.sort.created')}</option>
                   <option value="title">{t('dashboard.sort.title')}</option>
                   <option value="progress">{t('dashboard.sort.progress')}</option>
                 </select>
+                <svg
+                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-[#b07840]"
+                  fill="none" viewBox="0 0 10 10"
+                >
+                  <path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
             </div>
 

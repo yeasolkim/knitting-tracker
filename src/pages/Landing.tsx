@@ -362,11 +362,11 @@ export default function Landing() {
         </p>
         <p className="flex items-center justify-center gap-3 text-[10px] text-[#c4a882]">
           <Link to="/terms" className="hover:text-[#a08060] transition-colors underline underline-offset-2">
-            이용약관
+            {t('footer.terms')}
           </Link>
           <span className="text-[#b07840]">·</span>
           <Link to="/privacy" className="hover:text-[#a08060] transition-colors underline underline-offset-2 font-semibold">
-            개인정보처리방침
+            {t('footer.privacy')}
           </Link>
         </p>
         <span className="absolute bottom-1 right-2 text-[9px] text-[#c4a882]/40 select-none tabular-nums">
