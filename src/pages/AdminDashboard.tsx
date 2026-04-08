@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createAdminClient } from '@/lib/supabase/adminClient';
 
@@ -97,6 +97,57 @@ function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; ti
   );
 }
 
+// ─── Pattern row actions (patterns tab) ─────────────────────────────────────
+function PatternRowActions({ pattern, extraCount, onDelete }: { pattern: Pattern; extraCount: number; onDelete: (p: Pattern) => Promise<void> }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <div className="flex items-center gap-2 shrink-0">
+      {pattern.file_type === 'image' && extraCount > 0 && pattern.file_url && (
+        <DownloadAllButton
+          urls={[pattern.file_url, ...(pattern.extra_image_urls ?? []).map(e => e.url)]}
+          title={pattern.title || '도안'}
+          className="text-xs px-3 py-1.5"
+        />
+      )}
+      {pattern.file_url && !confirmDelete && (
+        <a
+          href={pattern.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-bold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-3 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all"
+        >
+          열기
+        </a>
+      )}
+      {confirmDelete ? (
+        <>
+          <button
+            disabled={deleting}
+            onClick={async () => { setDeleting(true); await onDelete(pattern); }}
+            className="text-xs font-bold text-white bg-red-500 border-2 border-red-600 rounded-lg px-3 py-1.5 hover:bg-red-600 transition-all disabled:opacity-50"
+          >
+            {deleting ? '…' : '확인'}
+          </button>
+          <button
+            onClick={() => setConfirmDelete(false)}
+            className="text-xs font-bold text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-3 py-1.5 hover:bg-[#f5edd6] transition-all"
+          >
+            취소
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="text-xs font-bold text-[#7a5c46] border-2 border-[#b07840] rounded-lg px-3 py-1.5 hover:bg-[#b07840] hover:text-[#fdf6e8] transition-all"
+        >
+          삭제
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Pattern mini-card (used in both tabs) ──────────────────────────────────
 function PatternCard({
   pattern,
@@ -106,6 +157,7 @@ function PatternCard({
   onDelete: (p: Pattern) => Promise<void>;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const extraCount = (pattern.extra_image_urls ?? []).length;
 
   const allImageUrls = pattern.file_type === 'image' && pattern.file_url
@@ -113,7 +165,7 @@ function PatternCard({
     : [];
 
   const handleDelete = async () => {
-    if (!confirm(`"${pattern.title || '(제목 없음)'}" 도안을 삭제할까요?`)) return;
+    if (!confirmDelete) { setConfirmDelete(true); return; }
     setDeleting(true);
     await onDelete(pattern);
     setDeleting(false);
@@ -161,7 +213,7 @@ function PatternCard({
           {allImageUrls.length > 1 && (
             <DownloadAllButton urls={allImageUrls} title={pattern.title || '도안'} className="flex-1 text-[10px] py-1 text-center" />
           )}
-          {pattern.file_url && (
+          {pattern.file_url && !confirmDelete && (
             <a
               href={pattern.file_url}
               target="_blank"
@@ -171,13 +223,31 @@ function PatternCard({
               열기
             </a>
           )}
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="flex-1 text-[10px] font-bold text-white bg-red-400 border-2 border-red-500 rounded-lg py-1 hover:bg-red-500 transition-colors disabled:opacity-50"
-          >
-            {deleting ? '…' : '삭제'}
-          </button>
+          {confirmDelete ? (
+            <>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 text-[10px] font-bold text-white bg-red-500 border-2 border-red-600 rounded-lg py-1 hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {deleting ? '…' : '확인'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 text-[10px] text-[#7a5c46] border-2 border-[#b07840] rounded-lg py-1 hover:bg-[#f5edd6] transition-colors"
+              >
+                취소
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex-1 text-[10px] font-bold text-[#7a5c46] border-2 border-[#b07840] rounded-lg py-1 hover:bg-[#b07840] hover:text-[#fdf6e8] transition-colors disabled:opacity-50"
+            >
+              삭제
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -202,7 +272,9 @@ export default function AdminDashboard() {
 
   // Patterns tab state
   const [filterAnonymous, setFilterAnonymous] = useState(false);
+  const [patternSearchInput, setPatternSearchInput] = useState('');
   const [patternSearch, setPatternSearch] = useState('');
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [thumbnailTotalBytes, setThumbnailTotalBytes] = useState<number | null>(null);
 
@@ -575,8 +647,13 @@ export default function AdminDashboard() {
                 <input
                   type="text"
                   placeholder="도안명 / 이메일 검색"
-                  value={patternSearch}
-                  onChange={e => setPatternSearch(e.target.value)}
+                  value={patternSearchInput}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setPatternSearchInput(v);
+                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                    searchDebounceRef.current = setTimeout(() => setPatternSearch(v), 300);
+                  }}
                   className="border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-3 py-1 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] w-44"
                 />
                 <span className="text-[11px] text-[#a08060]">{filtered.length}개</span>
@@ -633,34 +710,11 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          {p.file_type === 'image' && extraCount > 0 && p.file_url && (
-                            <DownloadAllButton
-                              urls={[p.file_url, ...(p.extra_image_urls ?? []).map(e => e.url)]}
-                              title={p.title || '도안'}
-                              className="text-xs px-3 py-1.5"
-                            />
-                          )}
-                          {p.file_url && (
-                            <a
-                              href={p.file_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-bold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-3 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all"
-                            >
-                              열기
-                            </a>
-                          )}
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`"${p.title || '(제목 없음)'}" 도안을 삭제할까요?`)) return;
-                              await handleDeletePattern(p);
-                            }}
-                            className="text-xs font-bold text-white bg-red-400 border-2 border-red-500 rounded-lg px-3 py-1.5 hover:bg-red-500 transition-all"
-                          >
-                            삭제
-                          </button>
-                        </div>
+                        <PatternRowActions
+                          pattern={p}
+                          extraCount={extraCount}
+                          onDelete={handleDeletePattern}
+                        />
                       </div>
                     </div>
                   );

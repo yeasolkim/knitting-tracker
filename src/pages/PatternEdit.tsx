@@ -107,6 +107,14 @@ function EditForm() {
   const [isDirty, setIsDirty] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
+  // Warn on browser back / tab close when there are unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   useEffect(() => {
     supabase
       .from('patterns')
@@ -130,11 +138,10 @@ function EditForm() {
   const handleFileSelect = (selectedFile: File) => {
     setIsDirty(true);
     setNewFile(selectedFile);
-    if (selectedFile.type.startsWith('image/')) {
-      setNewPreview(URL.createObjectURL(selectedFile));
-    } else {
-      setNewPreview(null);
-    }
+    setNewPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : null;
+    });
   };
 
   const handleExtraFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,6 +167,8 @@ function EditForm() {
   };
 
   const removeNewExtra = (index: number) => {
+    const url = newExtraPreviews[index];
+    if (url) URL.revokeObjectURL(url);
     setNewExtraFiles((prev) => prev.filter((_, i) => i !== index));
     setNewExtraPreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -306,7 +315,7 @@ function EditForm() {
                 navigate(`/patterns/${id}`);
               }
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] min-h-[44px] transition-colors tracking-wide font-medium"
+            className="inline-flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] min-h-[44px] transition-colors tracking-wide font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5541e] rounded"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -339,7 +348,7 @@ function EditForm() {
             </div>
             <button
               type="button"
-              onClick={() => { setNewFile(null); setNewPreview(null); }}
+              onClick={() => { if (newPreview) URL.revokeObjectURL(newPreview); setNewFile(null); setNewPreview(null); }}
               className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
             >
               {t('form.fileCancelReplace')}

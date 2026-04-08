@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom';
 import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+function fmtSize(bytes: number | null | undefined) {
+  if (!bytes) return '';
+  if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+  return Math.round(bytes / 1024) + ' KB';
+}
+
 interface PatternCardProps {
   pattern: PatternWithProgress;
   onDelete: (id: string) => void;
@@ -33,7 +39,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
             <img
               src={pattern.thumbnail_url || pattern.file_url}
               alt={pattern.title}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300 transform-gpu"
               onError={(e) => {
                 // thumbnail_url 로드 실패 시 file_url로 fallback
                 if (pattern.thumbnail_url && (e.target as HTMLImageElement).src !== pattern.file_url) {
@@ -42,11 +48,16 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1">
               <svg width="32" height="22" viewBox="0 0 28 18" fill="none">
                 <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
+              {pattern.file_type === 'pdf' && (
+                <span className="text-[9px] text-[#a08060] font-medium">
+                  PDF{fmtSize(pattern.file_size) ? ` · ${fmtSize(pattern.file_size)}` : ''}
+                </span>
+              )}
             </div>
           )}
           {/* Type badge */}

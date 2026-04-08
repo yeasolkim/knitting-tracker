@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
@@ -97,6 +97,10 @@ function UploadForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
+  // Track created blob URLs for cleanup on unmount
+  const blobUrlsRef = useRef<string[]>([]);
+  useEffect(() => () => { blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
+
   const addInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -109,9 +113,12 @@ function UploadForm() {
   const [error, setError] = useState<string | null>(null);
 
   const addFiles = (incoming: File[]) => {
-    const newPreviews = incoming.map((f) =>
-      f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
-    );
+    const newPreviews = incoming.map((f) => {
+      if (!f.type.startsWith('image/')) return '';
+      const url = URL.createObjectURL(f);
+      blobUrlsRef.current.push(url);
+      return url;
+    });
     setFiles((prev) => {
       const updated = [...prev, ...incoming];
       if (updated.length === incoming.length && !title) {
@@ -124,6 +131,8 @@ function UploadForm() {
   };
 
   const removeFile = (index: number) => {
+    const url = previews[index];
+    if (url) URL.revokeObjectURL(url);
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -160,7 +169,12 @@ function UploadForm() {
       const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
       if ((count ?? 0) >= 20) throw new Error(t('form.error.patternLimit'));
 
-      const thumbPromise = isPdf ? generatePdfThumbnail(primaryFile).catch(() => null) : null;
+      const thumbPromise = isPdf
+        ? Promise.race([
+            generatePdfThumbnail(primaryFile),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+          ]).catch(() => null)
+        : null;
 
       const { data: pattern, error: insertError } = await supabase
         .from('patterns')
@@ -334,7 +348,7 @@ function UploadForm() {
                     <path d="M8 18h2a2 2 0 000-4H8v6"/>
                   </svg>
                 </div>
-                <span className="text-[8px] font-bold text-[#b07840] tracking-wide">이미지 · PDF</span>
+                <span className="text-[8px] font-bold text-[#b07840] tracking-wide">{t('form.fileTypeLabel')}</span>
               </button>
 
               {/* Slots 2–4 – extras (greyed out, clickable) */}
@@ -417,7 +431,7 @@ function UploadForm() {
         {files.length > 0 && (
           <button
             type="button"
-            onClick={() => { setFiles([]); setPreviews([]); }}
+            onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); }}
             className="mt-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             {t('form.resetFiles')}

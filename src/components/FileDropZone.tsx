@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FileDropZoneProps {
@@ -23,18 +23,27 @@ export default function FileDropZone({
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useLanguage();
+
+  const showError = useCallback((msg: string) => {
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    setError(msg);
+    errorTimerRef.current = setTimeout(() => setError(null), 5000);
+  }, []);
+
+  useEffect(() => () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current); }, []);
 
   const validateFile = useCallback(
     (file: File): boolean => {
       if (file.size > maxSizeMB * 1024 * 1024) {
-        setError(t('dropzone.errorSize').replace('{max}', String(maxSizeMB)));
+        showError(t('dropzone.errorSize').replace('{max}', String(maxSizeMB)));
         return false;
       }
       const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf';
       if (!isImage && !isPdf) {
-        setError(t('dropzone.errorType'));
+        showError(t('dropzone.errorType'));
         return false;
       }
       return true;
@@ -89,7 +98,7 @@ export default function FileDropZone({
           }
         `}
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-        onDragLeave={() => setIsDragOver(false)}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false); }}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
