@@ -194,7 +194,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   };
 
   const chipClass = (active: boolean) =>
-    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[28px] ${
+    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[36px] ${
       active
         ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
         : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
@@ -259,7 +259,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
             ) : (
               <button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide"
+                className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors min-h-[44px] flex items-center tracking-wide focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5541e] rounded"
               >
                 {t('nav.logout')}
               </button>
@@ -268,11 +268,14 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         </div>
       </nav>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center pointer-events-none">
-          {toast}
-        </div>
-      )}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center pointer-events-none transition-opacity duration-200 ${toast ? 'opacity-100' : 'opacity-0'}`}
+      >
+        {toast ?? ''}
+      </div>
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {isFromCache && (
@@ -327,7 +330,8 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
                   }
                   navigate('/patterns/new');
                 }}
-                className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
+                aria-disabled={patterns.length >= PATTERN_LIMIT}
+                className={`inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px] ${patterns.length >= PATTERN_LIMIT ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -372,7 +376,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value as SortKey)}
-                  className="appearance-none text-[10px] font-semibold text-[#7a5c46] border-2 border-[#b07840] rounded-full pl-2.5 pr-6 py-1 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] focus:text-[#b5541e] min-h-[28px] transition-colors"
+                  className="appearance-none text-[10px] font-semibold text-[#7a5c46] border-2 border-[#b07840] rounded-full pl-2.5 pr-6 py-1.5 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] focus:text-[#b5541e] min-h-[36px] transition-colors hover:border-[#b5541e]"
                 >
                   <option value="updated">{t('dashboard.sort.updated')}</option>
                   <option value="created">{t('dashboard.sort.created')}</option>

@@ -98,7 +98,7 @@ function AppMockup() {
                   <span className="text-[9px] font-bold text-[#3d2b1f] tracking-tight">{t('landing.mockup.patternName')}</span>
                   <span className="text-[7px] font-bold bg-[#3d2b1f] text-[#fdf6e8] px-1 py-0.5 rounded leading-none">{t('card.type.knitting')}</span>
                 </div>
-                <p className="text-[7px] text-[#a08060]">메리노 · 4mm</p>
+                <p className="text-[7px] text-[#a08060]">{t('landing.mockup.yarn')}</p>
               </div>
             </div>
             <div className="flex items-center gap-0.5">

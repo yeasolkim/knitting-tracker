@@ -86,9 +86,9 @@ function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; ti
     <button
       onClick={handleDownload}
       disabled={downloading}
-      className={`font-bold border-2 rounded-lg transition-all disabled:opacity-50 ${
+      className={`font-bold border-2 rounded-lg transition-all transition-opacity duration-200 disabled:opacity-50 ${
         error
-          ? 'text-red-600 border-red-400 bg-red-50'
+          ? 'text-[#b5541e] border-[#b5541e] bg-[#fdf6e8]'
           : 'text-[#7a5c46] border-[#b07840] hover:bg-[#b07840] hover:text-[#fdf6e8]'
       } ${className}`}
     >
@@ -466,13 +466,18 @@ export default function AdminDashboard() {
                     >
                       {/* User row — click to expand */}
                       <div
-                        className="px-4 py-3 flex items-center gap-3 cursor-pointer select-none hover:bg-[#f5edd6] transition-colors"
+                        role={userPatterns.length > 0 ? 'button' : undefined}
+                        aria-expanded={userPatterns.length > 0 ? isExpanded : undefined}
+                        tabIndex={userPatterns.length > 0 ? 0 : undefined}
+                        className="px-4 py-3 flex items-center gap-3 cursor-pointer select-none hover:bg-[#f5edd6] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#b07840] rounded-xl"
                         onClick={() => userPatterns.length > 0 && toggleExpand(u.id)}
+                        onKeyDown={e => e.key === 'Enter' && userPatterns.length > 0 && toggleExpand(u.id)}
                       >
                         {filterAnonUsers && (
                           <input
                             type="checkbox"
                             checked={selectedUserIds.has(u.id)}
+                            aria-label={`선택: ${u.is_anonymous ? '비회원' : (u.email || u.id.slice(0, 8))}`}
                             onClick={e => e.stopPropagation()}
                             onChange={e => {
                               setSelectedUserIds(prev => {

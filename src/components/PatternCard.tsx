@@ -66,11 +66,17 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
       <div className="p-3">
         <div className="flex items-start justify-between gap-1 mb-2.5">
           <Link to={`/patterns/${pattern.id}`} className="min-w-0 flex-1">
-            <h3 className="font-semibold text-sm text-[#3d2b1f] line-clamp-1 tracking-tight group-hover:text-[#b5541e] transition-colors">
+            <h3
+              title={pattern.title}
+              className="font-semibold text-sm text-[#3d2b1f] line-clamp-1 tracking-tight group-hover:text-[#b5541e] transition-colors"
+            >
               {pattern.title}
             </h3>
             {(pattern.yarn || pattern.needle) && (
-              <p className="text-[10px] text-[#a08060] mt-0.5 line-clamp-1 tracking-wide">
+              <p
+                title={[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
+                className="text-[10px] text-[#a08060] mt-0.5 line-clamp-1 tracking-wide"
+              >
                 {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
               </p>
             )}
@@ -93,11 +99,11 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
+            <div className="flex items-center gap-0.5 shrink-0">
               {onDuplicate && (
                 <button
                   onClick={(e) => { e.preventDefault(); onDuplicate(pattern.id); }}
-                  className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-1"
+                  className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center"
                   aria-label={t('card.duplicate')}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -109,7 +115,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
               <Link
                 to={`/patterns/${pattern.id}/edit`}
                 onClick={(e) => e.stopPropagation()}
-                className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-1"
+                className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 aria-label={t('card.edit')}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -118,7 +124,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
               </Link>
               <button
                 onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
-                className="text-[#b07840] hover:text-[#b5541e] transition-colors p-1"
+                className="text-[#b07840] hover:text-[#b5541e] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 aria-label={t('card.delete')}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
