@@ -17,6 +17,7 @@ export default function Login() {
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const siteUrl = 'https://kis.marihoworld.com';
 
   const handleCopyUrl = () => {
@@ -34,7 +35,7 @@ export default function Login() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        alert(t('login.copyError', { url: siteUrl }));
+        setCopyFailed(true);
       }
     };
     if (navigator.clipboard) {
@@ -136,6 +137,17 @@ export default function Login() {
                 )}
                 {t('login.guestStart')}
               </button>
+              {copyFailed && (
+                <div className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5 text-center">
+                  <p className="text-xs text-amber-800 mb-1.5">{t('login.copyError')}</p>
+                  <input
+                    readOnly
+                    value={siteUrl}
+                    onFocus={e => e.target.select()}
+                    className="w-full text-xs text-center bg-white border border-amber-300 rounded px-2 py-1 text-amber-900 font-medium"
+                  />
+                </div>
+              )}
               {guestError && <p className="text-xs text-[#b5541e] text-center font-medium">{t('login.guestFailed')}</p>}
               <p className="text-[10px] text-[#a08060] text-center leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{t('login.guestDataWarning')}</p>
             </div>

@@ -58,3 +58,22 @@ export function getCachedPatterns(): PatternWithProgress[] | null {
     return null;
   }
 }
+
+// Individual pattern cache — for opening a pattern offline
+const SINGLE_PATTERN_PREFIX = 'kis_pattern_';
+
+export function cachePattern(pattern: PatternWithProgress): void {
+  try {
+    localStorage.setItem(SINGLE_PATTERN_PREFIX + pattern.id, JSON.stringify(pattern));
+  } catch {}
+}
+
+export function getCachedPattern(id: string): PatternWithProgress | null {
+  try {
+    const raw = localStorage.getItem(SINGLE_PATTERN_PREFIX + id);
+    if (!raw) return null;
+    return JSON.parse(raw) as PatternWithProgress;
+  } catch {
+    return null;
+  }
+}

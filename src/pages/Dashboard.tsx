@@ -43,6 +43,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [deleteError, setDeleteError] = useState(false);
   const [duplicateError, setDuplicateError] = useState(false);
   const [offlineActionError, setOfflineActionError] = useState(false);
+  const [patternLimitError, setPatternLimitError] = useState(false);
   const [isFromCache, setIsFromCache] = useState(false);
   const isOnline = useOnlineStatus();
 
@@ -269,6 +270,11 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         </div>
       </nav>
 
+      {patternLimitError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center">
+          {t('dashboard.patternLimitAlert')}
+        </div>
+      )}
       {offlineActionError && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
           {t('offline.actionBlocked')}
@@ -336,7 +342,8 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
               <button
                 onClick={() => {
                   if (patterns.length >= PATTERN_LIMIT) {
-                    alert(t('dashboard.patternLimitAlert'));
+                    setPatternLimitError(true);
+                    setTimeout(() => setPatternLimitError(false), 4000);
                     return;
                   }
                   navigate('/patterns/new');

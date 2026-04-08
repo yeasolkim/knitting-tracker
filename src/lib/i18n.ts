@@ -17,7 +17,11 @@ export const LANGUAGES: { code: Lang; label: string; native: string }[] = [
 
 type Translations = Record<string, string>;
 
-const ko: Translations = {
+// ko has no explicit type so TypeScript infers its exact keys.
+// TranslationKey is the union of all valid translation keys.
+// Other languages use Translations (= Record<string, string>) so they can be partial,
+// but t() only accepts TranslationKey — catching unknown keys at call sites.
+const ko = {
   // app
   'app.name': '니팅인더사우나',
   // nav
@@ -187,7 +191,7 @@ const ko: Translations = {
   'dashboard.anonWarning': '제작자의 사비로 운영되는 사이트라, 비회원 화면의 도면 파일은 불시에 삭제될 수 있어요.ㅠㅜ',
   'dashboard.linkGoogle': 'Google 연동',
   'dashboard.patternLimitAlert': '😭 베타 서비스 기간에는 도안 파일을 최대 20개까지만 저장할 수 있어요.',
-  'login.copyError': '주소를 직접 입력해주세요:\n{url}',
+  'login.copyError': '복사에 실패했습니다. 아래 주소를 직접 입력해주세요.',
   'login.inAppBrowserTitle': '앱 내 브라우저에서는 로그인이 제한돼요',
   'login.inAppBrowserDesc': '인스타그램, 카카오톡 등 앱에서 열면 Google 로그인이 차단돼요.\nChrome 또는 Safari 브라우저에서 접속해주세요.',
   'login.copied': '복사됐어요!',
@@ -421,7 +425,7 @@ const en: Translations = {
   'dashboard.anonWarning': 'This site runs at the creator\'s own expense. Files uploaded as a guest may be deleted without notice.',
   'dashboard.linkGoogle': 'Link Google',
   'dashboard.patternLimitAlert': '😭 During the beta period, you can save up to 20 patterns.',
-  'login.copyError': 'Please enter the address manually:\n{url}',
+  'login.copyError': 'Copy failed. Please enter the address below manually.',
   'login.inAppBrowserTitle': 'Login is restricted in in-app browsers',
   'login.inAppBrowserDesc': 'Google login is blocked when opened from apps like Instagram or KakaoTalk.\nPlease open in Chrome or Safari.',
   'login.copied': 'Copied!',
@@ -632,7 +636,7 @@ const ja: Translations = {
   'dashboard.anonWarning': '個人運営のサービスのため、ゲストのファイルは予告なく削除される場合があります。',
   'dashboard.linkGoogle': 'Googleと連携',
   'dashboard.patternLimitAlert': '😭 ベータ期間中は編み図を最大20個まで保存できます。',
-  'login.copyError': 'アドレスを直接入力してください:\n{url}',
+  'login.copyError': 'コピーに失敗しました。以下のアドレスを直接入力してください。',
   'login.inAppBrowserTitle': 'アプリ内ブラウザではログインが制限されています',
   'login.inAppBrowserDesc': 'InstagramやLINEなどのアプリで開くとGoogleログインが使えません。\nChromeまたはSafariで開いてください。',
   'login.copied': 'コピーしました！',
@@ -856,7 +860,7 @@ const zh: Translations = {
   'dashboard.anonWarning': '本站由创作者自费运营，游客上传的文件可能随时被删除。',
   'dashboard.linkGoogle': '关联 Google',
   'dashboard.patternLimitAlert': '😭 测试期间最多可储存20个图案。',
-  'login.copyError': '请手动输入地址：\n{url}',
+  'login.copyError': '复制失败。请手动输入以下地址。',
   'login.inAppBrowserTitle': '应用内浏览器无法登录',
   'login.inAppBrowserDesc': '从Instagram、微信等应用打开时，Google登录会被拦截。\n请在Chrome或Safari浏览器中访问。',
   'login.copied': '已复制！',
@@ -1064,7 +1068,7 @@ const es: Translations = {
   'dashboard.anonWarning': 'Este sitio funciona con fondos propios. Los archivos de invitados pueden eliminarse sin previo aviso.',
   'dashboard.linkGoogle': 'Conectar Google',
   'dashboard.patternLimitAlert': '😭 Durante el período beta, puedes guardar hasta 20 patrones.',
-  'login.copyError': 'Por favor, introduce la dirección manualmente:\n{url}',
+  'login.copyError': 'Copia fallida. Introduce manualmente la dirección de abajo.',
   'login.inAppBrowserTitle': 'El inicio de sesión está restringido en el navegador integrado',
   'login.inAppBrowserDesc': 'El inicio de sesión con Google está bloqueado al abrir desde apps como Instagram.\nAbre en Chrome o Safari.',
   'login.copied': '¡Copiado!',
@@ -1272,7 +1276,7 @@ const fr: Translations = {
   'dashboard.anonWarning': 'Ce site fonctionne aux frais du créateur. Les fichiers des invités peuvent être supprimés sans préavis.',
   'dashboard.linkGoogle': 'Lier Google',
   'dashboard.patternLimitAlert': '😭 Pendant la période bêta, vous pouvez sauvegarder jusqu\'à 20 patrons.',
-  'login.copyError': 'Veuillez saisir l\'adresse manuellement :\n{url}',
+  'login.copyError': 'Échec de la copie. Saisissez manuellement l\'adresse ci-dessous.',
   'login.inAppBrowserTitle': 'La connexion est restreinte dans les navigateurs intégrés aux apps',
   'login.inAppBrowserDesc': 'La connexion Google est bloquée depuis les apps comme Instagram.\nOuvrez dans Chrome ou Safari.',
   'login.copied': 'Copié !',
@@ -1480,7 +1484,7 @@ const it: Translations = {
   'dashboard.anonWarning': 'Questo sito è gestito a spese del creatore. I file degli ospiti potrebbero essere eliminati senza preavviso.',
   'dashboard.linkGoogle': 'Collega Google',
   'dashboard.patternLimitAlert': '😭 Durante il periodo beta, puoi salvare fino a 20 schemi.',
-  'login.copyError': 'Per favore inserisci l\'indirizzo manualmente:\n{url}',
+  'login.copyError': 'Copia fallita. Inserisci manualmente l\'indirizzo qui sotto.',
   'login.inAppBrowserTitle': 'Il login è limitato nei browser in-app',
   'login.inAppBrowserDesc': 'Il login Google è bloccato nelle app come Instagram.\nApri in Chrome o Safari.',
   'login.copied': 'Copiato!',
@@ -1688,7 +1692,7 @@ const de: Translations = {
   'dashboard.anonWarning': 'Diese Seite wird auf eigene Kosten betrieben. Gästedateien können ohne Ankündigung gelöscht werden.',
   'dashboard.linkGoogle': 'Google verknüpfen',
   'dashboard.patternLimitAlert': '😭 Während der Betaphase kannst du bis zu 20 Muster speichern.',
-  'login.copyError': 'Bitte gib die Adresse manuell ein:\n{url}',
+  'login.copyError': 'Kopieren fehlgeschlagen. Bitte gib die Adresse unten manuell ein.',
   'login.inAppBrowserTitle': 'Anmeldung im In-App-Browser eingeschränkt',
   'login.inAppBrowserDesc': 'Google-Login wird in Apps wie Instagram blockiert.\nÖffne in Chrome oder Safari.',
   'login.copied': 'Kopiert!',
@@ -1896,7 +1900,7 @@ const pt: Translations = {
   'dashboard.anonWarning': 'Este site funciona à custa do criador. Ficheiros de convidados podem ser apagados sem aviso.',
   'dashboard.linkGoogle': 'Ligar Google',
   'dashboard.patternLimitAlert': '😭 Durante o período beta, você pode salvar até 20 padrões.',
-  'login.copyError': 'Por favor, insira o endereço manualmente:\n{url}',
+  'login.copyError': 'Falha ao copiar. Por favor, insira o endereço abaixo manualmente.',
   'login.inAppBrowserTitle': 'O login está restrito no browser integrado nas apps',
   'login.inAppBrowserDesc': 'O login Google está bloqueado ao abrir em apps como o Instagram.\nAbre no Chrome ou Safari.',
   'login.copied': 'Copiado!',
@@ -2104,7 +2108,7 @@ const ru: Translations = {
   'dashboard.anonWarning': 'Сайт работает за счёт автора. Файлы гостей могут быть удалены без предупреждения.',
   'dashboard.linkGoogle': 'Связать Google',
   'dashboard.patternLimitAlert': '😭 В бета-период вы можете сохранить до 20 схем.',
-  'login.copyError': 'Пожалуйста, введите адрес вручную:\n{url}',
+  'login.copyError': 'Копирование не удалось. Введите адрес ниже вручную.',
   'login.inAppBrowserTitle': 'Вход ограничен во встроенных браузерах приложений',
   'login.inAppBrowserDesc': 'Вход через Google заблокирован при открытии из приложений вроде Instagram.\nОткройте в Chrome или Safari.',
   'login.copied': 'Скопировано!',
@@ -2312,7 +2316,7 @@ const no: Translations = {
   'dashboard.anonWarning': 'Dette nettstedet drives for skaperens egne midler. Gjesteopplastinger kan slettes uten varsel.',
   'dashboard.linkGoogle': 'Koble til Google',
   'dashboard.patternLimitAlert': '😭 I betaperioden kan du lagre opptil 20 mønstre.',
-  'login.copyError': 'Skriv inn adressen manuelt:\n{url}',
+  'login.copyError': 'Kopiering mislyktes. Skriv inn adressen nedenfor manuelt.',
   'login.inAppBrowserTitle': 'Innlogging er begrenset i app-nettlesere',
   'login.inAppBrowserDesc': 'Google-pålogging er blokkert fra apper som Instagram.\nÅpne i Chrome eller Safari.',
   'login.copied': 'Kopiert!',
@@ -2520,7 +2524,7 @@ const nl: Translations = {
   'dashboard.anonWarning': 'Deze site draait op kosten van de maker. Bestanden van gasten kunnen zonder waarschuwing worden verwijderd.',
   'dashboard.linkGoogle': 'Google koppelen',
   'dashboard.patternLimitAlert': '😭 Tijdens de bètaperiode kun je maximaal 20 patronen opslaan.',
-  'login.copyError': 'Voer het adres handmatig in:\n{url}',
+  'login.copyError': 'Kopiëren mislukt. Voer het adres hieronder handmatig in.',
   'login.inAppBrowserTitle': 'Inloggen is beperkt in in-app browsers',
   'login.inAppBrowserDesc': 'Google-login wordt geblokkeerd vanuit apps zoals Instagram.\nOpen in Chrome of Safari.',
   'login.copied': 'Gekopieerd!',
@@ -2596,5 +2600,7 @@ const nl: Translations = {
   'offline.syncDone': 'Gesynchroniseerd',
   'offline.actionBlocked': 'Niet beschikbaar offline.',
 };
+
+export type TranslationKey = keyof typeof ko;
 
 export const translations: Record<Lang, Translations> = { ko, en, ja, zh, es, fr, it, de, pt, ru, no, nl };

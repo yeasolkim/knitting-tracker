@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
+import type { TranslationKey } from '@/lib/i18n';
 import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import YarnLoader from '@/components/YarnLoader';
@@ -38,7 +39,7 @@ async function uploadFile(
   file: File,
   userId: string,
   patternId: string,
-  t: (key: string) => string,
+  t: (key: TranslationKey) => string,
 ): Promise<string> {
   const ext = file.name.split('.').pop();
   const path = `${userId}/${patternId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;

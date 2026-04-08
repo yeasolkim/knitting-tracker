@@ -17,13 +17,13 @@ import PatternNotes from '@/components/PatternNotes';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { enqueueOfflineUpdate } from '@/lib/offlineQueue';
+import { enqueueOfflineUpdate, cachePattern, getCachedPattern } from '@/lib/offlineQueue';
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function createDefaultSubPattern(index: number, prefix = '도안'): SubPattern {
+function createDefaultSubPattern(index: number, prefix: string): SubPattern {
   return {
     id: generateId(),
     name: `${prefix} ${index}`,
@@ -37,6 +37,7 @@ export default function PatternView() {
   const navigate = useNavigate();
   const [pattern, setPattern] = useState<PatternWithProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFromCache, setIsFromCache] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -55,16 +56,38 @@ export default function PatternView() {
       }
 
       if (queryResult.error || !queryResult.data) {
+        // Offline fallback: try localStorage cache
+        if (!navigator.onLine && id) {
+          const cached = getCachedPattern(id);
+          if (cached) {
+            setPattern(cached);
+            setIsFromCache(true);
+            setLoading(false);
+            return;
+          }
+        }
         navigate('/dashboard');
         return;
       }
 
-      setPattern({
+      const loaded: PatternWithProgress = {
         ...queryResult.data,
         progress: queryResult.data.progress?.[0] || null,
-      } as PatternWithProgress);
+      } as PatternWithProgress;
+      cachePattern(loaded); // persist for offline use
+      setPattern(loaded);
       setLoading(false);
     }).catch(() => {
+      // Network error: try cache before giving up
+      if (!navigator.onLine && id) {
+        const cached = getCachedPattern(id);
+        if (cached) {
+          setPattern(cached);
+          setIsFromCache(true);
+          setLoading(false);
+          return;
+        }
+      }
       navigate('/dashboard');
     });
   }, [id, navigate]);
@@ -86,11 +109,12 @@ export default function PatternView() {
     );
   }
 
-  return <PatternViewerPage pattern={pattern} />;
+  return <PatternViewerPage pattern={pattern} isFromCache={isFromCache} />;
 }
 
 interface Props {
   pattern: PatternWithProgress;
+  isFromCache?: boolean;
 }
 
 type CrochetRing = { cx: number; cy: number; r: number; ry?: number; shape?: 'circle' | 'ellipse' | 'rect' };
@@ -115,7 +139,7 @@ type Snapshot = {
 
 const MAX_HISTORY = 20;
 
-function PatternViewerPage({ pattern }: Props) {
+function PatternViewerPage({ pattern, isFromCache }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const viewerRef = useRef<PatternViewerHandle>(null);
   const navigate = useNavigate();
@@ -1206,6 +1230,13 @@ function PatternViewerPage({ pattern }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Offline cache notice */}
+      {isFromCache && (
+        <div className="bg-[#fdf6e8] border-b border-[#d4b896] px-3 py-1.5 text-[10px] text-[#b07840] font-medium text-center shrink-0">
+          {t('offline.cacheNote')}
+        </div>
+      )}
 
       {/* Image tab strip (shown only when multiple images exist) */}
       {allFiles.length > 1 && (

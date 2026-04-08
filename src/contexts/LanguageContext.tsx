@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { translations, LANGUAGES, type Lang } from '@/lib/i18n';
+import { translations, LANGUAGES, type Lang, type TranslationKey } from '@/lib/i18n';
 
 interface LanguageContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }
 
 const VALID_LANGS = LANGUAGES.map((l) => l.code);
@@ -71,7 +71,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     });
   }, [supabase]);
 
-  const t = useCallback((key: string, vars?: Record<string, string | number>): string => {
+  const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>): string => {
     let str = translations[lang][key] ?? translations['ko'][key] ?? key;
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
