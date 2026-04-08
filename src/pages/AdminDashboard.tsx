@@ -40,6 +40,44 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric' });
 }
 
+// ─── Shared download-all helper ─────────────────────────────────────────────
+function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; title: string; className?: string }) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      for (let i = 0; i < urls.length; i++) {
+        const res = await fetch(urls[i]);
+        const blob = await res.blob();
+        const ext = blob.type.includes('png') ? 'png' : 'jpg';
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${title}-${i + 1}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        if (i < urls.length - 1) await new Promise(r => setTimeout(r, 400));
+      }
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={downloading}
+      className={`font-bold text-[#7a5c46] border-2 border-[#b07840] rounded-lg hover:bg-[#b07840] hover:text-[#fdf6e8] transition-all disabled:opacity-50 ${className}`}
+    >
+      {downloading ? '…' : `전체 (${urls.length}장)`}
+    </button>
+  );
+}
+
 // ─── Pattern mini-card (used in both tabs) ──────────────────────────────────
 function PatternCard({
   pattern,
@@ -50,6 +88,10 @@ function PatternCard({
 }) {
   const [deleting, setDeleting] = useState(false);
   const extraCount = (pattern.extra_image_urls ?? []).length;
+
+  const allImageUrls = pattern.file_type === 'image' && pattern.file_url
+    ? [pattern.file_url, ...(pattern.extra_image_urls ?? []).map(e => e.url)]
+    : [];
 
   const handleDelete = async () => {
     if (!confirm(`"${pattern.title || '(제목 없음)'}" 도안을 삭제할까요?`)) return;
@@ -97,6 +139,9 @@ function PatternCard({
 
         {/* Action buttons */}
         <div className="flex gap-1 mt-auto pt-1">
+          {allImageUrls.length > 1 && (
+            <DownloadAllButton urls={allImageUrls} title={pattern.title || '도안'} className="flex-1 text-[10px] py-1 text-center" />
+          )}
           {pattern.file_url && (
             <a
               href={pattern.file_url}
@@ -577,6 +622,13 @@ export default function AdminDashboard() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 shrink-0">
+                          {p.file_type === 'image' && extraCount > 0 && p.file_url && (
+                            <DownloadAllButton
+                              urls={[p.file_url, ...(p.extra_image_urls ?? []).map(e => e.url)]}
+                              title={p.title || '도안'}
+                              className="text-xs px-3 py-1.5"
+                            />
+                          )}
                           {p.file_url && (
                             <a
                               href={p.file_url}
