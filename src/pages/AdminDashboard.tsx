@@ -43,25 +43,48 @@ function formatDate(iso: string) {
 // ─── Shared download-all helper ─────────────────────────────────────────────
 function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; title: string; className?: string }) {
   const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleDownload = async () => {
     if (downloading) return;
     setDownloading(true);
+    setError(false);
     try {
       for (let i = 0; i < urls.length; i++) {
-        const res = await fetch(urls[i]);
+        const ext = urls[i].match(/\.(png|gif|webp)$/i) ? urls[i].match(/\.(png|gif|webp)$/i)![1] : 'jpg';
+        const filename = `${title}-${i + 1}.${ext}`;
+
+        // Proxy through edge function to avoid CORS issues
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-download`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
+            },
+            body: JSON.stringify({ url: urls[i], filename }),
+          },
+        );
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const blob = await res.blob();
-        const ext = blob.type.includes('png') ? 'png' : 'jpg';
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = `${title}-${i + 1}.${ext}`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
-        if (i < urls.length - 1) await new Promise(r => setTimeout(r, 400));
+        // Revoke after a delay to ensure the browser has started the download
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+        if (i < urls.length - 1) await new Promise(r => setTimeout(r, 500));
       }
+    } catch {
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     } finally {
       setDownloading(false);
     }
@@ -71,9 +94,13 @@ function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; ti
     <button
       onClick={handleDownload}
       disabled={downloading}
-      className={`font-bold text-[#7a5c46] border-2 border-[#b07840] rounded-lg hover:bg-[#b07840] hover:text-[#fdf6e8] transition-all disabled:opacity-50 ${className}`}
+      className={`font-bold border-2 rounded-lg transition-all disabled:opacity-50 ${
+        error
+          ? 'text-red-600 border-red-400 bg-red-50'
+          : 'text-[#7a5c46] border-[#b07840] hover:bg-[#b07840] hover:text-[#fdf6e8]'
+      } ${className}`}
     >
-      {downloading ? '…' : `전체 (${urls.length}장)`}
+      {downloading ? '다운 중…' : error ? '실패' : `전체 (${urls.length}장)`}
     </button>
   );
 }
