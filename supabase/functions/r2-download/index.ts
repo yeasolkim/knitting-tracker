@@ -1,3 +1,5 @@
+import JSZip from 'npm:jszip@3';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -26,26 +28,59 @@ Deno.serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const { url, filename } = await req.json() as { url: string; filename: string };
+    const body = await req.json() as
+      | { urls: string[]; filename: string }
+      | { url: string; filename: string };
+
+    // ── ZIP: multiple files ───────────────────────────────────────────────────
+    if ('urls' in body) {
+      const { urls, filename } = body;
+      if (!urls?.length || !filename) {
+        return new Response('Missing urls or filename', { status: 400, headers: corsHeaders });
+      }
+
+      const zip = new JSZip();
+      await Promise.all(
+        urls.map(async (u, i) => {
+          const r2Res = await fetch(u);
+          if (!r2Res.ok) throw new Error(`R2 fetch failed for ${u}: ${r2Res.status}`);
+          const buf = await r2Res.arrayBuffer();
+          const ext = u.split('?')[0].split('.').pop() || 'jpg';
+          zip.file(`${String(i + 1).padStart(2, '0')}.${ext}`, buf);
+        }),
+      );
+
+      const zipBuf = await zip.generateAsync({ type: 'arraybuffer' });
+      return new Response(zipBuf, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          'Content-Length': String(zipBuf.byteLength),
+        },
+      });
+    }
+
+    // ── Single file ──────────────────────────────────────────────────────────
+    const { url, filename } = body;
     if (!url || !filename) {
       return new Response('Missing url or filename', { status: 400, headers: corsHeaders });
     }
 
-    // Fetch from R2 server-side (no CORS restrictions)
     const r2Res = await fetch(url);
     if (!r2Res.ok) {
       return new Response(`R2 fetch failed: ${r2Res.status}`, { status: r2Res.status, headers: corsHeaders });
     }
 
     const contentType = r2Res.headers.get('content-type') || 'application/octet-stream';
-    const body = await r2Res.arrayBuffer();
+    const buf = await r2Res.arrayBuffer();
 
-    return new Response(body, {
+    return new Response(buf, {
       headers: {
         ...corsHeaders,
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-        'Content-Length': String(body.byteLength),
+        'Content-Length': String(buf.byteLength),
       },
     });
   } catch (err) {

@@ -50,38 +50,30 @@ function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; ti
     setDownloading(true);
     setError(false);
     try {
-      for (let i = 0; i < urls.length; i++) {
-        const ext = urls[i].match(/\.(png|gif|webp)$/i) ? urls[i].match(/\.(png|gif|webp)$/i)![1] : 'jpg';
-        const filename = `${title}-${i + 1}.${ext}`;
-
-        // Proxy through edge function to avoid CORS issues
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-download`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
-            },
-            body: JSON.stringify({ url: urls[i], filename }),
+      const zipFilename = `${title}.zip`;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-download`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
           },
-        );
+          body: JSON.stringify({ urls, filename: zipFilename }),
+        },
+      );
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        // Revoke after a delay to ensure the browser has started the download
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-
-        if (i < urls.length - 1) await new Promise(r => setTimeout(r, 500));
-      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = zipFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     } catch {
       setError(true);
       setTimeout(() => setError(false), 3000);
@@ -100,7 +92,7 @@ function DownloadAllButton({ urls, title, className = '' }: { urls: string[]; ti
           : 'text-[#7a5c46] border-[#b07840] hover:bg-[#b07840] hover:text-[#fdf6e8]'
       } ${className}`}
     >
-      {downloading ? '다운 중…' : error ? '실패' : `전체 (${urls.length}장)`}
+      {downloading ? '압축 중…' : error ? '실패' : `ZIP (${urls.length}장)`}
     </button>
   );
 }
