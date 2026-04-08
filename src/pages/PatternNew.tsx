@@ -318,14 +318,23 @@ function UploadForm() {
               <button
                 type="button"
                 onClick={() => addInputRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors flex flex-col items-center justify-center gap-1.5"
+                className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors flex flex-col items-center justify-center gap-1"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <path d="M21 15l-5-5L5 21"/>
-                </svg>
-                <span className="text-[9px] font-bold text-[#b07840] tracking-wide">대표</span>
+                <div className="flex items-center gap-1.5">
+                  {/* Image icon */}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="M21 15l-5-5L5 21"/>
+                  </svg>
+                  {/* PDF icon */}
+                  <svg width="14" height="17" viewBox="0 0 24 28" fill="none" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 2h10l6 6v18a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z"/>
+                    <path d="M14 2v6h6"/>
+                    <path d="M8 18h2a2 2 0 000-4H8v6"/>
+                  </svg>
+                </div>
+                <span className="text-[8px] font-bold text-[#b07840] tracking-wide">이미지 · PDF</span>
               </button>
 
               {/* Slots 2–4 – extras (greyed out, clickable) */}
