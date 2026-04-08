@@ -19,11 +19,14 @@ export default defineConfig({
           {
             // Cache pattern images and PDFs from R2 after first view
             // Uses CacheFirst so they're available offline without network
+            // fetchOptions.mode = 'no-cors' required because R2 public bucket
+            // does not serve CORS headers; without this the SW fetch fails.
             urlPattern: ({ url }) =>
               /\.(png|jpg|jpeg|webp|gif|pdf)$/i.test(url.pathname),
             handler: 'CacheFirst',
             options: {
               cacheName: 'pattern-files-v1',
+              fetchOptions: { mode: 'no-cors' },
               expiration: {
                 maxEntries: 150,
                 maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
@@ -32,6 +35,9 @@ export default defineConfig({
             },
           },
         ],
+        // Do not let the SW intercept admin routes (no offline needed there)
+        navigationPreload: false,
+        navigateFallbackDenylist: [/^\/admin/],
       },
       manifest: {
         name: 'Knitting in the Sauna',
