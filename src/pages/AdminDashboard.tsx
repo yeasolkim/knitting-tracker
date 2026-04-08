@@ -245,20 +245,8 @@ export default function AdminDashboard() {
       if (patternsRes.data) setPatterns(ps);
       setLoading(false);
 
-      const headTargets = ps.flatMap(p => {
-        const targets: string[] = [];
-        if (!p.file_size && p.file_url) targets.push(p.file_url);
-        if (p.thumbnail_url) targets.push(p.thumbnail_url);
-        return targets;
-      }).filter(Boolean) as string[];
-
-      Promise.all(
-        headTargets.map(url =>
-          fetch(url, { method: 'HEAD' })
-            .then(r => parseInt(r.headers.get('content-length') ?? '0', 10))
-            .catch(() => 0)
-        )
-      ).then(sizes => setThumbnailTotalBytes(sizes.reduce((a, b) => a + b, 0)));
+      // Use stored file_size only — HEAD requests to R2 fail due to CORS
+      setThumbnailTotalBytes(0);
     }).catch((err) => {
       setFetchError(err instanceof Error ? err.message : String(err));
       setLoading(false);

@@ -9,10 +9,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Admin-only: verify service role key
+    // Admin-only: verify the token has service_role claim
     const authHeader = req.headers.get('authorization');
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!authHeader || !serviceKey || authHeader.replace(/^Bearer\s+/i, '') !== serviceKey) {
+    if (!authHeader) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    }
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    let role: string | undefined;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      role = payload.role;
+    } catch {
+      // invalid JWT
+    }
+    if (role !== 'service_role') {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
