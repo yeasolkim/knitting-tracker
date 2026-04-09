@@ -381,6 +381,11 @@ function EditForm() {
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
           {t('form.extraImagesLabel')}
+          {(currentExtraFiles.length + newExtraFiles.length) > 0 && (
+            <span className="ml-1.5 text-[#a08060] normal-case font-normal tracking-normal">
+              ({currentExtraFiles.length + newExtraFiles.length})
+            </span>
+          )}
         </label>
 
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

@@ -17,6 +17,8 @@ interface PatternCardProps {
 
 const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }: PatternCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
   const { t } = useLanguage();
 
   const subPatterns = (pattern.progress?.sub_patterns as SubPattern[]) || [];
@@ -35,15 +37,17 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
       {/* Thumbnail */}
       <Link to={`/patterns/${pattern.id}`}>
         <div className="aspect-[4/3] bg-[#f5edd6] relative overflow-hidden border-b-2 border-[#b07840]">
-          {pattern.thumbnail_url || pattern.file_type === 'image' ? (
+          {!imgFailed && (pattern.thumbnail_url || pattern.file_type === 'image') ? (
             <img
               src={pattern.thumbnail_url || pattern.file_url}
               alt={pattern.title}
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300 transform-gpu"
               onError={(e) => {
-                // thumbnail_url 로드 실패 시 file_url로 fallback
-                if (pattern.thumbnail_url && (e.target as HTMLImageElement).src !== pattern.file_url) {
-                  (e.target as HTMLImageElement).src = pattern.file_url;
+                const img = e.target as HTMLImageElement;
+                if (pattern.thumbnail_url && img.src !== pattern.file_url) {
+                  img.src = pattern.file_url;
+                } else {
+                  setImgFailed(true);
                 }
               }}
             />
@@ -97,10 +101,15 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
           {confirmDelete ? (
             <div className="flex items-center gap-1 shrink-0">
               <button
-                onClick={() => onDelete(pattern.id)}
-                className="text-[10px] text-[#fdf6e8] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors"
+                disabled={deleting}
+                onClick={async () => {
+                  if (deleting) return;
+                  setDeleting(true);
+                  await onDelete(pattern.id);
+                }}
+                className="text-[10px] text-[#fdf6e8] bg-[#b5541e] hover:bg-[#9a4318] px-1.5 py-0.5 rounded font-semibold tracking-wide transition-colors disabled:opacity-50"
               >
-                {t('card.delete')}
+                {deleting ? '…' : t('card.delete')}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}

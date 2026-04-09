@@ -202,8 +202,32 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5edd6]">
-        <YarnLoader />
+      <div className="min-h-screen flex flex-col">
+        <nav className="bg-[#f5edd6] border-b-2 border-[#b07840] sticky top-0 z-50">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="none" className="shrink-0">
+                <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+              <span className="font-bold text-[#3d2b1f] tracking-tight text-sm">{t('app.name')}</span>
+            </div>
+          </div>
+        </nav>
+        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] overflow-hidden animate-pulse">
+                <div className="aspect-[4/3] bg-[#f0e6d3]" />
+                <div className="p-3 space-y-2">
+                  <div className="h-3 bg-[#e8dcc8] rounded w-3/4" />
+                  <div className="h-2 bg-[#e8dcc8] rounded w-1/2" />
+                  <div className="h-1.5 bg-[#e8dcc8] rounded-full mt-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }

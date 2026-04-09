@@ -438,8 +438,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const visPageWidth = visW / S;
 
         // Prepare canvas dimensions (still display:none — shown only after render succeeds).
-        const canvasW = Math.round(visW * dpr);
-        const canvasH = Math.round(visH * dpr);
+        // Cap to 16MP to avoid iOS Safari silent downsampling.
+        let canvasW = Math.round(visW * dpr);
+        let canvasH = Math.round(visH * dpr);
+        const maxPixels = 16 * 1024 * 1024;
+        if (canvasW * canvasH > maxPixels) {
+          const scale = Math.sqrt(maxPixels / (canvasW * canvasH));
+          canvasW = Math.round(canvasW * scale);
+          canvasH = Math.round(canvasH * scale);
+        }
         canvas.width  = canvasW;
         canvas.height = canvasH;
 
@@ -696,7 +703,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const cImgW = cImgW_raw || W;
 
     const vMaxTy = Math.max(0, (cImgH * s - H) / 2);
-    const vThumbFrac = Math.min(1, H / Math.max(cImgH * s, H));
+    const vThumbFrac = Math.max(0.05, Math.min(1, H / Math.max(cImgH * s, H)));
     const vScrollPos = vMaxTy > 0 ? (vMaxTy - transform.y) / (2 * vMaxTy) : 0.5;
     const vThumbTop = Math.max(0, Math.min(1 - vThumbFrac, vScrollPos * (1 - vThumbFrac)));
 
@@ -895,14 +902,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-14">
           <button
             onClick={zoomIn}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            disabled={transform.scale >= 10}
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t('viewer.zoomIn')}
           >
             +
           </button>
           <button
             onClick={zoomOut}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            disabled={transform.scale <= 0.5}
+            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t('viewer.zoomOut')}
           >
             −

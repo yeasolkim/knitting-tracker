@@ -111,6 +111,7 @@ function UploadForm() {
   const [uploadStep, setUploadStep] = useState(0);
   const [uploadTotal, setUploadTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [pdfThumbWarning, setPdfThumbWarning] = useState(false);
 
   const addFiles = (incoming: File[]) => {
     const newPreviews = incoming.map((f) => {
@@ -203,6 +204,7 @@ function UploadForm() {
       let thumbnailUrl: string | null = null;
       if (isPdf) {
         const thumbBlob = await thumbPromise;
+        if (!thumbBlob) setPdfThumbWarning(true);
         if (thumbBlob) {
           try {
             const thumbPath = `${user.id}/${pattern.id}/thumb.jpg`;
@@ -264,6 +266,9 @@ function UploadForm() {
 
       createdPatternId = null;
       uploadedUrls = [];
+      if (isPdf && !thumbnailUrl) {
+        await new Promise((r) => setTimeout(r, 1800));
+      }
       navigate(`/patterns/${pattern.id}`);
     } catch (err) {
       if (createdPatternId) {
@@ -297,6 +302,11 @@ function UploadForm() {
               style={{ width: `${(uploadStep / uploadTotal) * 100}%` }}
             />
           </div>
+        )}
+        {pdfThumbWarning && (
+          <p className="mt-4 text-xs text-[#b07840] text-center max-w-xs">
+            PDF 미리보기 생성에 실패했어요. 도안은 정상 등록됩니다.
+          </p>
         )}
       </div>
     );

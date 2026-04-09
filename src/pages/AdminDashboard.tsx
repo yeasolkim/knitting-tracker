@@ -269,6 +269,7 @@ export default function AdminDashboard() {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
   const [deletingUsers, setDeletingUsers] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Patterns tab state
   const [filterAnonymous, setFilterAnonymous] = useState(false);
@@ -277,6 +278,10 @@ export default function AdminDashboard() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [thumbnailTotalBytes, setThumbnailTotalBytes] = useState<number | null>(null);
+
+  useEffect(() => {
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') !== 'true') {
@@ -355,8 +360,7 @@ export default function AdminDashboard() {
 
   const handleDeleteSelectedUsers = async () => {
     if (selectedUserIds.size === 0) return;
-    if (!confirm(`비회원 ${selectedUserIds.size}명과 해당 도안을 모두 삭제할까요?`)) return;
-
+    setShowBulkDeleteConfirm(false);
     setDeletingUsers(true);
     const client = createAdminClient();
     const ids = [...selectedUserIds];
@@ -510,13 +514,32 @@ export default function AdminDashboard() {
                       {allAnonSelected ? '전체 해제' : '전체 선택'}
                     </button>
                     {selectedUserIds.size > 0 && (
-                      <button
-                        onClick={handleDeleteSelectedUsers}
-                        disabled={deletingUsers}
-                        className="px-3 py-1 rounded-full text-xs font-bold border-2 bg-red-500 text-white border-red-600 hover:bg-red-600 transition-all disabled:opacity-50"
-                      >
-                        {deletingUsers ? '삭제 중…' : `${selectedUserIds.size}명 삭제`}
-                      </button>
+                      showBulkDeleteConfirm ? (
+                        <>
+                          <span className="text-xs text-[#3d2b1f] font-semibold">{selectedUserIds.size}명 삭제할까요?</span>
+                          <button
+                            onClick={handleDeleteSelectedUsers}
+                            disabled={deletingUsers}
+                            className="px-3 py-1 rounded-full text-xs font-bold border-2 bg-red-500 text-white border-red-600 hover:bg-red-600 transition-all disabled:opacity-50"
+                          >
+                            {deletingUsers ? '삭제 중…' : '확인'}
+                          </button>
+                          <button
+                            onClick={() => setShowBulkDeleteConfirm(false)}
+                            className="px-3 py-1 rounded-full text-xs font-bold border-2 bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:bg-[#f5edd6] transition-all"
+                          >
+                            취소
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setShowBulkDeleteConfirm(true)}
+                          disabled={deletingUsers}
+                          className="px-3 py-1 rounded-full text-xs font-bold border-2 bg-red-500 text-white border-red-600 hover:bg-red-600 transition-all disabled:opacity-50"
+                        >
+                          {selectedUserIds.size}명 삭제
+                        </button>
+                      )
                     )}
                   </>
                 )}

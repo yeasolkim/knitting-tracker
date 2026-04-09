@@ -64,6 +64,7 @@ export interface ImagePerState {
   ruler_position_x?: number;
   ruler_direction?: RulerDirection;
   ruler_orientation?: RulerOrientation;
+  active_sub_id?: string;
   completed_marks?: CompletedMark[];
   knitting_marks?: KnittingMark[];
   crochet_marks?: CrochetMark[];

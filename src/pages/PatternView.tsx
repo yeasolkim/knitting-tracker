@@ -647,6 +647,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     ruler_position_x: rulerX,
     ruler_direction: rulerDirection,
     ruler_orientation: rulerOrientation,
+    active_sub_id: activeSubId,
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
     crochet_marks: crochetMarks,
@@ -708,6 +709,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           : { ...r, shape: r.shape as 'circle' | 'ellipse' | 'rect' | undefined }
       )
     );
+
+    if (next?.active_sub_id) {
+      setActiveSubId(next.active_sub_id);
+    }
 
     setNotes(next?.notes ?? {});
     setNotePositions(next?.note_positions ?? {});
@@ -944,8 +949,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const sx = (screenX / 100) * W;
     const sy = (screenY / 100) * H;
     return {
-      x: ((sx - W / 2 - t.x) / t.scale + W / 2) / W * 100,
-      y: ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100,
+      x: Math.max(0, Math.min(100, ((sx - W / 2 - t.x) / t.scale + W / 2) / W * 100)),
+      y: Math.max(0, Math.min(100, ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100)),
     };
   }, []);
 
