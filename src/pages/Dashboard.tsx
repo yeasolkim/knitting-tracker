@@ -29,12 +29,18 @@ function getProgress(pattern: PatternWithProgress): number {
 export default function Dashboard() {
   return (
     <AuthGuard>
-      {(user) => <DashboardPage userEmail={user.email} isAnonymous={user.is_anonymous ?? false} />}
+      {(user, authLoading) => (
+        <DashboardPage
+          userEmail={user.email}
+          isAnonymous={user.is_anonymous ?? false}
+          authLoading={authLoading}
+        />
+      )}
     </AuthGuard>
   );
 }
 
-function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnonymous: boolean }) {
+function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: string; isAnonymous: boolean; authLoading: boolean }) {
   const navigate = useNavigate();
   const supabase = useMemo(() => createClient(), []);
   const [patterns, setPatterns] = useState<PatternWithProgress[]>([]);
@@ -205,7 +211,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
     }`;
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <nav className="bg-[#f5edd6] border-b-2 border-[#b07840] sticky top-0 z-50">

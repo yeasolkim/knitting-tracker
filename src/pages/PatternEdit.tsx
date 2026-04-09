@@ -61,7 +61,7 @@ async function uploadFile(
 export default function PatternEdit() {
   return (
     <AuthGuard>
-      {(user) => (
+      {(user, _authLoading) => (
         <div className="min-h-screen bg-[#faf9f7]">
           <Navbar userEmail={user.email} />
           <main className="max-w-lg mx-auto px-4 py-8 sm:py-12">

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 interface AuthGuardProps {
-  children: (user: User) => React.ReactNode;
+  children: (user: User, authLoading: boolean) => React.ReactNode;
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
@@ -38,13 +38,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-        <div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return <>{children(user)}</>;
+  // Pass authLoading down so each page can show its own skeleton immediately,
+  // avoiding the flash of a generic spinner before the page-level skeleton.
+  return <>{children(user ?? ({} as User), loading)}</>;
 }
