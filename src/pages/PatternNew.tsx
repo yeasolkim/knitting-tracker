@@ -113,22 +113,26 @@ function UploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [pdfThumbWarning, setPdfThumbWarning] = useState(false);
 
+  const MAX_FILES = 11; // 1 primary + up to 10 extra
+
   const addFiles = (incoming: File[]) => {
-    const newPreviews = incoming.map((f) => {
-      if (!f.type.startsWith('image/')) return '';
-      const url = URL.createObjectURL(f);
-      blobUrlsRef.current.push(url);
-      return url;
-    });
     setFiles((prev) => {
-      const updated = [...prev, ...incoming];
-      if (updated.length === incoming.length && !title) {
-        // first batch — auto-fill title from first file
-        setTitle(incoming[0].name.replace(/\.[^.]+$/, ''));
+      const remaining = Math.max(0, MAX_FILES - prev.length);
+      const toAdd = incoming.slice(0, remaining);
+      if (toAdd.length === 0) return prev;
+      const newPreviews = toAdd.map((f) => {
+        if (!f.type.startsWith('image/')) return '';
+        const url = URL.createObjectURL(f);
+        blobUrlsRef.current.push(url);
+        return url;
+      });
+      const updated = [...prev, ...toAdd];
+      if (prev.length === 0 && !title) {
+        setTitle(toAdd[0].name.replace(/\.[^.]+$/, ''));
       }
+      setPreviews((p) => [...p, ...newPreviews]);
       return updated;
     });
-    setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
   const removeFile = (index: number) => {

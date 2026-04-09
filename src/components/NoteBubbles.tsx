@@ -1,5 +1,6 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { NotePosition } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NoteBubblesProps {
   notes: Record<string, string>;
@@ -20,6 +21,24 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isPendingLongPress = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
+
+  // Clear longPress timer on unmount
+  useEffect(() => () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }, []);
+
+  // Close expanded popover when tapping outside any bubble (capture phase fires before stopPropagation)
+  useEffect(() => {
+    if (!expandedKey) return;
+    const close = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest('[data-note-bubble]')) return;
+      setExpandedKey(null);
+    };
+    document.addEventListener('pointerdown', close, { capture: true });
+    return () => document.removeEventListener('pointerdown', close, { capture: true });
+  }, [expandedKey]);
 
   const toPercent = useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return { x: 50, y: 50 };
@@ -105,6 +124,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
         return (
           <div
             key={key}
+            data-note-bubble
             className="absolute pointer-events-auto"
             style={{
               left: `${pos.x}%`,
@@ -137,11 +157,13 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-0.5">
-                  <div className="text-[10px] text-amber-500 font-medium">{label}단</div>
+                  <div className="text-[10px] text-amber-500 font-medium">
+                    {t('notes.rowLabel').replace('{n}', label)}
+                  </div>
                   <button
                     onClick={() => { setExpandedKey(null); onDelete(key); }}
                     className="text-gray-300 hover:text-red-400 transition-colors p-0.5"
-                    aria-label="메모 삭제"
+                    aria-label={t('notes.clearCurrent')}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -151,7 +173,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
                 {hasText ? (
                   <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{text}</p>
                 ) : (
-                  <p className="text-xs text-gray-400 italic">메모 없음</p>
+                  <p className="text-xs text-gray-400 italic">{t('notes.bubble.empty')}</p>
                 )}
               </div>
             )}

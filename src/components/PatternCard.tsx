@@ -13,9 +13,10 @@ interface PatternCardProps {
   pattern: PatternWithProgress;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
+  duplicating?: boolean;
 }
 
-const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }: PatternCardProps) {
+const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, duplicating = false }: PatternCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -122,8 +123,9 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate }
             <div className="flex items-center gap-0.5 shrink-0">
               {onDuplicate && (
                 <button
-                  onClick={(e) => { e.preventDefault(); onDuplicate(pattern.id); }}
-                  className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  onClick={(e) => { e.preventDefault(); if (!duplicating) onDuplicate(pattern.id); }}
+                  disabled={duplicating}
+                  className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label={t('card.duplicate')}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -708,7 +708,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const vThumbTop = Math.max(0, Math.min(1 - vThumbFrac, vScrollPos * (1 - vThumbFrac)));
 
     const hMaxTx = Math.max(0, (cImgW * s - W) / 2);
-    const hThumbFrac = Math.min(1, W / Math.max(cImgW * s, W));
+    const hThumbFrac = Math.max(0.05, Math.min(1, W / Math.max(cImgW * s, W)));
     const hScrollPos = hMaxTx > 0 ? (hMaxTx - transform.x) / (2 * hMaxTx) : 0.5;
     const hThumbLeft = Math.max(0, Math.min(1 - hThumbFrac, hScrollPos * (1 - hThumbFrac)));
 

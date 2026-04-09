@@ -23,11 +23,12 @@ function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: numb
       ref={inputRef}
       type="number"
       min={1}
+      max={99999}
       value={display}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
         const parsed = parseInt(draft ?? '');
-        onChange(isNaN(parsed) || parsed < 1 ? 1 : parsed);
+        onChange(isNaN(parsed) || parsed < 1 ? 1 : Math.min(99999, parsed));
         setDraft(null);
       }}
       onKeyDown={(e) => {
@@ -123,6 +124,7 @@ export default function SubPatternSelector({
                     onClick={() => {
                       onSelect(sub.id);
                       setIsExpanded(false);
+                      setDeleteConfirmId(null);
                     }}
                   >
                     <span className="font-semibold">{sub.name}</span>

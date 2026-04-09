@@ -41,6 +41,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
   const isOnline = useOnlineStatus();
 
@@ -123,14 +124,14 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
       showToast(t('offline.actionBlocked'));
       return;
     }
-    const pattern = patterns.find((p) => p.id === id);
+    const backup = patterns.find((p) => p.id === id);
     setPatterns((prev) => prev.filter((p) => p.id !== id));
 
-    if (pattern) {
-      const extraUrls = (pattern.extra_image_urls ?? []).flatMap((f) =>
+    if (backup) {
+      const extraUrls = (backup.extra_image_urls ?? []).flatMap((f) =>
         [f.url, f.thumbnail_url].filter(Boolean)
       ) as string[];
-      const urls = [...new Set([pattern.file_url, pattern.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
+      const urls = [...new Set([backup.file_url, backup.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
       if (urls.length > 0) {
         supabase.functions.invoke('r2-delete', { body: { urls } }).catch(() => {});
       }
@@ -142,18 +143,20 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
     ]);
 
     if (deleteResult.error) {
-      fetchPatterns();
+      if (backup) setPatterns((prev) => [...prev, backup]);
       showToast(t('dashboard.deleteError'));
     }
-  }, [supabase, patterns, fetchPatterns, showToast, t]);
+  }, [supabase, patterns, showToast, t]);
 
   const handleDuplicate = useCallback(async (id: string) => {
+    if (duplicatingId) return;
     if (!navigator.onLine) {
       showToast(t('offline.actionBlocked'));
       return;
     }
     const pattern = patterns.find(p => p.id === id);
     if (!pattern) return;
+    setDuplicatingId(id);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -174,12 +177,14 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
 
     if (error || !data) {
       showToast(t('dashboard.duplicateError'));
+      setDuplicatingId(null);
       return;
     }
 
     await fetchPatterns();
+    setDuplicatingId(null);
     navigate(`/patterns/${data.id}/edit`);
-  }, [supabase, patterns, t, navigate, fetchPatterns, showToast]);
+  }, [supabase, patterns, t, navigate, fetchPatterns, showToast, duplicatingId]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -296,6 +301,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
         role="status"
         aria-live="polite"
         aria-atomic="true"
+        aria-hidden={!toast}
         className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#3d2b1f] text-[#fdf6e8] text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg max-w-[80vw] text-center pointer-events-none transition-opacity duration-200 ${toast ? 'opacity-100' : 'opacity-0'}`}
       >
         {toast ?? ''}
@@ -437,6 +443,7 @@ function DashboardPage({ userEmail, isAnonymous }: { userEmail?: string; isAnony
                     pattern={pattern}
                     onDelete={handleDelete}
                     onDuplicate={handleDuplicate}
+                    duplicating={duplicatingId === pattern.id}
                   />
                 ))}
               </div>

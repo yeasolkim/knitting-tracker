@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
@@ -107,7 +107,13 @@ function EditForm() {
   const [isDirty, setIsDirty] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // Warn on browser back / tab close when there are unsaved changes
+  // Block in-app route changes (browser back button, link clicks) when there are unsaved changes
+  const blocker = useBlocker(isDirty && !saving);
+  useEffect(() => {
+    if (blocker.state === 'blocked') setShowLeaveConfirm(true);
+  }, [blocker.state]);
+
+  // Warn on browser tab close / hard refresh when there are unsaved changes
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
@@ -292,14 +298,17 @@ function EditForm() {
             <span className="text-xs text-[#7a5c46]">{t('edit.unsavedWarning')}</span>
             <button
               type="button"
-              onClick={() => navigate(`/patterns/${id}`)}
+              onClick={() => {
+                if (blocker.state === 'blocked') blocker.proceed();
+                else navigate(`/patterns/${id}`);
+              }}
               className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
             >
               {t('edit.unsavedLeave')}
             </button>
             <button
               type="button"
-              onClick={() => setShowLeaveConfirm(false)}
+              onClick={() => { blocker.reset?.(); setShowLeaveConfirm(false); }}
               className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1"
             >
               {t('card.cancel')}
