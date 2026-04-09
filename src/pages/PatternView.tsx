@@ -889,10 +889,20 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       setNotePositions((prev) => {
         const next = { ...prev };
         let changed = false;
-        const { rulerY: ry, rulerHeight: rh } = latestRef.current;
+        const { rulerY: ry, rulerHeight: rh, containerH: H, containerW: W, imgH: iH, imgW: iW } = latestRef.current;
+        // rulerY/rulerHeight are stored as image-space % (% of rendered image dims).
+        // notePositions are container-space % (% of the full W×H container), since
+        // note bubbles render inside the CSS transform at `left/top: pos%`.
+        // Converting image-space → container-space avoids letterbox offset bugs.
+        const imgTop = iH > 0 ? (H - iH) / 2 : 0;
+        const refH = iH > 0 ? iH : H;
+        const imgLeft = iW > 0 ? (W - iW) / 2 : 0;
+        const refW = iW > 0 ? iW : W;
+        const autoY = Math.max(0, Math.min(100, ((imgTop + (ry + rh / 2) / 100 * refH) / H) * 100));
+        const autoX = Math.max(0, Math.min(100, ((imgLeft + 0.88 * refW) / W) * 100));
         for (const key of Object.keys(updatedNotes)) {
           if (!next[key]) {
-            next[key] = { x: 90, y: ry + rh / 2 };
+            next[key] = { x: autoX, y: autoY };
             changed = true;
           }
         }

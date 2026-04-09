@@ -36,6 +36,7 @@ export default function PatternNotes({
   const [isOpen, setIsOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState('');
+  const [confirmClear, setConfirmClear] = useState<'current' | 'all' | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
@@ -94,7 +95,7 @@ export default function PatternNotes({
   useEffect(() => {
     if (isOpen && scrollRef.current) {
       const el = scrollRef.current.querySelector(`[data-key="${currentKey}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isOpen, currentKey]);
 
@@ -120,31 +121,51 @@ export default function PatternNotes({
 
         {isOpen && totalCount > 0 && (
           <div className="flex items-center gap-2">
-            {(entriesBySub.get(activeSubPattern.id)?.length || 0) > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm(t('notes.clearCurrentConfirm').replace('{name}', activeSubPattern.name))) {
-                    const updated = { ...notes };
-                    for (const key of Object.keys(updated)) {
-                      if (key.startsWith(activeSubPattern.id + ':')) delete updated[key];
+            {confirmClear ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (confirmClear === 'current') {
+                      const updated = { ...notes };
+                      for (const key of Object.keys(updated)) {
+                        if (key.startsWith(activeSubPattern.id + ':')) delete updated[key];
+                      }
+                      onUpdate(updated);
+                    } else {
+                      onUpdate({});
                     }
-                    onUpdate(updated);
-                  }
-                }}
-                className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
-              >
-                {t('notes.clearCurrent')}
-              </button>
-            )}
-            {totalCount > 0 && subPatterns.length > 1 && (
-              <button
-                onClick={() => {
-                  if (confirm(t('notes.clearAllConfirm'))) onUpdate({});
-                }}
-                className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
-              >
-                {t('notes.clearAll')}
-              </button>
+                    setConfirmClear(null);
+                  }}
+                  className="text-[10px] font-bold text-[#fdf6e8] bg-[#b5541e] border border-[#9a4318] rounded px-2 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
+                >
+                  {t('sub.delete')}
+                </button>
+                <button
+                  onClick={() => setConfirmClear(null)}
+                  className="text-[10px] text-[#a08060] hover:text-[#3d2b1f] px-1.5 py-1 min-h-[36px] transition-colors"
+                >
+                  {t('card.cancel')}
+                </button>
+              </div>
+            ) : (
+              <>
+                {(entriesBySub.get(activeSubPattern.id)?.length || 0) > 0 && (
+                  <button
+                    onClick={() => setConfirmClear('current')}
+                    className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
+                  >
+                    {t('notes.clearCurrent')}
+                  </button>
+                )}
+                {totalCount > 0 && subPatterns.length > 1 && (
+                  <button
+                    onClick={() => setConfirmClear('all')}
+                    className="text-[10px] text-[#b5541e] hover:text-[#9a4318] tracking-wide transition-colors"
+                  >
+                    {t('notes.clearAll')}
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -163,6 +184,7 @@ export default function PatternNotes({
             <textarea
               value={draftNote}
               onChange={(e) => setDraftNote(e.target.value)}
+              onBlur={() => { if (hasUnsaved) handleSaveCurrentNote(); }}
               placeholder={t('notes.currentPlaceholder')}
               className="w-full h-16 text-sm border-2 border-[#b07840] rounded-lg p-2 resize-none focus:outline-none focus:border-[#b5541e] bg-[#fdf6e8] text-[#3d2b1f] placeholder:text-[#c4a882]"
             />
@@ -182,14 +204,14 @@ export default function PatternNotes({
                 {t('notes.save')}
               </button>
               <button
-                onClick={() => onPlaceNote(currentKey)}
-                disabled={hasUnsaved}
+                onClick={() => {
+                  if (hasUnsaved) handleSaveCurrentNote();
+                  onPlaceNote(currentKey);
+                }}
                 className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded-lg border-2 transition-colors ${
-                  hasUnsaved
-                    ? 'bg-[#fdf6e8] text-[#c4a882] border-[#b07840] opacity-40 cursor-not-allowed'
-                    : notePositions[currentKey]
-                      ? 'bg-amber-500 text-white border-amber-600'
-                      : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
+                  notePositions[currentKey]
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-[#fdf6e8] text-amber-500 border-amber-300 hover:border-amber-500'
                 }`}
                 title={t('notes.placeNote')}
               >
@@ -289,7 +311,7 @@ export default function PatternNotes({
                               <button
                                 onClick={() => onDelete(key)}
                                 className="text-[#b07840] hover:text-[#b5541e] sm:opacity-0 sm:group-hover:opacity-100 transition-all p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                aria-label="메모 삭제"
+                                aria-label={t('notes.clearCurrent')}
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
