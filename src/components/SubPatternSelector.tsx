@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -34,7 +34,7 @@ function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: numb
       onKeyDown={(e) => {
         if (e.key === 'Enter') inputRef.current?.blur();
       }}
-      className="w-16 text-xs border-2 border-[#b07840] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
+      className="w-16 text-base sm:text-xs border-2 border-[#b07840] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
       onClick={(e) => e.stopPropagation()}
     />
   );
@@ -57,6 +57,16 @@ export default function SubPatternSelector({
   const { t } = useLanguage();
 
   const active = subPatterns.find((s) => s.id === activeId);
+
+  // Close dropdown on Escape key
+  useEffect(() => {
+    if (!isExpanded) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsExpanded(false); setDeleteConfirmId(null); }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isExpanded]);
 
   const startRename = (sub: SubPattern) => {
     setEditingId(sub.id);
@@ -90,7 +100,7 @@ export default function SubPatternSelector({
 
       {/* Dropdown */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] py-1 min-w-[220px] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
+        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] py-1 min-w-[min(220px,calc(100vw-24px))] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
           {subPatterns.map((sub) => (
             <div
               key={sub.id}

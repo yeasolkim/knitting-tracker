@@ -17,15 +17,17 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            // Cache pattern images and PDFs from R2 after first view
-            // Uses CacheFirst so they're available offline without network
-            // fetchOptions.mode = 'no-cors' required because R2 public bucket
-            // does not serve CORS headers; without this the SW fetch fails.
+            // Cache pattern images from R2 after first view (offline support).
+            // fetchOptions.mode = 'no-cors': R2 public bucket returns opaque
+            // responses for cross-origin requests. Opaque responses are fine
+            // for <img> display (status 0 is cached). PDFs are excluded here
+            // because react-pdf needs readable (non-opaque) response content —
+            // an opaque cache hit causes ERR_FAILED on subsequent loads.
             urlPattern: ({ url }) =>
-              /\.(png|jpg|jpeg|webp|gif|pdf)$/i.test(url.pathname),
+              /\.(png|jpg|jpeg|webp|gif)$/i.test(url.pathname),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'pattern-files-v1',
+              cacheName: 'pattern-images-v2',
               fetchOptions: { mode: 'no-cors' },
               expiration: {
                 maxEntries: 150,
@@ -33,6 +35,13 @@ export default defineConfig({
               },
               cacheableResponse: { statuses: [0, 200] },
             },
+          },
+          {
+            // PDFs must always be fetched from the network.
+            // Caching with no-cors produces an opaque response (status 0) which
+            // react-pdf cannot read; serving it causes ERR_FAILED in the browser.
+            urlPattern: ({ url }) => /\.pdf$/i.test(url.pathname),
+            handler: 'NetworkOnly',
           },
         ],
         // Do not let the SW intercept admin routes (no offline needed there)

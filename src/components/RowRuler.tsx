@@ -188,7 +188,7 @@ const RowRuler = memo(function RowRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.max(0, positionX - 0.3)); }}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7 7" />
@@ -205,7 +205,7 @@ const RowRuler = memo(function RowRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.min(100 - height, positionX + 0.3)); }}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -222,7 +222,7 @@ const RowRuler = memo(function RowRuler({
           <button
             onClick={(e) => { e.stopPropagation(); onComplete(); }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
+            className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
             title={t('ruler.complete')}
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -233,7 +233,7 @@ const RowRuler = memo(function RowRuler({
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
             onPointerDown={(e) => e.stopPropagation()}
-            className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
+            className={`flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
               showSettings
                 ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
                 : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
@@ -346,7 +346,7 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onComplete(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
+          className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
           title={t('ruler.complete')}
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -357,7 +357,7 @@ const RowRuler = memo(function RowRuler({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
+          className={`flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
             showSettings
               ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
               : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'

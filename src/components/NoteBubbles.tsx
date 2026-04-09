@@ -36,8 +36,15 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
       if (target?.closest('[data-note-bubble]')) return;
       setExpandedKey(null);
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedKey(null);
+    };
     document.addEventListener('pointerdown', close, { capture: true });
-    return () => document.removeEventListener('pointerdown', close, { capture: true });
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', close, { capture: true });
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [expandedKey]);
 
   const toPercent = useCallback((clientX: number, clientY: number) => {
@@ -134,7 +141,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
             }}
           >
             <div
-              className={`touch-none select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+              className={`touch-none select-none min-w-[44px] min-h-[44px] flex items-center justify-center ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
               onPointerDown={handlePointerDown(key)}
               onPointerMove={handlePointerMove(key)}
               onPointerUp={handlePointerUp(key)}
