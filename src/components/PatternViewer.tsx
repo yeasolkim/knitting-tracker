@@ -590,10 +590,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const contentY = imageToContentY(rulerYPercent);
         const newY = -(contentY - H / 2) * targetScale;
         const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
+        const maxTx = Math.max(0, (imgW * targetScale - W) / 2);
         if (rulerXPercent !== undefined) {
           const contentX = imageToContentX(rulerXPercent);
           const newX = -(contentX - W / 2) * targetScale;
-          setFullTransform({ scale: targetScale, x: Math.max(-maxTy, Math.min(maxTy, newX)), y: Math.max(-maxTy, Math.min(maxTy, newY)) });
+          setFullTransform({ scale: targetScale, x: Math.max(-maxTx, Math.min(maxTx, newX)), y: Math.max(-maxTy, Math.min(maxTy, newY)) });
         } else {
           setFullTransform({ scale: targetScale, x: 0, y: Math.max(-maxTy, Math.min(maxTy, newY)) });
         }
