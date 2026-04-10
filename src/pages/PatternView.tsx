@@ -854,12 +854,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
         : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
-      view_scale: viewTransform.scale,
-      view_x: viewTransform.x,
-      view_y: viewTransform.y,
       image_states: imageStatesRef.current,
     });
-  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, viewTransform, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
@@ -1363,7 +1360,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             onSelectionChange={setHasMarkSelection}
             onDragStart={captureHistory}
           />
-          {(!isCrochet || crochetShape === 'line') && !showGuide && (
+          {(!isCrochet || crochetShape === 'line') && !showGuide && imgH > 0 && (
             <RowRuler
               positionY={screenRulerY}
               height={rulerOrientation === 'horizontal' ? screenRulerWidth : screenRulerHeight}
@@ -1382,7 +1379,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             />
           )}
 
-          {isCrochet && crochetShape !== 'line' && (
+          {isCrochet && crochetShape !== 'line' && imgH > 0 && (
             <CrochetRuler
               cx={contentToScreenX(crochetCx)}
               cy={contentToScreenY(crochetCy)}
@@ -1425,7 +1422,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               }}
             />
           )}
-          {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && (
+          {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && imgH > 0 && (
             <CrochetRuler
               ringsOnly
               completedRings={completedCrochetRings.map(ring => ({
