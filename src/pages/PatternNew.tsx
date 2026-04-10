@@ -291,15 +291,20 @@ function UploadForm() {
   };
 
   if (uploading) {
-    const progressText = uploadTotal > 1
+    // 사용자 기준 파일 수: 썸네일(내부 처리)은 카운터에서 제외
+    const isPrimaryPdf = files[0]?.type === 'application/pdf';
+    const userTotal = files.length;
+    const userStep = isPrimaryPdf ? Math.max(0, uploadStep - 1) : uploadStep;
+    const showCounter = userTotal > 1;
+    const progressText = showCounter
       ? t('form.uploadProgress')
-          .replace('{done}', String(uploadStep))
-          .replace('{total}', String(uploadTotal))
+          .replace('{done}', String(userStep))
+          .replace('{total}', String(userTotal))
       : t('form.uploading');
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <YarnLoader text={progressText} />
-        {uploadTotal > 1 && (
+        {showCounter && (
           <div className="mt-4 w-48 h-1.5 bg-[#e8dcc8] rounded-full overflow-hidden">
             <div
               className="h-full bg-[#b5541e] rounded-full transition-all duration-300"
