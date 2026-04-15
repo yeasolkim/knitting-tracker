@@ -13,6 +13,7 @@ interface AdminUser {
 interface ExtraFile {
   url: string;
   thumbnail_url: string | null;
+  file_type?: string;
 }
 
 interface Pattern {
@@ -103,7 +104,7 @@ function PatternRowActions({ pattern, extraCount, onDelete }: { pattern: Pattern
   const [deleting, setDeleting] = useState(false);
   return (
     <div className="flex items-center gap-2 shrink-0">
-      {pattern.file_type === 'image' && extraCount > 0 && pattern.file_url && (
+      {extraCount > 0 && pattern.file_url && (
         <DownloadAllButton
           urls={[pattern.file_url, ...(pattern.extra_image_urls ?? []).map(e => e.url)]}
           title={pattern.title || '도안'}
@@ -160,7 +161,7 @@ function PatternCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const extraCount = (pattern.extra_image_urls ?? []).length;
 
-  const allImageUrls = pattern.file_type === 'image' && pattern.file_url
+  const allFileUrls = pattern.file_url
     ? [pattern.file_url, ...(pattern.extra_image_urls ?? []).map(e => e.url)]
     : [];
 
@@ -210,8 +211,8 @@ function PatternCard({
 
         {/* Action buttons */}
         <div className="flex gap-1 mt-auto pt-1">
-          {allImageUrls.length > 1 && (
-            <DownloadAllButton urls={allImageUrls} title={pattern.title || '도안'} className="flex-1 text-[10px] py-1 text-center" />
+          {allFileUrls.length > 1 && (
+            <DownloadAllButton urls={allFileUrls} title={pattern.title || '도안'} className="flex-1 text-[10px] py-1 text-center" />
           )}
           {pattern.file_url && !confirmDelete && (
             <a
@@ -718,7 +719,7 @@ export default function AdminDashboard() {
                             )}
                             {extraCount > 0 && (
                               <span className="text-[10px] font-bold text-[#7a5c46] border border-[#c4a882] rounded px-1">
-                                이미지 {extraCount + 1}장
+                                {p.file_type === 'pdf' ? `PDF ${extraCount + 1}개` : `이미지 ${extraCount + 1}장`}
                               </span>
                             )}
                           </div>
