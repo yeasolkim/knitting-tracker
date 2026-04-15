@@ -93,7 +93,7 @@ const ko = {
   'card.downloadAll': '전체 다운로드',
   'card.rowCurrent': '{n}단',
   'card.rowTotal': '/ {n}단',
-  'card.imageCount': '+{n}장',
+  'card.imageCount': '+{n}개',
   // pattern new/edit form
   'form.backToList': '내 도안',
   'form.backToPattern': '도안으로 돌아가기',
