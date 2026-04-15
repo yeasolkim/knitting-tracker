@@ -239,9 +239,45 @@ function UploadForm() {
       // Upload extra images
       const extraImageUrls: ExtraPatternFile[] = [];
       for (let i = 0; i < extraFilesList.length; i++) {
-        const extraUrl = await uploadFile(supabase, extraFilesList[i], user.id, pattern.id, t);
+        const extraFile = extraFilesList[i];
+        const isExtraPdf = extraFile.type === 'application/pdf';
+        const extraUrl = await uploadFile(supabase, extraFile, user.id, pattern.id, t);
         uploadedUrls.push(extraUrl);
-        extraImageUrls.push({ url: extraUrl, thumbnail_url: extraUrl });
+
+        let extraThumbUrl: string | null = isExtraPdf ? null : extraUrl;
+        if (isExtraPdf) {
+          try {
+            const thumbBlob = await Promise.race([
+              generatePdfThumbnail(extraFile),
+              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+            ]).catch(() => null);
+            if (thumbBlob) {
+              const thumbPath = `${user.id}/${pattern.id}/thumb_extra_${i}.jpg`;
+              const { data: tpd, error: tpe } = await supabase.functions.invoke('r2-presign', {
+                body: { path: thumbPath, contentType: 'image/jpeg' },
+              });
+              if (!tpe && tpd) {
+                const tres = await fetch(tpd.presignedUrl, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'image/jpeg' },
+                  body: thumbBlob,
+                });
+                if (tres.ok) {
+                  extraThumbUrl = tpd.fileUrl;
+                  uploadedUrls.push(tpd.fileUrl);
+                }
+              }
+            }
+          } catch {
+            // thumbnail failed, proceed without
+          }
+        }
+
+        extraImageUrls.push({
+          url: extraUrl,
+          thumbnail_url: extraThumbUrl,
+          file_type: isExtraPdf ? 'pdf' : 'image',
+        });
         setUploadStep((isPdf ? 2 : 1) + i + 1);
       }
 

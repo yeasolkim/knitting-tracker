@@ -4,6 +4,7 @@ export type FileType = 'image' | 'pdf';
 export interface ExtraPatternFile {
   url: string;
   thumbnail_url: string | null;
+  file_type?: FileType;
 }
 
 export interface Pattern {

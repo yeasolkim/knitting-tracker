@@ -236,9 +236,42 @@ function EditForm() {
 
       // Upload new extra images
       const uploadedExtraFiles: ExtraPatternFile[] = [];
-      for (const extraFile of newExtraFiles) {
+      for (let i = 0; i < newExtraFiles.length; i++) {
+        const extraFile = newExtraFiles[i];
+        const isExtraPdf = extraFile.type === 'application/pdf';
         const extraUrl = await uploadFile(supabase, extraFile, session.user.id, id!, t);
-        uploadedExtraFiles.push({ url: extraUrl, thumbnail_url: extraUrl });
+
+        let extraThumbUrl: string | null = isExtraPdf ? null : extraUrl;
+        if (isExtraPdf) {
+          try {
+            const thumbBlob = await Promise.race([
+              generatePdfThumbnail(extraFile),
+              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+            ]).catch(() => null);
+            if (thumbBlob) {
+              const thumbPath = `${session.user.id}/${id}/thumb_extra_${Date.now()}_${i}.jpg`;
+              const { data: tpd, error: tpe } = await supabase.functions.invoke('r2-presign', {
+                body: { path: thumbPath, contentType: 'image/jpeg' },
+              });
+              if (!tpe && tpd) {
+                const tres = await fetch(tpd.presignedUrl, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'image/jpeg' },
+                  body: thumbBlob,
+                });
+                if (tres.ok) extraThumbUrl = tpd.fileUrl;
+              }
+            }
+          } catch {
+            // thumbnail failed, proceed without
+          }
+        }
+
+        uploadedExtraFiles.push({
+          url: extraUrl,
+          thumbnail_url: extraThumbUrl,
+          file_type: isExtraPdf ? 'pdf' : 'image',
+        });
       }
 
       const finalExtraImageUrls: ExtraPatternFile[] = [

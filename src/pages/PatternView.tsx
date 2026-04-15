@@ -234,7 +234,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const allFiles = useMemo(() => {
     const extras = (pattern.extra_image_urls ?? []).map((f) => ({
       url: f.url,
-      file_type: 'image' as const,
+      file_type: (f.file_type ?? (f.url.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')) as 'image' | 'pdf',
     }));
     return [{ url: pattern.file_url, file_type: pattern.file_type }, ...extras];
   }, [pattern.file_url, pattern.file_type, pattern.extra_image_urls]);
