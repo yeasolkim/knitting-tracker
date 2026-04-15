@@ -18,6 +18,8 @@ function parseLabel(key: string): string {
 const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete, scale = 1 }: NoteBubblesProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const draggingKeyRef = useRef<string | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isPendingLongPress = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,15 +61,18 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const handlePointerDown = useCallback(
     (key: string) => (e: React.PointerEvent) => {
       e.stopPropagation();
-      const pointerId = e.pointerId;
-      const target = e.currentTarget as HTMLElement;
+      // setPointerCapture must be called synchronously during a pointer event
+      // (calling it from setTimeout silently fails on iOS Safari)
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
       isPendingLongPress.current = true;
+      setPendingKey(key);
       longPressTimer.current = setTimeout(() => {
         isPendingLongPress.current = false;
+        draggingKeyRef.current = key;
+        setPendingKey(null);
         setDraggingKey(key);
         setExpandedKey(null);
-        target.setPointerCapture(pointerId);
       }, 400);
     },
     []
@@ -76,15 +81,17 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
   const handlePointerMove = useCallback(
     (key: string) => (e: React.PointerEvent) => {
       // Block pan propagation during long-press wait AND while dragging
-      if (draggingKey !== key && !isPendingLongPress.current) return;
+      if (draggingKeyRef.current !== key && !isPendingLongPress.current) return;
       e.stopPropagation();
       e.preventDefault();
-      if (draggingKey === key) {
+      // Use ref (not state) to check dragging — avoids race condition where
+      // draggingKey state hasn't updated yet after the 400ms timer fires
+      if (draggingKeyRef.current === key) {
         const { x, y } = toPercent(e.clientX, e.clientY);
         onPositionChange(key, { x, y });
       }
     },
-    [draggingKey, onPositionChange, toPercent]
+    [onPositionChange, toPercent]
   );
 
   const handlePointerUp = useCallback(
@@ -95,13 +102,15 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
-      if (draggingKey === key) {
+      if (draggingKeyRef.current === key) {
+        draggingKeyRef.current = null;
         setDraggingKey(null);
       } else {
+        setPendingKey(null);
         setExpandedKey((prev) => (prev === key ? null : key));
       }
     },
-    [draggingKey]
+    []
   );
 
   const handlePointerCancel = useCallback(() => {
@@ -110,6 +119,8 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+    draggingKeyRef.current = null;
+    setPendingKey(null);
     setDraggingKey(null);
   }, []);
 
@@ -126,6 +137,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
         const label = parseLabel(key);
         const isExpanded = expandedKey === key;
         const isDragging = draggingKey === key;
+        const isPending = pendingKey === key;
         const hasText = text.trim().length > 0;
 
         return (
@@ -136,8 +148,9 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
             style={{
               left: `${pos.x}%`,
               top: `${pos.y}%`,
-              transform: `translate(-50%, -50%) scale(${(isDragging ? 1.25 : 1) / scale})`,
+              transform: `translate(-50%, -50%) scale(${(isDragging ? 1.25 : isPending ? 1.1 : 1) / scale})`,
               zIndex: isExpanded || isDragging ? 30 : 20,
+              transition: isPending || isDragging ? 'none' : undefined,
             }}
           >
             <div
@@ -147,7 +160,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
               onPointerUp={handlePointerUp(key)}
               onPointerCancel={handlePointerCancel}
             >
-              <div className={`relative flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : hasText ? 'bg-amber-500' : 'bg-amber-300'}`}>
+              <div className={`relative flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full shadow-md transition-colors ${isDragging ? 'bg-amber-400' : isPending ? 'bg-amber-400' : hasText ? 'bg-amber-500' : 'bg-amber-300'}`}>
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17z"/>
                   <path d="M4 4v12h14.83L20 17.17V4H4z" opacity=".3"/>
