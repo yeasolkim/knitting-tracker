@@ -152,10 +152,12 @@ function EditForm() {
 
   const handleExtraFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []).filter((f) =>
-      f.type.startsWith('image/')
+      f.type.startsWith('image/') || f.type === 'application/pdf'
     );
     if (selected.length === 0) return;
-    const newPreviews = selected.map((f) => URL.createObjectURL(f));
+    const newPreviews = selected.map((f) =>
+      f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
+    );
     setNewExtraFiles((prev) => [...prev, ...selected]);
     setNewExtraPreviews((prev) => [...prev, ...newPreviews]);
     setIsDirty(true);
@@ -432,13 +434,31 @@ function EditForm() {
 
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {/* Existing extra images from DB */}
-          {currentExtraFiles.map((f, i) => (
+          {currentExtraFiles.map((f, i) => {
+            const isPdfFile = f.file_type === 'pdf' || (!f.file_type && f.url.toLowerCase().endsWith('.pdf'));
+            return (
             <div key={`cur-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8]">
-              <img
-                src={f.thumbnail_url || f.url}
-                alt={`extra ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {f.thumbnail_url ? (
+                <img
+                  src={f.thumbnail_url}
+                  alt={`extra ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : isPdfFile ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
+                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  </svg>
+                  <span className="text-[9px] text-[#a08060]">PDF</span>
+                </div>
+              ) : (
+                <img
+                  src={f.url}
+                  alt={`extra ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              )}
               <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
                 {i + 1}
               </div>
@@ -450,16 +470,27 @@ function EditForm() {
                 ×
               </button>
             </div>
-          ))}
+          );
+          })}
 
           {/* New extra images (not yet uploaded) */}
-          {newExtraFiles.map((_, i) => (
+          {newExtraFiles.map((f, i) => (
             <div key={`new-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#b07840] bg-[#fdf6e8]">
-              <img
-                src={newExtraPreviews[i]}
-                alt={`new extra ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {newExtraPreviews[i] ? (
+                <img
+                  src={newExtraPreviews[i]}
+                  alt={`new extra ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
+                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  </svg>
+                  <span className="text-[9px] text-[#a08060]">PDF</span>
+                </div>
+              )}
               <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
                 {currentExtraFiles.length + i + 1}
               </div>
@@ -487,7 +518,7 @@ function EditForm() {
         <input
           ref={extraInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf"
           multiple
           className="hidden"
           onChange={handleExtraFilesChange}
