@@ -895,7 +895,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
         const refH = iH > 0 ? iH : H;
         const imgLeft = iW > 0 ? (W - iW) / 2 : 0;
         const refW = iW > 0 ? iW : W;
-        const autoY = Math.max(0, Math.min(100, ((imgTop + (ry + rh / 2) / 100 * refH) / H) * 100));
+        // No Y clamp — multi-page PDFs have imgH > H, so autoY can legitimately exceed 100%
+        const autoY = ((imgTop + (ry + rh / 2) / 100 * refH) / H) * 100;
         const autoX = Math.max(0, Math.min(100, ((imgLeft + 0.88 * refW) / W) * 100));
         for (const key of Object.keys(updatedNotes)) {
           if (!next[key]) {
@@ -957,7 +958,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const sy = (screenY / 100) * H;
     return {
       x: Math.max(0, Math.min(100, ((sx - W / 2 - t.x) / t.scale + W / 2) / W * 100)),
-      y: Math.max(0, Math.min(100, ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100)),
+      // No Y clamp — multi-page PDFs are taller than the container (imgH > H),
+      // so valid Y positions can exceed 100%. Clamping would restrict notes to
+      // the top ~1/N of an N-page PDF.
+      y: ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100,
     };
   }, []);
 

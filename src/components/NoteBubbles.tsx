@@ -54,7 +54,9 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
     const rect = containerRef.current.getBoundingClientRect();
     return {
       x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
-      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+      // No Y clamp — multi-page PDFs are taller than the container, so valid Y
+      // positions can exceed 100% in container-space. CSS `top: Y%` handles this.
+      y: ((clientY - rect.top) / rect.height) * 100,
     };
   }, []);
 
