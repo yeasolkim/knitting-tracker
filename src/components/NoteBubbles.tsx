@@ -11,8 +11,10 @@ interface NoteBubblesProps {
 }
 
 function parseLabel(key: string): string {
-  const i = key.indexOf(':');
-  return i === -1 ? key : key.slice(i + 1);
+  // key format: "subId:row" (legacy) or "subId:row:uuid" (new)
+  // Display label is always the row number (parts[1])
+  const parts = key.split(':');
+  return parts.length >= 2 ? parts[1] : key;
 }
 
 const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete, scale = 1 }: NoteBubblesProps) {
