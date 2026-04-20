@@ -483,7 +483,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
         // Render succeeded: show overlay and hide the underlying PDF canvas so they
         // don't overlap. PDF canvases are restored the next time the overlay hides.
-        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;z-index:8;`;
+        // No explicit z-index: DOM order (canvas before {children}) already places this
+        // canvas above the react-pdf canvas, and overlay children (CompletedOverlay,
+        // RowRuler, markers) come after in DOM so they naturally appear on top.
+        // Setting z-index:8 was causing overlay children to be hidden at scale ≥ 4.
+        canvas.style.cssText = `position:absolute;left:${visLeft}px;top:${visTop}px;width:${visW}px;height:${visH}px;display:block;pointer-events:none;`;
         const pdfPageCanvas = document.querySelector<HTMLElement>(
           `.react-pdf__Page[data-page-number="${pageIdx + 1}"] canvas`
         );
