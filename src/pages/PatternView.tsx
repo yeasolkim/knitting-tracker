@@ -1067,8 +1067,11 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const handleCancelKnittingPlace = useCallback(() => setIsPlacingKnittingMarker(false), []);
 
   const handleNotePositionChange = useCallback((key: string, pos: NotePosition) => {
-    setNotePositions((prev) => ({ ...prev, [key]: pos }));
-  }, []);
+    // pos is screen-space % (NoteBubbles container is now outside CSS transform).
+    // Convert to content-space % before storing so positions survive zoom changes.
+    const contentPos = screenToContent(pos.x, pos.y);
+    setNotePositions((prev) => ({ ...prev, [key]: contentPos }));
+  }, [screenToContent]);
 
   const handleAddSubPattern = () => {
     captureHistory();
@@ -1121,6 +1124,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const s = toScreen(m.x, m.y);
     return { ...m, x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
   });
+
+  // Note positions stored as content-space % — convert to screen % for rendering outside CSS transform.
+  const screenNotePositions: Record<string, NotePosition> = {};
+  for (const [key, pos] of Object.entries(notePositions)) {
+    const s = toScreen(pos.x, pos.y);
+    screenNotePositions[key] = { x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
+  }
 
   const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
     if (m.orientation === 'horizontal') {
@@ -1325,10 +1335,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           contentOverlay={
             <NoteBubbles
               notes={notes}
-              positions={notePositions}
+              positions={screenNotePositions}
               onPositionChange={handleNotePositionChange}
               onDelete={handleNoteDelete}
-              scale={viewTransform.scale}
             />
           }
         >

@@ -7,7 +7,6 @@ interface NoteBubblesProps {
   positions: Record<string, NotePosition>;
   onPositionChange: (key: string, pos: NotePosition) => void;
   onDelete: (key: string) => void;
-  scale?: number;
 }
 
 function parseLabel(key: string): string {
@@ -17,7 +16,7 @@ function parseLabel(key: string): string {
   return parts.length >= 2 ? parts[1] : key;
 }
 
-const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete, scale = 1 }: NoteBubblesProps) {
+const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChange, onDelete }: NoteBubblesProps) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -152,7 +151,7 @@ const NoteBubbles = memo(function NoteBubbles({ notes, positions, onPositionChan
             style={{
               left: `${pos.x}%`,
               top: `${pos.y}%`,
-              transform: `translate(-50%, -50%) scale(${(isDragging ? 1.25 : isPending ? 1.1 : 1) / scale})`,
+              transform: `translate(-50%, -50%) scale(${isDragging ? 1.25 : isPending ? 1.1 : 1})`,
               zIndex: isExpanded || isDragging ? 30 : 20,
               transition: isPending || isDragging ? 'none' : undefined,
             }}

@@ -844,14 +844,17 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               </Suspense>
             )}
 
-            {contentOverlay}
           </div>
         </div>
 
         {/* iOS high-quality overlay canvas — rendered via PDF.js directly */}
         <canvas ref={overlayCanvasRef} style={{ display: 'none' }} />
 
-        {/* Fixed overlays (ruler) */}
+        {/* Content overlays (note bubbles) — outside CSS transform so they stay above the iOS
+            high-quality canvas (scale≥4) and correctly track image positions via toScreen. */}
+        {contentOverlay}
+
+        {/* Fixed overlays (ruler, markers) */}
         {children}
 
         {/* Zoom level indicator — top-right, subtle */}
