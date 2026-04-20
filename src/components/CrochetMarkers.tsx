@@ -111,14 +111,15 @@ const CrochetMarkers = memo(function CrochetMarkers({
     [isPlacing, onDragStart]
   );
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (draggingId && dragStartRef.current && containerRef.current) {
+  const handleMarkerPointerMove = useCallback(
+    (id: string) => (e: React.PointerEvent) => {
+      if (draggingId === id && dragStartRef.current && containerRef.current) {
         e.stopPropagation();
+        e.preventDefault();
         const rect = containerRef.current.getBoundingClientRect();
         const dx = ((e.clientX - dragStartRef.current.x) / rect.width) * 100;
         const dy = ((e.clientY - dragStartRef.current.y) / rect.height) * 100;
-        onMove(draggingId, dragStartRef.current.markX + dx, dragStartRef.current.markY + dy);
+        onMove(id, dragStartRef.current.markX + dx, dragStartRef.current.markY + dy);
         return;
       }
       // 롱프레스 중 8px 이상 이동하면 취소 → 도안 스크롤 허용
@@ -153,9 +154,6 @@ const CrochetMarkers = memo(function CrochetMarkers({
       className={`absolute inset-0 ${isPlacing ? 'cursor-crosshair' : ''}`}
       style={{ pointerEvents: isPlacing || selectedId ? 'auto' : 'none' }}
       onClick={handleContainerClick}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
     >
       {isPlacing && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
@@ -194,6 +192,9 @@ const CrochetMarkers = memo(function CrochetMarkers({
             <div
               className={`touch-none select-none ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
               onPointerDown={handleMarkerPointerDown(mark)}
+              onPointerMove={handleMarkerPointerMove(mark.id)}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
               onClick={(e) => e.stopPropagation()}
             >
               <PinIcon label={mark.label} selected={isSelected} dragging={isDragging} />
