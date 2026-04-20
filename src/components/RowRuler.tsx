@@ -37,10 +37,13 @@ const RowRuler = memo(function RowRuler({
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showActionBar, setShowActionBar] = useState(false);
   const dragStartRef = useRef<{
     clientY: number; startY: number;
     clientX: number; startX: number;
   } | null>(null);
+  const hasDraggedRef = useRef(false);
+  const pointerDownClientRef = useRef<{ x: number; y: number } | null>(null);
   const { t } = useLanguage();
 
   const isHorizontal = orientation === 'horizontal';
@@ -63,6 +66,8 @@ const RowRuler = memo(function RowRuler({
       e.preventDefault();
       onDragStart?.();
       setIsDragging(true);
+      hasDraggedRef.current = false;
+      pointerDownClientRef.current = { x: e.clientX, y: e.clientY };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartRef.current = {
         clientY: e.clientY, startY: positionY,
@@ -76,6 +81,15 @@ const RowRuler = memo(function RowRuler({
     (e: React.PointerEvent) => {
       if (!isDragging || !dragStartRef.current) return;
       e.stopPropagation();
+      // Detect drag: if moved more than 5px, mark as dragged and close action bar
+      if (!hasDraggedRef.current && pointerDownClientRef.current) {
+        const dx = e.clientX - pointerDownClientRef.current.x;
+        const dy = e.clientY - pointerDownClientRef.current.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 5) {
+          hasDraggedRef.current = true;
+          setShowActionBar(false);
+        }
+      }
       if (isHorizontal) {
         const currentPct = toPercentX(e.clientX);
         const startPct = toPercentX(dragStartRef.current.clientX);
@@ -96,6 +110,11 @@ const RowRuler = memo(function RowRuler({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
     setIsDragging(false);
+    if (!hasDraggedRef.current) {
+      setShowActionBar(prev => !prev);
+    }
+    hasDraggedRef.current = false;
+    pointerDownClientRef.current = null;
     dragStartRef.current = null;
   }, []);
 
@@ -118,9 +137,6 @@ const RowRuler = memo(function RowRuler({
     }
     return lines;
   }, [direction, positionY, positionX, height, isHorizontal]);
-
-  const rulerCenterY = positionY + height / 2;
-  const rulerCenterX = positionX + height / 2;
 
   // --- Horizontal mode ---
   if (isHorizontal) {
@@ -214,37 +230,45 @@ const RowRuler = memo(function RowRuler({
           </div>
         )}
 
-        {/* Floating action buttons — top-left of ruler band */}
-        <div
-          className="absolute pointer-events-auto z-20 flex flex-col items-center gap-1 sm:gap-1.5"
-          style={{ left: `${rulerCenterX}%`, top: '1.5rem', transform: 'translateX(-50%)' }}
-        >
-          <button
-            onClick={(e) => { e.stopPropagation(); onComplete(); }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
-            title={t('ruler.complete')}
+        {/* Action bar popup — tap ruler to show/hide */}
+        {showActionBar && !isDragging && (
+          <div
+            className="absolute top-1/2 pointer-events-auto z-20"
+            style={{ left: `${positionX}%`, transform: 'translate(calc(-100% - 8px), -50%)' }}
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </button>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className={`flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
-              showSettings
-                ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
-                : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
-            }`}
-            title={t('ruler.heightSettings')}
-          >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-          </button>
-        </div>
+            <div className="relative flex flex-col items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowActionBar(false); onComplete(); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
+                title={t('ruler.complete')}
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {t('ruler.complete')}
+              </button>
+              <div className="h-px bg-[#d4b896]" />
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                  showSettings
+                    ? 'bg-[#b5541e] text-[#fdf6e8]'
+                    : 'text-[#b07840] hover:bg-[#f5edd6] active:scale-95'
+                }`}
+                title={t('ruler.heightSettings')}
+              >
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                {t('ruler.heightSettings')}
+              </button>
+            </div>
+            {/* Arrow pointing right toward ruler */}
+            <div className="absolute top-1/2 right-0 translate-x-full -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-t-transparent border-b-transparent border-l-[#d4b896]" />
+          </div>
+        )}
       </div>
     );
   }
@@ -338,37 +362,45 @@ const RowRuler = memo(function RowRuler({
         </div>
       )}
 
-      {/* Floating complete + rotate + settings buttons */}
-      <div
-        className="absolute left-1.5 pointer-events-auto z-20 flex items-center gap-1 sm:gap-1.5"
-        style={{ top: `${rulerCenterY}%`, transform: 'translateY(-50%)' }}
-      >
-        <button
-          onClick={(e) => { e.stopPropagation(); onComplete(); }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
-          title={t('ruler.complete')}
+      {/* Action bar popup — tap ruler to show/hide */}
+      {showActionBar && !isDragging && (
+        <div
+          className="absolute left-1/2 pointer-events-auto z-20"
+          style={{ top: `${positionY}%`, transform: 'translate(-50%, calc(-100% - 8px))' }}
         >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </button>
-
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className={`flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
-            showSettings
-              ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
-              : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
-          }`}
-          title={t('ruler.heightSettings')}
-        >
-          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-        </button>
-      </div>
+          <div className="relative flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowActionBar(false); onComplete(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
+              title={t('ruler.complete')}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              {t('ruler.complete')}
+            </button>
+            <div className="w-px bg-[#d4b896]" />
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                showSettings
+                  ? 'bg-[#b5541e] text-[#fdf6e8]'
+                  : 'text-[#b07840] hover:bg-[#f5edd6] active:scale-95'
+              }`}
+              title={t('ruler.heightSettings')}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              {t('ruler.heightSettings')}
+            </button>
+          </div>
+          {/* Arrow pointing down toward ruler */}
+          <div className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />
+        </div>
+      )}
     </div>
   );
 });
