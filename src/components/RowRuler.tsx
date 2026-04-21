@@ -63,13 +63,15 @@ const RowRuler = memo(function RowRuler({
   const toPercentY = useCallback((clientY: number) => {
     if (!containerRef.current) return 0;
     const rect = containerRef.current.getBoundingClientRect();
-    return ((clientY - rect.top) / rect.height) * 100;
+    // Use Math.round to match clientHeight (integer) used in PatternView's
+    // handleRulerPositionChange, preventing sub-pixel drift on non-integer DPR devices.
+    return ((clientY - rect.top) / Math.round(rect.height)) * 100;
   }, []);
 
   const toPercentX = useCallback((clientX: number) => {
     if (!containerRef.current) return 0;
     const rect = containerRef.current.getBoundingClientRect();
-    return ((clientX - rect.left) / rect.width) * 100;
+    return ((clientX - rect.left) / Math.round(rect.width)) * 100;
   }, []);
 
   const handleBodyPointerDown = useCallback(

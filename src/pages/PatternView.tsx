@@ -317,7 +317,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             // 재방문: 저장된 뷰 위치가 있으면 복원, 없으면 진행선 중앙 정렬
             const savedState = imageStatesRef.current[activeFileIdxRef.current];
             if (savedState?.view_scale && h > 0) {
-              const s = savedState.view_scale;
+              // view_scale은 fit-width 배율 대비 비율로 저장됨.
+              // 복원 시 현재 기기의 fit-width 배율(containerW/imgW)을 곱해 절대 scale 계산.
+              const cW = latestRef.current.containerW;
+              const s = cW > 0 && w > 0 ? savedState.view_scale * (cW / w) : savedState.view_scale;
               const cx = savedState.view_x ?? 50;
               const cy = savedState.view_y ?? 50;
               // cx/cy는 도안 이미지 대비 % → 픽셀 변환 후 transform.x/y 계산
@@ -348,7 +351,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           const latestH = lastReportedImgH.current;
           const savedState = imageStatesRef.current[activeFileIdxRef.current];
           if (savedState?.view_scale && latestW > 0 && latestH > 0) {
-            const s = savedState.view_scale;
+            const cW = latestRef.current.containerW;
+            const s = cW > 0 ? savedState.view_scale * (cW / latestW) : savedState.view_scale;
             const cx = savedState.view_x ?? 50;
             const cy = savedState.view_y ?? 50;
             const tx = -(cx / 100 * latestW - latestW / 2) * s;
@@ -686,8 +690,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     // imgW/imgH are 0 before the image loads (first render / image switch).
     // Fall back to the last known saved state so auto-save on mount does NOT
     // overwrite a previously correct view_scale with the default scale=1.
-    view_scale: imgW > 0 && imgH > 0
-      ? viewTransform.scale
+    // view_scale is stored as a fit-width ratio (scale / fitWidthScale = scale * imgW / containerW)
+    // so it restores to the same visual zoom level on any screen width.
+    view_scale: imgW > 0 && imgH > 0 && containerW > 0
+      ? viewTransform.scale * imgW / containerW
       : imageStatesRef.current[activeFileIdx]?.view_scale,
     view_x: imgW > 0
       ? (0.5 - viewTransform.x / (viewTransform.scale * imgW)) * 100
