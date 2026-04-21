@@ -265,6 +265,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Restore view once: after image is loaded
   const initialScrollDoneRef = useRef(false);
+  // true after we successfully restored a saved view — suppresses the PDF height-change correction
+  const viewRestoredRef = useRef(false);
   // Track last reported image height so we can detect significant imgH changes
   const lastReportedImgH = useRef(0);
   // Debounce timer for goToRuler correction after significant imgH changes
@@ -314,13 +316,15 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           } else {
             // 재방문: 저장된 뷰 위치가 있으면 복원, 없으면 진행선 중앙 정렬
             const savedState = imageStatesRef.current[activeFileIdxRef.current];
-            if (savedState?.view_scale && w > 0 && h > 0) {
+            if (savedState?.view_scale && h > 0) {
               const s = savedState.view_scale;
               const cx = savedState.view_x ?? 50;
               const cy = savedState.view_y ?? 50;
               // cx/cy는 도안 이미지 대비 % → 픽셀 변환 후 transform.x/y 계산
-              const tx = -(cx / 100 * w - w / 2) * s;
+              // w=0(PDF preParse 단계)이면 tx=0(가로 중앙)으로 fallback
+              const tx = w > 0 ? -(cx / 100 * w - w / 2) * s : 0;
               const ty = -(cy / 100 * h - h / 2) * s;
+              viewRestoredRef.current = true;
               viewerRef.current?.restoreTransform(s, tx, ty);
             } else {
               // 저장된 뷰 없음: fit-width 배율로 진행선 중앙 정렬
@@ -333,7 +337,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       h > 0 &&
       Math.abs(h - prevH) > 50 &&
       !isFirstOpenRef.current &&
-      !showGuideRef.current
+      !showGuideRef.current &&
+      !viewRestoredRef.current  // 저장된 뷰를 복원한 경우 PDF 높이 보정으로 덮어쓰지 않음
     ) {
       // imgH changed significantly (>50px) — this indicates the container width changed
       // (device rotation, window resize) and imgH has been recalculated.
@@ -750,6 +755,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
     // Reset view so PatternViewer re-runs fit logic for the new image
     initialScrollDoneRef.current = false;
+    viewRestoredRef.current = false;
     // If this image has been visited before, go to ruler; otherwise fit from top
     isFirstOpenRef.current = !next;
     // Guides only show on image 0 — close them when switching to any other image
