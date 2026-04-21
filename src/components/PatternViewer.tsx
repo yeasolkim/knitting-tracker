@@ -616,6 +616,27 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       },
     }), [transform, setXY, imageToContentY, imageToContentX, goToRuler, setFullTransform, getStableContentDims, rulerYPercent, rulerXPercent]);
 
+    // Pan navigation handlers
+    const handlePanUp = useCallback(() => {
+      const H = sizeRef.current?.clientHeight || 1;
+      panBy(0, H * 0.9);
+    }, [panBy]);
+
+    const handlePanDown = useCallback(() => {
+      const H = sizeRef.current?.clientHeight || 1;
+      panBy(0, -H * 0.9);
+    }, [panBy]);
+
+    const handlePanLeft = useCallback(() => {
+      const W = sizeRef.current?.clientWidth || 1;
+      panBy(W * 0.9, 0);
+    }, [panBy]);
+
+    const handlePanRight = useCallback(() => {
+      const W = sizeRef.current?.clientWidth || 1;
+      panBy(-W * 0.9, 0);
+    }, [panBy]);
+
     // Scrollbar drag state
     const scrollDragRef = useRef<{
       axis: 'v' | 'h';
@@ -862,6 +883,51 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           <span className="text-[10px] font-mono text-[#3d2b1f]/30 tabular-nums">
             {Math.round(transform.scale * 100)}%
           </span>
+        </div>
+
+        {/* Pan navigation — top-right cross */}
+        <div className="absolute top-6 right-10 z-20 grid grid-cols-3 gap-0.5" style={{ width: 88 }}>
+          <div />
+          <button
+            onClick={handlePanUp}
+            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label="위로 이동"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <div />
+          <button
+            onClick={handlePanLeft}
+            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label="왼쪽으로 이동"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div />
+          <button
+            onClick={handlePanRight}
+            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label="오른쪽으로 이동"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div />
+          <button
+            onClick={handlePanDown}
+            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            aria-label="아래로 이동"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div />
         </div>
 
         {/* Vertical scrollbar — stops above zoom buttons (bottom ~160px) */}
