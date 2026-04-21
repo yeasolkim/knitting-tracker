@@ -79,6 +79,12 @@ export interface ImagePerState {
   };
   notes?: Record<string, string>;
   note_positions?: Record<string, NotePosition>;
+  // View transform saved as image-relative % (device-independent)
+  // view_x: screen-center x as % of image width (0-100)
+  // view_y: screen-center y as % of image height (0-100)
+  view_scale?: number;
+  view_x?: number;
+  view_y?: number;
 }
 
 export interface PatternProgress {

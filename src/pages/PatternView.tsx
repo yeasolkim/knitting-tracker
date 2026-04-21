@@ -312,8 +312,20 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               setShowSubPatternGuide(true);
             }
           } else {
-            // 재방문: fit-width 배율로 진행선 중앙 정렬 (scale=1 초기값에서 zoom-in하는 문제 방지)
-            viewerRef.current?.fitWidthGoToRuler();
+            // 재방문: 저장된 뷰 위치가 있으면 복원, 없으면 진행선 중앙 정렬
+            const savedState = imageStatesRef.current[activeFileIdxRef.current];
+            if (savedState?.view_scale && w > 0 && h > 0) {
+              const s = savedState.view_scale;
+              const cx = savedState.view_x ?? 50;
+              const cy = savedState.view_y ?? 50;
+              // cx/cy는 도안 이미지 대비 % → 픽셀 변환 후 transform.x/y 계산
+              const tx = -(cx / 100 * w - w / 2) * s;
+              const ty = -(cy / 100 * h - h / 2) * s;
+              viewerRef.current?.restoreTransform(s, tx, ty);
+            } else {
+              // 저장된 뷰 없음: fit-width 배율로 진행선 중앙 정렬
+              viewerRef.current?.fitWidthGoToRuler();
+            }
           }
         });
       });
@@ -654,6 +666,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
     notes,
     note_positions: notePositions,
+    // Save view as image-relative % so it restores correctly on any screen size
+    view_scale: viewTransform.scale,
+    view_x: imgW > 0 ? (0.5 - viewTransform.x / (viewTransform.scale * imgW)) * 100 : 50,
+    view_y: imgH > 0 ? (0.5 - viewTransform.y / (viewTransform.scale * imgH)) * 100 : 50,
   };
 
   const updateActiveSub = useCallback((updater: (sub: SubPattern) => SubPattern) => {
