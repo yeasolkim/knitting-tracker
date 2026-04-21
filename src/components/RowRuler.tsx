@@ -195,11 +195,11 @@ const RowRuler = memo(function RowRuler({
             </div>
         </div>
 
-        {/* Left nudge */}
+        {/* Left nudge — bottom to avoid overlapping the action bar popup (left side) */}
         {showSettings && (
           <div
-            className="absolute top-1/2 pointer-events-auto z-20"
-            style={{ left: `${positionX}%`, transform: 'translate(-100%, -50%)' }}
+            className="absolute bottom-6 pointer-events-auto z-20"
+            style={{ left: `${positionX}%`, transform: 'translateX(-50%)' }}
           >
             <button
               onPointerDown={(e) => e.stopPropagation()}
@@ -212,11 +212,11 @@ const RowRuler = memo(function RowRuler({
             </button>
           </div>
         )}
-        {/* Right nudge */}
+        {/* Right nudge — bottom to avoid overlapping the action bar popup (left side) */}
         {showSettings && (
           <div
-            className="absolute top-1/2 pointer-events-auto z-20"
-            style={{ left: `${positionX + height}%`, transform: 'translate(0%, -50%)' }}
+            className="absolute bottom-6 pointer-events-auto z-20"
+            style={{ left: `${positionX + height}%`, transform: 'translateX(-50%)' }}
           >
             <button
               onPointerDown={(e) => e.stopPropagation()}
@@ -329,11 +329,11 @@ const RowRuler = memo(function RowRuler({
         </div>
       </div>
 
-      {/* Up nudge */}
+      {/* Up nudge — right side to avoid overlapping the action bar popup (center) */}
       {showSettings && (
         <div
-          className="absolute left-1/2 pointer-events-auto z-20"
-          style={{ top: `${positionY}%`, transform: 'translate(-50%, -100%)' }}
+          className="absolute right-6 pointer-events-auto z-20"
+          style={{ top: `${positionY}%`, transform: 'translateY(-100%)' }}
         >
           <button
             onPointerDown={(e) => e.stopPropagation()}
@@ -346,11 +346,11 @@ const RowRuler = memo(function RowRuler({
           </button>
         </div>
       )}
-      {/* Down nudge */}
+      {/* Down nudge — right side to avoid overlapping the action bar popup (center) */}
       {showSettings && (
         <div
-          className="absolute left-1/2 pointer-events-auto z-20"
-          style={{ top: `${positionY + height}%`, transform: 'translate(-50%, 0%)' }}
+          className="absolute right-6 pointer-events-auto z-20"
+          style={{ top: `${positionY + height}%`, transform: 'translateY(0%)' }}
         >
           <button
             onPointerDown={(e) => e.stopPropagation()}
