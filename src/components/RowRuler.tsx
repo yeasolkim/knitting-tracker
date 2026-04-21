@@ -382,26 +382,32 @@ const RowRuler = memo(function RowRuler({
           </div>
           {/* Arrow pointing down toward ruler */}
           <div className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />
-          {/* Up nudge — attached to the right of the action bar */}
-          <div className="absolute top-0 left-full ml-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.3)); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#fdf6e8] border border-[#d4b896] shadow-md text-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e] active:scale-95 transition-all"
-              title="진행선 위로"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-              </svg>
-            </button>
-          </div>
         </div>
       )}
-      {/* Down nudge — below the ruler, centered */}
+      {/* Up nudge — right-4, just above ruler top */}
       {showActionBar && !isDragging && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-20"
-          style={{ top: `${positionY + height}%`, transform: 'translateX(-50%)' }}
+          className="absolute right-4 pointer-events-auto z-20"
+          style={{ top: `${positionY}%`, transform: 'translateY(-100%)' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.3)); }}
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#fdf6e8] border border-[#d4b896] shadow-md text-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e] active:scale-95 transition-all"
+            title="진행선 위로"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
+      {/* Down nudge — right-4, just below ruler bottom */}
+      {showActionBar && !isDragging && (
+        <div
+          className="absolute right-4 pointer-events-auto z-20"
+          style={{ top: `${positionY + height}%` }}
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
