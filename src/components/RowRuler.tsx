@@ -196,7 +196,7 @@ const RowRuler = memo(function RowRuler({
         </div>
 
         {/* Left nudge — bottom to avoid overlapping the action bar popup (left side) */}
-        {showSettings && (
+        {(showActionBar || showSettings) && !isDragging && (
           <div
             className="absolute bottom-6 pointer-events-auto z-20"
             style={{ left: `${positionX}%`, transform: 'translateX(-50%)' }}
@@ -213,7 +213,7 @@ const RowRuler = memo(function RowRuler({
           </div>
         )}
         {/* Right nudge — bottom to avoid overlapping the action bar popup (left side) */}
-        {showSettings && (
+        {(showActionBar || showSettings) && !isDragging && (
           <div
             className="absolute bottom-6 pointer-events-auto z-20"
             style={{ left: `${positionX + height}%`, transform: 'translateX(-50%)' }}
@@ -330,7 +330,7 @@ const RowRuler = memo(function RowRuler({
       </div>
 
       {/* Up nudge — right side to avoid overlapping the action bar popup (center) */}
-      {showSettings && (
+      {(showActionBar || showSettings) && !isDragging && (
         <div
           className="absolute right-6 pointer-events-auto z-20"
           style={{ top: `${positionY}%`, transform: 'translateY(-100%)' }}
@@ -347,7 +347,7 @@ const RowRuler = memo(function RowRuler({
         </div>
       )}
       {/* Down nudge — right side to avoid overlapping the action bar popup (center) */}
-      {showSettings && (
+      {(showActionBar || showSettings) && !isDragging && (
         <div
           className="absolute right-6 pointer-events-auto z-20"
           style={{ top: `${positionY + height}%`, transform: 'translateY(0%)' }}
