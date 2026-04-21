@@ -200,9 +200,10 @@ const RowRuler = memo(function RowRuler({
           <div
             className="absolute bottom-6 pointer-events-auto z-20"
             style={{ left: `${positionX}%`, transform: 'translateX(-50%)' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.max(0, positionX - 0.3)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
@@ -217,9 +218,10 @@ const RowRuler = memo(function RowRuler({
           <div
             className="absolute bottom-6 pointer-events-auto z-20"
             style={{ left: `${positionX + height}%`, transform: 'translateX(-50%)' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.min(100 - height, positionX + 0.3)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
@@ -334,9 +336,10 @@ const RowRuler = memo(function RowRuler({
         <div
           className="absolute right-6 pointer-events-auto z-20"
           style={{ top: `${positionY}%`, transform: 'translateY(-100%)' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           <button
-            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChangePosition(Math.max(0, positionY - 0.3)); }}
             className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
           >
@@ -351,9 +354,10 @@ const RowRuler = memo(function RowRuler({
         <div
           className="absolute right-6 pointer-events-auto z-20"
           style={{ top: `${positionY + height}%`, transform: 'translateY(0%)' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           <button
-            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
             className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
           >
