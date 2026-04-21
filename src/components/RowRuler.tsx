@@ -235,6 +235,8 @@ const RowRuler = memo(function RowRuler({
           <div
             className="absolute top-1/2 pointer-events-auto z-20"
             style={{ left: `${positionX}%`, transform: 'translate(calc(-100% - 8px), -50%)' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
           >
             <div className="relative flex flex-col items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
               <button
@@ -367,6 +369,8 @@ const RowRuler = memo(function RowRuler({
         <div
           className="absolute left-1/2 pointer-events-auto z-20"
           style={{ top: `${positionY}%`, transform: 'translate(-50%, calc(-100% - 8px))' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           <div className="relative flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
             <button
