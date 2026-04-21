@@ -82,7 +82,11 @@ export interface ImagePerState {
   // View transform saved as image-relative % (device-independent)
   // view_x: screen-center x as % of image width (0-100)
   // view_y: screen-center y as % of image height (0-100)
+  // view_scale: absolute CSS scale at save time
+  // view_fit_scale: fit-width scale (containerW/imgW) at save time — used to normalize
+  //   view_scale across devices: restore_scale = view_scale * (current_fitW / view_fit_scale)
   view_scale?: number;
+  view_fit_scale?: number;
   view_x?: number;
   view_y?: number;
 }

@@ -317,10 +317,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             // 재방문: 저장된 뷰 위치가 있으면 복원, 없으면 진행선 중앙 정렬
             const savedState = imageStatesRef.current[activeFileIdxRef.current];
             if (savedState?.view_scale && h > 0) {
-              // view_scale은 fit-width 배율 대비 비율로 저장됨.
-              // 복원 시 현재 기기의 fit-width 배율(containerW/imgW)을 곱해 절대 scale 계산.
+              // view_fit_scale이 저장된 경우: s = view_scale × (현재 fit-width / 저장 fit-width)
+              // → 기기가 달라도 같은 상대적 줌 레벨로 복원.
+              // 구버전 데이터(view_fit_scale 없음): 절대값 그대로 사용 (기존 동작 유지).
               const cW = latestRef.current.containerW;
-              const s = cW > 0 && w > 0 ? savedState.view_scale * (cW / w) : savedState.view_scale;
+              const currentFitW = cW > 0 && w > 0 ? cW / w : 0;
+              const s = currentFitW > 0 && savedState.view_fit_scale
+                ? savedState.view_scale * (currentFitW / savedState.view_fit_scale)
+                : savedState.view_scale;
               const cx = savedState.view_x ?? 50;
               const cy = savedState.view_y ?? 50;
               // cx/cy는 도안 이미지 대비 % → 픽셀 변환 후 transform.x/y 계산
@@ -352,7 +356,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           const savedState = imageStatesRef.current[activeFileIdxRef.current];
           if (savedState?.view_scale && latestW > 0 && latestH > 0) {
             const cW = latestRef.current.containerW;
-            const s = cW > 0 ? savedState.view_scale * (cW / latestW) : savedState.view_scale;
+            const currentFitW = cW > 0 && latestW > 0 ? cW / latestW : 0;
+            const s = currentFitW > 0 && savedState.view_fit_scale
+              ? savedState.view_scale * (currentFitW / savedState.view_fit_scale)
+              : savedState.view_scale;
             const cx = savedState.view_x ?? 50;
             const cy = savedState.view_y ?? 50;
             const tx = -(cx / 100 * latestW - latestW / 2) * s;
@@ -690,11 +697,15 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     // imgW/imgH are 0 before the image loads (first render / image switch).
     // Fall back to the last known saved state so auto-save on mount does NOT
     // overwrite a previously correct view_scale with the default scale=1.
-    // view_scale is stored as a fit-width ratio (scale / fitWidthScale = scale * imgW / containerW)
-    // so it restores to the same visual zoom level on any screen width.
-    view_scale: imgW > 0 && imgH > 0 && containerW > 0
-      ? viewTransform.scale * imgW / containerW
+    // view_scale: absolute CSS scale (device-dependent).
+    // view_fit_scale: fit-width scale (containerW/imgW) at save time.
+    // Restore: s = view_scale × (current_fitW / saved_fitW) → same relative zoom on any device.
+    view_scale: imgW > 0 && imgH > 0
+      ? viewTransform.scale
       : imageStatesRef.current[activeFileIdx]?.view_scale,
+    view_fit_scale: imgW > 0 && containerW > 0
+      ? containerW / imgW
+      : imageStatesRef.current[activeFileIdx]?.view_fit_scale,
     view_x: imgW > 0
       ? (0.5 - viewTransform.x / (viewTransform.scale * imgW)) * 100
       : imageStatesRef.current[activeFileIdx]?.view_x,
