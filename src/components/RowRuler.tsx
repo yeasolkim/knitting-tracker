@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RulerDirection, RulerOrientation } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -38,6 +38,18 @@ const RowRuler = memo(function RowRuler({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showActionBar, setShowActionBar] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+  }, []);
+
+  const triggerPreview = useCallback(() => {
+    setShowPreview(true);
+    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = setTimeout(() => setShowPreview(false), 2000);
+  }, []);
   const dragStartRef = useRef<{
     clientY: number; startY: number;
     clientX: number; startX: number;
@@ -160,7 +172,7 @@ const RowRuler = memo(function RowRuler({
         />
 
         {/* Ghost preview lines */}
-        {(isAdjusting || isDragging || showSettings) && previewLines.map((x, i) => {
+        {(isAdjusting || isDragging || showSettings || showPreview) && previewLines.map((x, i) => {
           const opacity = Math.max(0.1, 0.85 - i * 0.08);
           return (
             <div
@@ -204,7 +216,7 @@ const RowRuler = memo(function RowRuler({
             onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.max(0, positionX - 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.3)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -222,7 +234,7 @@ const RowRuler = memo(function RowRuler({
             onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onClick={(e) => { e.stopPropagation(); onChangePositionX?.(Math.min(100 - height, positionX + 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.3)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -299,7 +311,7 @@ const RowRuler = memo(function RowRuler({
       />
 
       {/* Ghost preview lines */}
-      {(isAdjusting || isDragging || showSettings) && previewLines.map((y, i) => {
+      {(isAdjusting || isDragging || showSettings || showPreview) && previewLines.map((y, i) => {
         const opacity = Math.max(0.1, 0.85 - i * 0.08);
         return (
           <div
@@ -340,7 +352,7 @@ const RowRuler = memo(function RowRuler({
           onPointerUp={(e) => e.stopPropagation()}
         >
           <button
-            onClick={(e) => { e.stopPropagation(); onChangePosition(Math.max(0, positionY - 0.3)); }}
+            onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.3)); }}
             className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -358,7 +370,7 @@ const RowRuler = memo(function RowRuler({
           onPointerUp={(e) => e.stopPropagation()}
         >
           <button
-            onClick={(e) => { e.stopPropagation(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
+            onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
             className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
