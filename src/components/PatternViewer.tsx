@@ -619,22 +619,22 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Pan navigation handlers
     const handlePanUp = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      panBy(0, H * 0.9);
+      panBy(0, H * 0.7);
     }, [panBy]);
 
     const handlePanDown = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      panBy(0, -H * 0.9);
+      panBy(0, -H * 0.7);
     }, [panBy]);
 
     const handlePanLeft = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
-      panBy(W * 0.9, 0);
+      panBy(W * 0.7, 0);
     }, [panBy]);
 
     const handlePanRight = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
-      panBy(-W * 0.9, 0);
+      panBy(-W * 0.7, 0);
     }, [panBy]);
 
     // Scrollbar drag state
