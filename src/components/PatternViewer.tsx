@@ -885,50 +885,47 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           </span>
         </div>
 
-        {/* Pan navigation — top-right cross */}
-        <div className="absolute top-6 right-10 z-20 grid grid-cols-3 gap-0.5" style={{ width: 88 }}>
-          <div />
-          <button
-            onClick={handlePanUp}
-            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="위로 이동"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-            </svg>
-          </button>
-          <div />
-          <button
-            onClick={handlePanLeft}
-            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="왼쪽으로 이동"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div />
-          <button
-            onClick={handlePanRight}
-            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="오른쪽으로 이동"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <div />
-          <button
-            onClick={handlePanDown}
-            className="h-7 w-7 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-lg border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
-            aria-label="아래로 이동"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div />
-        </div>
+        {/* Pan navigation — edge-center chevrons */}
+        {/* Top center */}
+        <button
+          onClick={handlePanUp}
+          className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 flex items-center justify-center text-[#3d2b1f]/40 hover:text-[#3d2b1f]/70 active:text-[#b5541e]/80 transition-colors"
+          aria-label="위로 이동"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+        {/* Bottom center */}
+        <button
+          onClick={handlePanDown}
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 flex items-center justify-center text-[#3d2b1f]/40 hover:text-[#3d2b1f]/70 active:text-[#b5541e]/80 transition-colors"
+          aria-label="아래로 이동"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {/* Left center */}
+        <button
+          onClick={handlePanLeft}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-10 flex items-center justify-center text-[#3d2b1f]/40 hover:text-[#3d2b1f]/70 active:text-[#b5541e]/80 transition-colors"
+          aria-label="왼쪽으로 이동"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        {/* Right center — z-30 to stay above vertical scrollbar (z-25) */}
+        <button
+          onClick={handlePanRight}
+          className="absolute right-7 top-1/2 -translate-y-1/2 z-30 w-7 h-10 flex items-center justify-center text-[#3d2b1f]/40 hover:text-[#3d2b1f]/70 active:text-[#b5541e]/80 transition-colors"
+          aria-label="오른쪽으로 이동"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
 
         {/* Vertical scrollbar — stops above zoom buttons (bottom ~160px) */}
         {showScrollbars && (
