@@ -666,10 +666,19 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
     notes,
     note_positions: notePositions,
-    // Save view as image-relative % so it restores correctly on any screen size
-    view_scale: viewTransform.scale,
-    view_x: imgW > 0 ? (0.5 - viewTransform.x / (viewTransform.scale * imgW)) * 100 : 50,
-    view_y: imgH > 0 ? (0.5 - viewTransform.y / (viewTransform.scale * imgH)) * 100 : 50,
+    // Save view as image-relative % so it restores correctly on any screen size.
+    // imgW/imgH are 0 before the image loads (first render / image switch).
+    // Fall back to the last known saved state so auto-save on mount does NOT
+    // overwrite a previously correct view_scale with the default scale=1.
+    view_scale: imgW > 0 && imgH > 0
+      ? viewTransform.scale
+      : imageStatesRef.current[activeFileIdx]?.view_scale,
+    view_x: imgW > 0
+      ? (0.5 - viewTransform.x / (viewTransform.scale * imgW)) * 100
+      : imageStatesRef.current[activeFileIdx]?.view_x,
+    view_y: imgH > 0
+      ? (0.5 - viewTransform.y / (viewTransform.scale * imgH)) * 100
+      : imageStatesRef.current[activeFileIdx]?.view_y,
   };
 
   const updateActiveSub = useCallback((updater: (sub: SubPattern) => SubPattern) => {
