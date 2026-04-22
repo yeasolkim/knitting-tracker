@@ -326,7 +326,13 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     useEffect(() => {
       if (!sizeRef.current) return;
       const observer = new ResizeObserver((entries) => {
-        const { width, height } = entries[0].contentRect;
+        // Use clientWidth/clientHeight (always integers) instead of contentRect
+        // (which can be fractional on high-DPR devices). This keeps containerH/W
+        // consistent with RowRuler's Math.round(rect.height) and clientHeight
+        // used in gesture handlers — preventing sub-pixel ruler drift across devices.
+        const target = entries[0].target as HTMLElement;
+        const width = target.clientWidth;
+        const height = target.clientHeight;
         // If containerWidth changed significantly, clear stale DOM-measured heights.
         // getPageCssHeight() prefers pageHeightsRef (DOM measurements from old width)
         // over pageAspectRatiosRef (always proportional/correct). Clearing forces it
