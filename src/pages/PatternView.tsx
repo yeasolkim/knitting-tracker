@@ -1011,17 +1011,24 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     }
   }, [captureHistory, rulerDirection, updateActiveSub]);
 
-  // Convert screen % → content % for marker placement (markers now outside CSS transform)
+  // Convert screen % → image-space % for marker placement (markers now outside CSS transform)
+  // Accounts for letterbox offset so positions are device-independent.
   const screenToContent = useCallback((screenX: number, screenY: number) => {
-    const { viewTransform: t, containerH: H, containerW: W } = latestRef.current;
+    const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW } = latestRef.current;
     const sx = (screenX / 100) * W;
     const sy = (screenY / 100) * H;
+    const contentPx = (sx - W / 2 - t.x) / t.scale + W / 2;
+    const contentPy = (sy - H / 2 - t.y) / t.scale + H / 2;
+    const imgLeft = iW > 0 ? (W - iW) / 2 : 0;
+    const imgTop = iH > 0 ? (H - iH) / 2 : 0;
+    const refW = iW > 0 ? iW : W;
+    const refH = iH > 0 ? iH : H;
     return {
-      x: Math.max(0, Math.min(100, ((sx - W / 2 - t.x) / t.scale + W / 2) / W * 100)),
+      x: Math.max(0, Math.min(100, (contentPx - imgLeft) / refW * 100)),
       // No Y clamp — multi-page PDFs are taller than the container (imgH > H),
       // so valid Y positions can exceed 100%. Clamping would restrict notes to
       // the top ~1/N of an N-page PDF.
-      y: ((sy - H / 2 - t.y) / t.scale + H / 2) / H * 100,
+      y: (contentPy - imgTop) / refH * 100,
     };
   }, []);
 
@@ -1167,29 +1174,23 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   }, []);
 
   // All overlay components are outside the CSS transform — convert content % → screen %
-  const toScreen = (cx: number, cy: number) => {
-    const t = viewTransform;
-    return {
-      x: ((cx / 100) * containerW - containerW / 2) * t.scale + containerW / 2 + t.x,
-      y: ((cy / 100) * containerH - containerH / 2) * t.scale + containerH / 2 + t.y,
-    };
-  };
+  // Use contentToScreenX/Y which correctly accounts for letterbox offset (imgLeft/imgTop).
+  const screenKnittingMarks: KnittingMark[] = knittingMarks.map((m) => ({
+    ...m,
+    x: contentToScreenX(m.x),
+    y: contentToScreenY(m.y),
+  }));
 
-  const screenKnittingMarks: KnittingMark[] = knittingMarks.map((m) => {
-    const s = toScreen(m.x, m.y);
-    return { ...m, x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
-  });
-
-  const screenCrochetMarks: CrochetMark[] = crochetMarks.map((m) => {
-    const s = toScreen(m.x, m.y);
-    return { ...m, x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
-  });
+  const screenCrochetMarks: CrochetMark[] = crochetMarks.map((m) => ({
+    ...m,
+    x: contentToScreenX(m.x),
+    y: contentToScreenY(m.y),
+  }));
 
   // Note positions stored as content-space % — convert to screen % for rendering outside CSS transform.
   const screenNotePositions: Record<string, NotePosition> = {};
   for (const [key, pos] of Object.entries(notePositions)) {
-    const s = toScreen(pos.x, pos.y);
-    screenNotePositions[key] = { x: (s.x / containerW) * 100, y: (s.y / containerH) * 100 };
+    screenNotePositions[key] = { x: contentToScreenX(pos.x), y: contentToScreenY(pos.y) };
   }
 
   const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
