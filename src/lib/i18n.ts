@@ -147,11 +147,11 @@ const ko = {
   'view.deleteAllMarks': '모든 완료 표시를 삭제하시겠습니까?',
   'view.deleteAll': '전체 삭제',
   // ruler
-  'ruler.complete': '완료 (다음 단으로)',
+  'ruler.complete': '완료',
   'ruler.dirUp': '진행 방향: 위로',
   'ruler.dirDown': '진행 방향: 아래로',
   'ruler.direction': '진행방향',
-  'ruler.heightSettings': '진행선 높이 설정',
+  'ruler.heightSettings': '진행선 설정',
   'ruler.height': '높이',
   'ruler.rotate': '90° 회전',
   // sub-pattern selector
