@@ -1375,7 +1375,17 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               setShowRulerGuide(true);
             }
           } : () => {
-            const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW, rulerHeight: rh, rulerOrientation: orientation } = latestRef.current;
+            const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW, rulerOrientation: orientation } = latestRef.current;
+            // First placement: set ruler height to ~30% of screen
+            let rh = latestRef.current.rulerHeight;
+            if (showGuideRef.current) {
+              const initialH = orientation === 'horizontal'
+                ? (iW > 0 && t.scale > 0 ? Math.min(50, (30 * W) / (iW * t.scale)) : 5)
+                : (iH > 0 && t.scale > 0 ? Math.min(50, (30 * H) / (iH * t.scale)) : 5);
+              setRulerHeight(initialH);
+              setMaxRulerHeight(prev => Math.max(prev, initialH * 1.5));
+              rh = initialH;
+            }
             if (orientation === 'horizontal') {
               const contentX = W / 2 - t.x / t.scale;
               const refW = iW > 0 ? iW : W;
