@@ -52,7 +52,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 10, contentSizeRef);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
@@ -1032,7 +1032,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-11 sm:w-14">
           <button
             onClick={zoomIn}
-            disabled={transform.scale >= 10}
+            disabled={transform.scale >= 20}
             className="h-9 sm:h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-lg sm:text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t('viewer.zoomIn')}
           >
