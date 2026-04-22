@@ -218,7 +218,7 @@ const RowRuler = memo(function RowRuler({
             onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.1)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -236,7 +236,7 @@ const RowRuler = memo(function RowRuler({
             onPointerUp={(e) => e.stopPropagation()}
           >
             <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.1)); }}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -384,7 +384,7 @@ const RowRuler = memo(function RowRuler({
             <div className="w-px bg-[#d4b896]" />
             {/* Up nudge — ruler line below arrow */}
             <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
               title="진행선 위로"
@@ -397,7 +397,7 @@ const RowRuler = memo(function RowRuler({
             <div className="w-px bg-[#d4b896]" />
             {/* Down nudge — ruler line above arrow */}
             <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(100 - height, positionY + 0.3)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(100 - height, positionY + 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
               title="진행선 아래로"

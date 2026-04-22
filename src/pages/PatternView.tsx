@@ -1778,7 +1778,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   >÷1.3</button>
                   <button
                     onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onClick={() => setRulerHeight((h) => Math.max(0.001, h / 1.05))}
+                    onClick={() => setRulerHeight((h) => Math.max(0.001, h / 1.02))}
                     className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                   >−</button>
                   <input
@@ -1793,7 +1793,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   />
                   <button
                     onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h * 1.05))}
+                    onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h * 1.02))}
                     className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                   >+</button>
                   <button
@@ -1850,7 +1850,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               >×1.3</button>
               <button
                 onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h * 1.05))}
+                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h * 1.02))}
                 className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >+</button>
               <input
@@ -1865,7 +1865,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               />
               <button
                 onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.max(0.001, h / 1.05))}
+                onClick={() => setRulerHeight((h) => Math.max(0.001, h / 1.02))}
                 className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >−</button>
               <button
