@@ -616,26 +616,47 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       },
     }), [transform, setXY, imageToContentY, imageToContentX, goToRuler, setFullTransform, getStableContentDims, rulerYPercent, rulerXPercent]);
 
-    // Pan navigation handlers
+    // Pan overlap guide — briefly shows which half was already visible
+    const [panOverlay, setPanOverlay] = useState<{
+      dir: 'up' | 'down' | 'left' | 'right';
+      visible: boolean;
+    } | null>(null);
+    const panOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (panOverlayTimerRef.current) clearTimeout(panOverlayTimerRef.current); }, []);
+
+    const showPanGuide = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+      if (panOverlayTimerRef.current) clearTimeout(panOverlayTimerRef.current);
+      setPanOverlay({ dir, visible: true });
+      panOverlayTimerRef.current = setTimeout(() => {
+        setPanOverlay(p => p ? { ...p, visible: false } : null);
+        panOverlayTimerRef.current = setTimeout(() => setPanOverlay(null), 350);
+      }, 1200);
+    }, []);
+
+    // Pan navigation handlers (50% step — keeps 50% overlap with previous view)
     const handlePanUp = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      panBy(0, H * 0.7);
-    }, [panBy]);
+      panBy(0, H * 0.5);
+      showPanGuide('up');
+    }, [panBy, showPanGuide]);
 
     const handlePanDown = useCallback(() => {
       const H = sizeRef.current?.clientHeight || 1;
-      panBy(0, -H * 0.7);
-    }, [panBy]);
+      panBy(0, -H * 0.5);
+      showPanGuide('down');
+    }, [panBy, showPanGuide]);
 
     const handlePanLeft = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
-      panBy(W * 0.7, 0);
-    }, [panBy]);
+      panBy(W * 0.5, 0);
+      showPanGuide('left');
+    }, [panBy, showPanGuide]);
 
     const handlePanRight = useCallback(() => {
       const W = sizeRef.current?.clientWidth || 1;
-      panBy(-W * 0.7, 0);
-    }, [panBy]);
+      panBy(-W * 0.5, 0);
+      showPanGuide('right');
+    }, [panBy, showPanGuide]);
 
     // Scrollbar drag state
     const scrollDragRef = useRef<{
@@ -874,6 +895,49 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Content overlays (note bubbles) — outside CSS transform so they stay above the iOS
             high-quality canvas (scale≥4) and correctly track image positions via toScreen. */}
         {contentOverlay}
+
+        {/* Pan overlap guide — z-[8] so it sits above content but below ruler (z-10) */}
+        {panOverlay && (
+          <div
+            className={`absolute inset-0 z-[8] pointer-events-none transition-opacity duration-300 ${
+              panOverlay.visible ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {/* Gradient tint on the "already seen" half */}
+            <div
+              className={
+                panOverlay.dir === 'up'    ? 'absolute left-0 right-0 bg-gradient-to-t from-black/10 to-transparent'
+                : panOverlay.dir === 'down'  ? 'absolute left-0 right-0 bg-gradient-to-b from-black/10 to-transparent'
+                : panOverlay.dir === 'left'  ? 'absolute top-0 bottom-0 bg-gradient-to-l from-black/10 to-transparent'
+                :                              'absolute top-0 bottom-0 bg-gradient-to-r from-black/10 to-transparent'
+              }
+              style={
+                panOverlay.dir === 'up'    ? { top: '50%', bottom: 0 }
+                : panOverlay.dir === 'down'  ? { top: 0, bottom: '50%' }
+                : panOverlay.dir === 'left'  ? { left: '50%', right: 0 }
+                :                              { left: 0, right: '50%' }
+              }
+            />
+            {/* Boundary line at the 50% mark */}
+            <div
+              className="absolute bg-[#b5541e]/35"
+              style={
+                panOverlay.dir === 'up' || panOverlay.dir === 'down'
+                  ? { top: '50%', left: 0, right: 0, height: 1 }
+                  : { left: '50%', top: 0, bottom: 0, width: 1 }
+              }
+            />
+            {/* "이전 화면" badge centered on the boundary line */}
+            <div
+              className="absolute"
+              style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+            >
+              <span className="bg-[#fdf6e8]/90 text-[#b07840] text-[9px] font-semibold px-2 py-0.5 rounded-full border border-[#d4b896]/70 select-none whitespace-nowrap">
+                이전 화면
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Fixed overlays (ruler, markers) */}
         {children}
