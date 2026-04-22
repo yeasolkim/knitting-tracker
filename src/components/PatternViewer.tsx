@@ -948,40 +948,40 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Top center */}
         <button
           onClick={handlePanUp}
-          className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-16 h-10 flex items-center justify-center text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+          className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 sm:w-16 sm:h-10 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
           aria-label="위로 이동"
         >
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
           </svg>
         </button>
         {/* Bottom center */}
         <button
           onClick={handlePanDown}
-          className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-16 h-10 flex items-center justify-center text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 sm:w-16 sm:h-10 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
           aria-label="아래로 이동"
         >
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         {/* Left center */}
         <button
           onClick={handlePanLeft}
-          className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-16 flex items-center justify-center text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-10 sm:w-10 sm:h-16 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
           aria-label="왼쪽으로 이동"
         >
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         {/* Right center — z-30 to stay above vertical scrollbar (z-25) */}
         <button
           onClick={handlePanRight}
-          className="absolute right-7 top-1/2 -translate-y-1/2 z-30 w-10 h-16 flex items-center justify-center text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+          className="absolute right-7 top-1/2 -translate-y-1/2 z-30 w-7 h-10 sm:w-10 sm:h-16 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
           aria-label="오른쪽으로 이동"
         >
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
@@ -1029,11 +1029,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         )}
 
         {/* Zoom controls — bottom-right */}
-        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-14">
+        <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex flex-col items-stretch gap-0 z-20 w-11 sm:w-14">
           <button
             onClick={zoomIn}
             disabled={transform.scale >= 10}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-9 sm:h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-t-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-lg sm:text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t('viewer.zoomIn')}
           >
             +
@@ -1041,44 +1041,44 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           <button
             onClick={zoomOut}
             disabled={transform.scale <= 0.5}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-9 sm:h-11 bg-[#fdf6e8]/90 backdrop-blur-sm border-2 border-t-0 border-[#b07840] flex items-center justify-center text-[#7a5c46] text-lg sm:text-xl font-bold hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t('viewer.zoomOut')}
           >
             −
           </button>
           <button
             onClick={fitWidth}
-            className="h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#b07840] flex flex-col items-center justify-center gap-0.5 text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-9 sm:h-11 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-b-xl border-2 border-t-0 border-[#b07840] flex flex-col items-center justify-center gap-0.5 text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label={t('viewer.fitWidth')}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16M4 12l3-3m-3 3l3 3M20 12l-3-3m3 3l-3 3" />
             </svg>
-            <span className="text-[8px] font-bold leading-none">{t('viewer.fitWidth')}</span>
+            <span className="text-[7px] sm:text-[8px] font-bold leading-none">{t('viewer.fitWidth')}</span>
           </button>
         </div>
 
         {/* Ruler navigation — bottom-left */}
-        <div className={`absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1.5 ${highlightBringRuler ? 'z-50' : 'z-20'} w-16`}>
+        <div className={`absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1 sm:gap-1.5 ${highlightBringRuler ? 'z-50' : 'z-20'} w-13 sm:w-16`}>
           <button
             onClick={goToRuler}
-            className="h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
+            className="h-10 sm:h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label={t('viewer.goToRuler')}
           >
-            <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
+            <span className="text-[9px] sm:text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
           </button>
 
           {onResetRuler && (
             <button
               onClick={onResetRuler}
-              className={`h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 flex items-center justify-center text-[#7a5c46] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors ${
+              className={`h-10 sm:h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 flex items-center justify-center text-[#7a5c46] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors ${
                 highlightBringRuler
                   ? 'border-[#b5541e] animate-pulse shadow-[0_0_0_3px_rgba(181,84,30,0.3)]'
                   : 'border-[#b07840] hover:border-[#b5541e]'
               }`}
               aria-label={t('viewer.bringRuler')}
             >
-              <span className="text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>
+              <span className="text-[9px] sm:text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>
             </button>
           )}
         </div>
