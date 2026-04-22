@@ -903,28 +903,23 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               panOverlay.visible ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            {/* Gradient tint on the "already seen" half */}
+            {/* Semi-transparent shadow over the "already seen" half */}
             <div
-              className={
-                panOverlay.dir === 'up'    ? 'absolute left-0 right-0 bg-gradient-to-t from-black/10 to-transparent'
-                : panOverlay.dir === 'down'  ? 'absolute left-0 right-0 bg-gradient-to-b from-black/10 to-transparent'
-                : panOverlay.dir === 'left'  ? 'absolute top-0 bottom-0 bg-gradient-to-l from-black/10 to-transparent'
-                :                              'absolute top-0 bottom-0 bg-gradient-to-r from-black/10 to-transparent'
-              }
+              className="absolute bg-black/25"
               style={
-                panOverlay.dir === 'up'    ? { top: '50%', bottom: 0 }
-                : panOverlay.dir === 'down'  ? { top: 0, bottom: '50%' }
-                : panOverlay.dir === 'left'  ? { left: '50%', right: 0 }
-                :                              { left: 0, right: '50%' }
+                panOverlay.dir === 'up'    ? { top: '50%', bottom: 0, left: 0, right: 0 }
+                : panOverlay.dir === 'down'  ? { top: 0, bottom: '50%', left: 0, right: 0 }
+                : panOverlay.dir === 'left'  ? { left: '50%', right: 0, top: 0, bottom: 0 }
+                :                              { left: 0, right: '50%', top: 0, bottom: 0 }
               }
             />
             {/* Boundary line at the 50% mark */}
             <div
-              className="absolute bg-[#b5541e]/35"
+              className="absolute bg-[#b5541e]/70"
               style={
                 panOverlay.dir === 'up' || panOverlay.dir === 'down'
-                  ? { top: '50%', left: 0, right: 0, height: 1 }
-                  : { left: '50%', top: 0, bottom: 0, width: 1 }
+                  ? { top: '50%', left: 0, right: 0, height: 2 }
+                  : { left: '50%', top: 0, bottom: 0, width: 2 }
               }
             />
             {/* "이전 화면" badge centered on the boundary line */}
