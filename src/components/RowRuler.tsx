@@ -364,19 +364,7 @@ const RowRuler = memo(function RowRuler({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          <div className="relative flex flex-col bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
-            {/* Close button — top-right */}
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowActionBar(false); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="absolute top-1 right-1 z-10 flex items-center justify-center w-5 h-5 rounded-full text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-              title="닫기"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div className="flex items-stretch">
+          <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
             <button
               onClick={(e) => { e.stopPropagation(); setShowActionBar(false); onComplete(); }}
               onPointerDown={(e) => e.stopPropagation()}
@@ -392,7 +380,7 @@ const RowRuler = memo(function RowRuler({
             <button
               onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
               onPointerDown={(e) => e.stopPropagation()}
-              className={`flex items-center gap-1.5 px-3.5 py-2.5 pr-7 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold transition-all ${
                 showSettings
                   ? 'bg-[#b5541e] text-[#fdf6e8]'
                   : 'text-[#b07840] hover:bg-[#f5edd6] active:scale-95'
@@ -404,11 +392,7 @@ const RowRuler = memo(function RowRuler({
               </svg>
               {t('ruler.heightSettings')}
             </button>
-            </div>
-            <div className="h-px bg-[#d4b896]" />
-            <div className="flex items-stretch">
             <div className="w-px bg-[#d4b896]" />
-            {/* Up nudge — ruler line below arrow */}
             <button
               onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
@@ -421,7 +405,6 @@ const RowRuler = memo(function RowRuler({
               </svg>
             </button>
             <div className="w-px bg-[#d4b896]" />
-            {/* Down nudge — ruler line above arrow */}
             <button
               onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(100 - height, positionY + 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
@@ -433,7 +416,17 @@ const RowRuler = memo(function RowRuler({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 17 L5 12 L15 12 Z" fill="currentColor" />
               </svg>
             </button>
-            </div>
+            <div className="w-px bg-[#d4b896]" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowActionBar(false); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+              title="닫기"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
           {/* Arrow pointing down toward ruler */}
           <div className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />

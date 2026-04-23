@@ -332,21 +332,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               // w=0(PDF preParse 단계)이면 tx=0(가로 중앙)으로 fallback
               const tx = w > 0 ? -(cx / 100 * w - w / 2) * s : 0;
               const rawTy = -(cy / 100 * h - h / 2) * s;
-              // 복원된 뷰에서 진행선이 화면 밖(15%~85% 범위 밖)이면
-              // 진행선 중심으로 pan을 교정해 기기 전환 후에도 항상 진행선이 보이도록 함.
-              const { rulerY: ry, rulerHeight: rh } = latestRef.current;
-              const rulerCenter = ry + rh / 2;
               const maxTy = cH > 0 ? Math.max(0, (h * s - cH) / 2) : 0;
-              const clampedTy = Math.max(-maxTy, Math.min(maxTy, rawTy));
-              const imgTopY = cH > 0 ? (cH - h) / 2 : 0;
-              const rulerContentY = imgTopY + (rulerCenter / 100) * h;
-              const screenRulerFrac = cH > 0
-                ? ((rulerContentY - cH / 2) * s + cH / 2 + clampedTy) / cH
-                : 0.5;
-              const finalTy = (screenRulerFrac >= 0.15 && screenRulerFrac <= 0.85)
-                ? clampedTy
-                : Math.max(-maxTy, Math.min(maxTy, -(rulerContentY - cH / 2) * s));
-              viewerRef.current?.restoreTransform(s, tx, finalTy);
+              const ty = Math.max(-maxTy, Math.min(maxTy, rawTy));
+              viewerRef.current?.restoreTransform(s, tx, ty);
             } else {
               // 저장된 뷰 없음: fit-width 배율로 진행선 중앙 정렬
               viewerRef.current?.fitWidthGoToRuler();
@@ -380,19 +368,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             const cy = savedState.view_y ?? 50;
             const tx = -(cx / 100 * latestW - latestW / 2) * s;
             const rawTy = -(cy / 100 * latestH - latestH / 2) * s;
-            const { rulerY: ry, rulerHeight: rh } = latestRef.current;
-            const rulerCenter = ry + rh / 2;
             const maxTy = cH > 0 ? Math.max(0, (latestH * s - cH) / 2) : 0;
-            const clampedTy = Math.max(-maxTy, Math.min(maxTy, rawTy));
-            const imgTopY = cH > 0 ? (cH - latestH) / 2 : 0;
-            const rulerContentY = imgTopY + (rulerCenter / 100) * latestH;
-            const screenRulerFrac = cH > 0
-              ? ((rulerContentY - cH / 2) * s + cH / 2 + clampedTy) / cH
-              : 0.5;
-            const finalTy = (screenRulerFrac >= 0.15 && screenRulerFrac <= 0.85)
-              ? clampedTy
-              : Math.max(-maxTy, Math.min(maxTy, -(rulerContentY - cH / 2) * s));
-            viewerRef.current?.restoreTransform(s, tx, finalTy);
+            const ty = Math.max(-maxTy, Math.min(maxTy, rawTy));
+            viewerRef.current?.restoreTransform(s, tx, ty);
           } else {
             viewerRef.current?.fitWidthGoToRuler();
           }

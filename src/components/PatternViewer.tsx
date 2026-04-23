@@ -342,6 +342,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         }
         setContainerWidth(width);
         onTransformChangeRef.current?.(transformRef.current, height, width);
+        // Synchronously update imgH so latestRef.containerH and latestRef.imgH
+        // are always consistent — prevents ruler drift if user drags during resize.
+        reportImageSize();
         requestAnimationFrame(() => {
           reportImageSize();
           const { w: iW, h: iH } = getStableContentDims();
