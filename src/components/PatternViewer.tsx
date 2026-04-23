@@ -625,7 +625,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       },
     }), [transform, setXY, imageToContentY, imageToContentX, goToRuler, setFullTransform, getStableContentDims, rulerYPercent, rulerXPercent]);
 
-    // Pan overlap guide — briefly shows which half was already visible
+    // Pan overlap guide — briefly shows boundary line after pan button press
     const [panOverlay, setPanOverlay] = useState<{
       dir: 'up' | 'down' | 'left' | 'right';
       visible: boolean;
@@ -633,13 +633,24 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const panOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => () => { if (panOverlayTimerRef.current) clearTimeout(panOverlayTimerRef.current); }, []);
 
+    // Smooth animation flag — applied to CSS transition only during pan button press,
+    // never during drag/gesture so there's no input lag.
+    const [isPanAnimating, setIsPanAnimating] = useState(false);
+    const panAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (panAnimTimerRef.current) clearTimeout(panAnimTimerRef.current); }, []);
+
     const showPanGuide = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
       if (panOverlayTimerRef.current) clearTimeout(panOverlayTimerRef.current);
+      if (panAnimTimerRef.current) clearTimeout(panAnimTimerRef.current);
+      setIsPanAnimating(true);
       setPanOverlay({ dir, visible: true });
+      // Clear animation flag after transition completes (200ms)
+      panAnimTimerRef.current = setTimeout(() => setIsPanAnimating(false), 250);
+      // Show boundary line briefly, then fade out
       panOverlayTimerRef.current = setTimeout(() => {
         setPanOverlay(p => p ? { ...p, visible: false } : null);
-        panOverlayTimerRef.current = setTimeout(() => setPanOverlay(null), 350);
-      }, 1200);
+        panOverlayTimerRef.current = setTimeout(() => setPanOverlay(null), 250);
+      }, 500);
     }, []);
 
     // Pan navigation handlers (50% step — keeps 50% overlap with previous view)
@@ -781,7 +792,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             style={{
               transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
               transformOrigin: 'center center',
-              transition: 'none',
+              // Smooth animation only for pan button presses; 'none' during drag/gesture to avoid lag.
+              transition: (isPanAnimating && !isPanning) ? 'transform 200ms ease-out' : 'none',
             }}
             className="relative w-full h-full flex items-center justify-center"
           >
@@ -905,41 +917,21 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             high-quality canvas (scale≥4) and correctly track image positions via toScreen. */}
         {contentOverlay}
 
-        {/* Pan overlap guide — z-[8] so it sits above content but below ruler (z-10) */}
+        {/* Pan boundary guide — shows where previous view ended */}
         {panOverlay && (
           <div
-            className={`absolute inset-0 z-[8] pointer-events-none transition-opacity duration-300 ${
+            className={`absolute inset-0 z-[8] pointer-events-none transition-opacity duration-250 ${
               panOverlay.visible ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            {/* Semi-transparent shadow over the "already seen" half */}
             <div
-              className="absolute bg-black/25"
-              style={
-                panOverlay.dir === 'up'    ? { top: '50%', bottom: 0, left: 0, right: 0 }
-                : panOverlay.dir === 'down'  ? { top: 0, bottom: '50%', left: 0, right: 0 }
-                : panOverlay.dir === 'left'  ? { left: '50%', right: 0, top: 0, bottom: 0 }
-                :                              { left: 0, right: '50%', top: 0, bottom: 0 }
-              }
-            />
-            {/* Boundary line at the 50% mark */}
-            <div
-              className="absolute bg-[#b5541e]/70"
+              className="absolute bg-[#b5541e]/50"
               style={
                 panOverlay.dir === 'up' || panOverlay.dir === 'down'
                   ? { top: '50%', left: 0, right: 0, height: 2 }
                   : { left: '50%', top: 0, bottom: 0, width: 2 }
               }
             />
-            {/* "이전 화면" badge centered on the boundary line */}
-            <div
-              className="absolute"
-              style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-            >
-              <span className="bg-[#fdf6e8]/90 text-[#b07840] text-[9px] font-semibold px-2 py-0.5 rounded-full border border-[#d4b896]/70 select-none whitespace-nowrap">
-                이전 화면
-              </span>
-            </div>
           </div>
         )}
 
