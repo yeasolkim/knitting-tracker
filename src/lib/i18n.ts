@@ -609,6 +609,8 @@ const ja: Translations = {
   'viewer.zoomIn': '拡大',
   'viewer.zoomOut': '縮小',
   'viewer.fitWidth': '幅に\n合わせる',
+  'viewer.imageLoadError': '編み図を読み込めませんでした。\nしばらくしてからもう一度試してください。',
+  'viewer.imageLoadErrorClose': 'OK',
   // pattern view
   'view.edit': '編み図を編集',
   'view.undo': '元に戻す (Ctrl+Z)',
@@ -616,6 +618,9 @@ const ja: Translations = {
   'view.saveView': '現在の画面を保存',
   'view.saveViewDone': '保存済み',
   'view.autoSaveError': '保存に失敗しました — 再試行中...',
+  'load.error.title': '編み図を読み込めませんでした。',
+  'load.error.desc': 'ネットワーク接続を確認してから、もう一度試してください。',
+  'load.error.toDashboard': 'ダッシュボードへ',
   'view.deleteAllMarks': 'すべての完了マークを削除しますか？',
   'view.deleteAll': 'すべて削除',
   // ruler
@@ -747,6 +752,8 @@ const ja: Translations = {
   'offline.syncing': '同期中...',
   'offline.syncDone': '同期完了',
   'offline.actionBlocked': 'オフライン中は使用できません。',
+  'offline.syncError': '同期に失敗しました',
+  'offline.syncErrorRetry': '再試行',
 };
 
 const zh: Translations = {
@@ -847,6 +854,8 @@ const zh: Translations = {
   'viewer.zoomIn': '放大',
   'viewer.zoomOut': '缩小',
   'viewer.fitWidth': '适合\n宽度',
+  'viewer.imageLoadError': '无法加载图案。\n请稍后再试。',
+  'viewer.imageLoadErrorClose': '确定',
   // pattern view
   'view.edit': '编辑编织图',
   'view.undo': '撤销 (Ctrl+Z)',
@@ -854,6 +863,9 @@ const zh: Translations = {
   'view.saveView': '保存当前画面',
   'view.saveViewDone': '已保存',
   'view.autoSaveError': '保存失败 — 重试中...',
+  'load.error.title': '无法加载图案。',
+  'load.error.desc': '请检查网络连接后重试。',
+  'load.error.toDashboard': '前往仪表板',
   'view.deleteAllMarks': '确定删除所有完成标记吗？',
   'view.deleteAll': '全部删除',
   // ruler
@@ -985,6 +997,8 @@ const zh: Translations = {
   'offline.syncing': '同步中...',
   'offline.syncDone': '同步完成',
   'offline.actionBlocked': '离线状态下无法使用。',
+  'offline.syncError': '同步失败',
+  'offline.syncErrorRetry': '重试',
 };
 
 const es: Translations = {
@@ -1075,12 +1089,17 @@ const es: Translations = {
   'viewer.zoomIn': 'Ampliar',
   'viewer.zoomOut': 'Reducir',
   'viewer.fitWidth': 'Ajustar\nancho',
+  'viewer.imageLoadError': 'No se pudo cargar el patrón.\nInténtalo de nuevo.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Editar patrón',
   'view.undo': 'Deshacer (Ctrl+Z)',
   'view.redo': 'Rehacer (Ctrl+Shift+Z)',
   'view.saveView': 'Guardar vista',
   'view.saveViewDone': 'Guardado',
   'view.autoSaveError': 'Error al guardar — reintentando...',
+  'load.error.title': 'No se pudo cargar el patrón.',
+  'load.error.desc': 'Comprueba tu conexión e inténtalo de nuevo.',
+  'load.error.toDashboard': 'Ir al tablero',
   'view.deleteAllMarks': '¿Eliminar todas las marcas?',
   'view.deleteAll': 'Eliminar todo',
   'ruler.complete': 'Hecho',
@@ -1207,6 +1226,8 @@ const es: Translations = {
   'offline.syncing': 'Sincronizando...',
   'offline.syncDone': 'Sincronizado',
   'offline.actionBlocked': 'No disponible sin conexión.',
+  'offline.syncError': 'Sincronización fallida',
+  'offline.syncErrorRetry': 'Reintentar',
 };
 
 const fr: Translations = {
@@ -1297,12 +1318,17 @@ const fr: Translations = {
   'viewer.zoomIn': 'Zoom +',
   'viewer.zoomOut': 'Zoom −',
   'viewer.fitWidth': 'Ajuster\nlargeur',
+  'viewer.imageLoadError': 'Impossible de charger le patron.\nVeuillez réessayer.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Modifier le patron',
   'view.undo': 'Annuler (Ctrl+Z)',
   'view.redo': 'Rétablir (Ctrl+Shift+Z)',
   'view.saveView': 'Enregistrer la vue',
   'view.saveViewDone': 'Enregistré',
   'view.autoSaveError': 'Enregistrement échoué — nouvelle tentative...',
+  'load.error.title': 'Impossible de charger le patron.',
+  'load.error.desc': 'Vérifiez votre connexion et réessayez.',
+  'load.error.toDashboard': 'Aller au tableau de bord',
   'view.deleteAllMarks': 'Supprimer toutes les marques ?',
   'view.deleteAll': 'Tout supprimer',
   'ruler.complete': 'Fait',
@@ -1429,6 +1455,8 @@ const fr: Translations = {
   'offline.syncing': 'Synchronisation...',
   'offline.syncDone': 'Synchronisé',
   'offline.actionBlocked': 'Non disponible hors ligne.',
+  'offline.syncError': 'Échec de synchronisation',
+  'offline.syncErrorRetry': 'Réessayer',
 };
 
 const it: Translations = {
@@ -1519,12 +1547,17 @@ const it: Translations = {
   'viewer.zoomIn': 'Zoom +',
   'viewer.zoomOut': 'Zoom −',
   'viewer.fitWidth': 'Adatta\nlarg.',
+  'viewer.imageLoadError': 'Impossibile caricare lo schema.\nRiprova.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Modifica schema',
   'view.undo': 'Annulla (Ctrl+Z)',
   'view.redo': 'Ripristina (Ctrl+Shift+Z)',
   'view.saveView': 'Salva vista',
   'view.saveViewDone': 'Salvato',
   'view.autoSaveError': 'Salvataggio fallito — nuovo tentativo...',
+  'load.error.title': 'Impossibile caricare lo schema.',
+  'load.error.desc': 'Controlla la connessione e riprova.',
+  'load.error.toDashboard': 'Vai alla dashboard',
   'view.deleteAllMarks': 'Eliminare tutte le marche?',
   'view.deleteAll': 'Elimina tutto',
   'ruler.complete': 'Fatto',
@@ -1651,6 +1684,8 @@ const it: Translations = {
   'offline.syncing': 'Sincronizzazione...',
   'offline.syncDone': 'Sincronizzato',
   'offline.actionBlocked': 'Non disponibile offline.',
+  'offline.syncError': 'Sincronizzazione fallita',
+  'offline.syncErrorRetry': 'Riprova',
 };
 
 const de: Translations = {
@@ -1741,12 +1776,17 @@ const de: Translations = {
   'viewer.zoomIn': 'Vergrößern',
   'viewer.zoomOut': 'Verkleinern',
   'viewer.fitWidth': 'Breite\nanpassen',
+  'viewer.imageLoadError': 'Muster konnte nicht geladen werden.\nBitte erneut versuchen.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Muster bearbeiten',
   'view.undo': 'Rückgängig (Ctrl+Z)',
   'view.redo': 'Wiederholen (Ctrl+Shift+Z)',
   'view.saveView': 'Ansicht speichern',
   'view.saveViewDone': 'Gespeichert',
   'view.autoSaveError': 'Speichern fehlgeschlagen — wird erneut versucht...',
+  'load.error.title': 'Muster konnte nicht geladen werden.',
+  'load.error.desc': 'Überprüfe deine Verbindung und versuche es erneut.',
+  'load.error.toDashboard': 'Zum Dashboard',
   'view.deleteAllMarks': 'Alle Markierungen löschen?',
   'view.deleteAll': 'Alles löschen',
   'ruler.complete': 'Fertig',
@@ -1873,6 +1913,8 @@ const de: Translations = {
   'offline.syncing': 'Synchronisierung...',
   'offline.syncDone': 'Synchronisiert',
   'offline.actionBlocked': 'Offline nicht verfügbar.',
+  'offline.syncError': 'Synchronisierung fehlgeschlagen',
+  'offline.syncErrorRetry': 'Wiederholen',
 };
 
 const pt: Translations = {
@@ -1963,12 +2005,17 @@ const pt: Translations = {
   'viewer.zoomIn': 'Ampliar',
   'viewer.zoomOut': 'Reduzir',
   'viewer.fitWidth': 'Ajustar\nlargura',
+  'viewer.imageLoadError': 'Não foi possível carregar o padrão.\nTente novamente.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Editar gráfico',
   'view.undo': 'Desfazer (Ctrl+Z)',
   'view.redo': 'Refazer (Ctrl+Shift+Z)',
   'view.saveView': 'Salvar vista',
   'view.saveViewDone': 'Salvo',
   'view.autoSaveError': 'Falha ao salvar — a tentar novamente...',
+  'load.error.title': 'Não foi possível carregar o padrão.',
+  'load.error.desc': 'Verifique a sua ligação e tente novamente.',
+  'load.error.toDashboard': 'Ir para o painel',
   'view.deleteAllMarks': 'Excluir todas as marcações?',
   'view.deleteAll': 'Excluir tudo',
   'ruler.complete': 'Concluído',
@@ -2095,6 +2142,8 @@ const pt: Translations = {
   'offline.syncing': 'Sincronizando...',
   'offline.syncDone': 'Sincronizado',
   'offline.actionBlocked': 'Não disponível offline.',
+  'offline.syncError': 'Falha na sincronização',
+  'offline.syncErrorRetry': 'Tentar novamente',
 };
 
 const ru: Translations = {
@@ -2185,12 +2234,17 @@ const ru: Translations = {
   'viewer.zoomIn': 'Увеличить',
   'viewer.zoomOut': 'Уменьшить',
   'viewer.fitWidth': 'По\nширине',
+  'viewer.imageLoadError': 'Не удалось загрузить схему.\nПопробуйте ещё раз.',
+  'viewer.imageLoadErrorClose': 'ОК',
   'view.edit': 'Изменить схему',
   'view.undo': 'Отменить (Ctrl+Z)',
   'view.redo': 'Повторить (Ctrl+Shift+Z)',
   'view.saveView': 'Сохранить вид',
   'view.saveViewDone': 'Сохранено',
   'view.autoSaveError': 'Ошибка сохранения — повторная попытка...',
+  'load.error.title': 'Не удалось загрузить схему.',
+  'load.error.desc': 'Проверьте подключение и попробуйте снова.',
+  'load.error.toDashboard': 'На главную',
   'view.deleteAllMarks': 'Удалить все отметки?',
   'view.deleteAll': 'Удалить всё',
   'ruler.complete': 'Готово',
@@ -2317,6 +2371,8 @@ const ru: Translations = {
   'offline.syncing': 'Синхронизация...',
   'offline.syncDone': 'Синхронизировано',
   'offline.actionBlocked': 'Недоступно в офлайн-режиме.',
+  'offline.syncError': 'Ошибка синхронизации',
+  'offline.syncErrorRetry': 'Повторить',
 };
 
 const no: Translations = {
@@ -2407,12 +2463,17 @@ const no: Translations = {
   'viewer.zoomIn': 'Zoom inn',
   'viewer.zoomOut': 'Zoom ut',
   'viewer.fitWidth': 'Tilpass\nbredde',
+  'viewer.imageLoadError': 'Kunne ikke laste mønsteret.\nVennligst prøv igjen.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Rediger mønster',
   'view.undo': 'Angre (Ctrl+Z)',
   'view.redo': 'Gjør om (Ctrl+Shift+Z)',
   'view.saveView': 'Lagre visning',
   'view.saveViewDone': 'Lagret',
   'view.autoSaveError': 'Lagring mislyktes — prøver igjen...',
+  'load.error.title': 'Kunne ikke laste mønsteret.',
+  'load.error.desc': 'Sjekk tilkoblingen og prøv igjen.',
+  'load.error.toDashboard': 'Gå til dashbordet',
   'view.deleteAllMarks': 'Slette alle markeringer?',
   'view.deleteAll': 'Slett alt',
   'ruler.complete': 'Ferdig',
@@ -2539,6 +2600,8 @@ const no: Translations = {
   'offline.syncing': 'Synkroniserer...',
   'offline.syncDone': 'Synkronisert',
   'offline.actionBlocked': 'Ikke tilgjengelig offline.',
+  'offline.syncError': 'Synkronisering mislyktes',
+  'offline.syncErrorRetry': 'Prøv igjen',
 };
 
 const nl: Translations = {
@@ -2629,12 +2692,17 @@ const nl: Translations = {
   'viewer.zoomIn': 'Inzoomen',
   'viewer.zoomOut': 'Uitzoomen',
   'viewer.fitWidth': 'Breedte\naanpassen',
+  'viewer.imageLoadError': 'Patroon kon niet worden geladen.\nProbeer het opnieuw.',
+  'viewer.imageLoadErrorClose': 'OK',
   'view.edit': 'Patroon bewerken',
   'view.undo': 'Ongedaan maken (Ctrl+Z)',
   'view.redo': 'Opnieuw uitvoeren (Ctrl+Shift+Z)',
   'view.saveView': 'Weergave opslaan',
   'view.saveViewDone': 'Opgeslagen',
   'view.autoSaveError': 'Opslaan mislukt — opnieuw proberen...',
+  'load.error.title': 'Patroon kon niet worden geladen.',
+  'load.error.desc': 'Controleer je verbinding en probeer opnieuw.',
+  'load.error.toDashboard': 'Naar dashboard',
   'view.deleteAllMarks': 'Alle markeringen verwijderen?',
   'view.deleteAll': 'Alles verwijderen',
   'ruler.complete': 'Klaar',
@@ -2761,6 +2829,8 @@ const nl: Translations = {
   'offline.syncing': 'Synchroniseren...',
   'offline.syncDone': 'Gesynchroniseerd',
   'offline.actionBlocked': 'Niet beschikbaar offline.',
+  'offline.syncError': 'Synchronisatie mislukt',
+  'offline.syncErrorRetry': 'Opnieuw proberen',
 };
 
 export type TranslationKey = keyof typeof ko;
