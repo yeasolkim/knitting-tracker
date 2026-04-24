@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   getOfflineQueue,
@@ -6,16 +6,22 @@ import {
   hasOfflineQueue,
 } from '@/lib/offlineQueue';
 
-type SyncStatus = 'idle' | 'syncing' | 'done';
+type SyncStatus = 'idle' | 'syncing' | 'done' | 'error';
 
-export function useOfflineSync(): SyncStatus {
+export function useOfflineSync(): { status: SyncStatus; retry: () => void } {
   const supabase = useMemo(() => createClient(), []);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const processQueue = useCallback(async () => {
     if (!navigator.onLine) return;
     const queue = getOfflineQueue();
     if (queue.length === 0) return;
+
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
 
     setSyncStatus('syncing');
 
@@ -50,28 +56,33 @@ export function useOfflineSync(): SyncStatus {
           );
 
         if (!error) removeFromOfflineQueue(item.patternId);
-        // If error: leave in queue, retry next time online
+        // If error: leave in queue, retry after delay
       } catch {
         // Network error mid-sync — leave item in queue
       }
     }
 
-    // Only show 'done' if queue is actually empty (all items synced or server-won)
     if (!hasOfflineQueue()) {
       setSyncStatus('done');
       setTimeout(() => setSyncStatus('idle'), 3000);
     } else {
-      setSyncStatus('idle');
+      // Some items failed — show error and schedule auto-retry in 30s
+      setSyncStatus('error');
+      retryTimerRef.current = setTimeout(() => {
+        if (navigator.onLine) processQueue();
+      }, 30000);
     }
   }, [supabase]);
 
   useEffect(() => {
-    // Try on mount (in case there are leftover items from a previous session)
     if (hasOfflineQueue()) processQueue();
 
     window.addEventListener('online', processQueue);
-    return () => window.removeEventListener('online', processQueue);
+    return () => {
+      window.removeEventListener('online', processQueue);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
   }, [processQueue]);
 
-  return syncStatus;
+  return { status: syncStatus, retry: processQueue };
 }

@@ -83,6 +83,8 @@ const ko = {
   'offline.syncing': '동기화 중...',
   'offline.syncDone': '동기화 완료',
   'offline.actionBlocked': '오프라인 상태에서는 사용할 수 없어요.',
+  'offline.syncError': '동기화 실패',
+  'offline.syncErrorRetry': '재시도',
   // pattern card
   'card.type.knitting': '대바늘',
   'card.type.crochet': '코바늘',
@@ -137,6 +139,8 @@ const ko = {
   'viewer.zoomIn': '확대',
   'viewer.zoomOut': '축소',
   'viewer.fitWidth': '화면\n맞춤',
+  'viewer.imageLoadError': '도안을 불러오지 못했어요.\n잠시 후 다시 시도해주세요.',
+  'viewer.imageLoadErrorClose': '확인',
   // pattern view
   'view.edit': '도안 수정',
   'view.undo': '되돌리기 (Ctrl+Z)',
@@ -144,6 +148,9 @@ const ko = {
   'view.saveView': '현재 화면 저장',
   'view.saveViewDone': '저장됨',
   'view.autoSaveError': '저장 실패 — 재시도 중...',
+  'load.error.title': '도안을 불러오지 못했어요.',
+  'load.error.desc': '네트워크를 확인한 후 다시 시도해주세요.',
+  'load.error.toDashboard': '대시보드로 이동',
   'view.deleteAllMarks': '모든 완료 표시를 삭제하시겠습니까?',
   'view.deleteAll': '전체 삭제',
   // ruler
@@ -321,6 +328,8 @@ const en: Translations = {
   'offline.syncing': 'Syncing...',
   'offline.syncDone': 'Synced',
   'offline.actionBlocked': 'Not available while offline.',
+  'offline.syncError': 'Sync failed',
+  'offline.syncErrorRetry': 'Retry',
   // pattern card
   'card.type.knitting': 'Knitting',
   'card.type.crochet': 'Crochet',
@@ -375,6 +384,8 @@ const en: Translations = {
   'viewer.zoomIn': 'Zoom in',
   'viewer.zoomOut': 'Zoom out',
   'viewer.fitWidth': 'Fit\nWidth',
+  'viewer.imageLoadError': 'Could not load the pattern.\nPlease try again.',
+  'viewer.imageLoadErrorClose': 'OK',
   // pattern view
   'view.edit': 'Edit Pattern',
   'view.undo': 'Undo (Ctrl+Z)',
@@ -382,6 +393,9 @@ const en: Translations = {
   'view.saveView': 'Save view',
   'view.saveViewDone': 'Saved',
   'view.autoSaveError': 'Save failed — retrying...',
+  'load.error.title': 'Could not load the pattern.',
+  'load.error.desc': 'Check your connection and try again.',
+  'load.error.toDashboard': 'Go to Dashboard',
   'view.deleteAllMarks': 'Delete all completed marks?',
   'view.deleteAll': 'Delete all',
   // ruler

@@ -76,7 +76,7 @@ function OAuthHandler() {
 // Global offline banner + sync manager — renders nothing visible when online
 function OfflineManager() {
   const isOnline = useOnlineStatus();
-  const syncStatus = useOfflineSync();
+  const { status: syncStatus, retry: retrySync } = useOfflineSync();
   const { t } = useLanguage();
 
   if (isOnline && syncStatus === 'idle') return null;
@@ -97,6 +97,17 @@ function OfflineManager() {
       {isOnline && syncStatus === 'done' && (
         <div className="bg-[#5a8a5a] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
           {t('offline.syncDone')}
+        </div>
+      )}
+      {isOnline && syncStatus === 'error' && (
+        <div className="bg-[#b5541e] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-2 pointer-events-auto">
+          {t('offline.syncError')}
+          <button
+            onClick={retrySync}
+            className="underline underline-offset-2 hover:opacity-80 active:opacity-60 transition-opacity"
+          >
+            {t('offline.syncErrorRetry')}
+          </button>
         </div>
       )}
     </div>

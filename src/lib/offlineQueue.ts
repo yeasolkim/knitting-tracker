@@ -10,15 +10,16 @@ export interface OfflineQueueItem {
   queuedAt: number; // client timestamp — used for conflict resolution
 }
 
-export function enqueueOfflineUpdate(item: OfflineQueueItem): void {
+export function enqueueOfflineUpdate(item: OfflineQueueItem): boolean {
   try {
     const queue = getOfflineQueue();
     // Keep only the latest entry per pattern (last write wins locally)
     const deduped = queue.filter(i => i.patternId !== item.patternId);
     deduped.push(item);
     localStorage.setItem(QUEUE_KEY, JSON.stringify(deduped));
+    return true;
   } catch {
-    // Ignore storage quota errors
+    return false; // quota exceeded or storage unavailable
   }
 }
 

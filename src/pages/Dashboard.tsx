@@ -187,9 +187,12 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
       return;
     }
 
-    await fetchPatterns();
-    setDuplicatingId(null);
-    navigate(`/patterns/${data.id}/edit`);
+    try {
+      await fetchPatterns();
+      navigate(`/patterns/${data.id}/edit`);
+    } finally {
+      setDuplicatingId(null);
+    }
   }, [supabase, patterns, t, navigate, fetchPatterns, showToast, duplicatingId]);
 
   const handleLogout = async () => {

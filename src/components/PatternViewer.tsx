@@ -820,8 +820,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                       // ── 1순위 개선: PDF 메타데이터에서 모든 페이지 종횡비를 미리 파싱 ──
                       // 이를 통해 렌더링 전부터 정확한 전체 높이를 알 수 있어,
                       // 세로/가로 혼합 PDF에서도 진행선이 튀지 않음.
+                      const ratios: number[] = [];
                       try {
-                        const ratios: number[] = [];
                         for (let i = 1; i <= numPages; i++) {
                           const page = await pdfDoc.getPage(i);
                           const vp = page.getViewport({ scale: 1 });
@@ -842,8 +842,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                         preParseDoneRef.current = true;
                         setPreParseDone(true);
                       } catch {
-                        // 파싱 실패: preParseDone 상태를 true로 설정해
-                        // onRenderSuccess 또는 preParseDone effect가 reportImageSize를 호출하도록 허용
+                        // 파싱 실패: 부분적으로 파싱된 데이터라도 저장해 나머지 페이지 높이 추정에 활용
+                        if (ratios.length > 0) pageAspectRatiosRef.current = ratios;
                         preParseDoneRef.current = true;
                         setPreParseDone(true);
                       }

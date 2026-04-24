@@ -35,8 +35,10 @@ function createDefaultSubPattern(index: number, prefix: string): SubPattern {
 export default function PatternView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [pattern, setPattern] = useState<PatternWithProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isFromCache, setIsFromCache] = useState(false);
 
   useEffect(() => {
@@ -66,7 +68,8 @@ export default function PatternView() {
             return;
           }
         }
-        navigate('/dashboard');
+        setLoading(false);
+        setLoadError(true);
         return;
       }
 
@@ -88,9 +91,25 @@ export default function PatternView() {
           return;
         }
       }
-      navigate('/dashboard');
+      setLoading(false);
+      setLoadError(true);
     });
   }, [id, navigate]);
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#f5edd6] p-8">
+        <p className="text-[#3d2b1f] text-center font-semibold">{t('load.error.title')}</p>
+        <p className="text-sm text-[#7a5c46] text-center">{t('load.error.desc')}</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="px-4 py-2.5 bg-[#b5541e] text-[#fdf6e8] rounded-lg text-sm font-bold hover:bg-[#9a4318] transition-colors border-2 border-[#9a4318]"
+        >
+          {t('load.error.toDashboard')}
+        </button>
+      </div>
+    );
+  }
 
   if (loading || !pattern) {
     return (
@@ -243,6 +262,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const activeFileIdxRef = useRef(0);
   activeFileIdxRef.current = activeFileIdx;
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
   // Set of image indices that have been visited (and thus have saved per-image state)
@@ -304,6 +324,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       initialScrollDoneRef.current = true;
       if (imageLoadingTimeoutRef.current) { clearTimeout(imageLoadingTimeoutRef.current); imageLoadingTimeoutRef.current = null; }
       setIsImageLoading(false);
+      setImageLoadError(false);
       // Double RAF: ensures browser has fully laid out the image before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -736,9 +757,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
     // Show loading overlay while new image loads
     setIsImageLoading(true);
+    setImageLoadError(false);
     // Safety: clear overlay after 8s in case image never reports dimensions (e.g., load error)
     if (imageLoadingTimeoutRef.current) clearTimeout(imageLoadingTimeoutRef.current);
-    imageLoadingTimeoutRef.current = setTimeout(() => setIsImageLoading(false), 8000);
+    imageLoadingTimeoutRef.current = setTimeout(() => {
+      setIsImageLoading(false);
+      setImageLoadError(true);
+    }, 8000);
 
     // Save current state for the image we're leaving (deep copy to prevent shared array refs)
     imageStatesRef.current[prevIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
@@ -846,7 +871,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
       // Offline: queue locally and return without error (optimistic)
       if (!isOnlineRef.current) {
-        enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+        const queued = enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+        if (!queued) throw new Error('storage_full');
         return;
       }
 
@@ -863,7 +889,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       if (error) {
         // Network dropped during save — queue instead of surfacing error
         if (!isOnlineRef.current) {
-          enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+          const queued = enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
+          if (!queued) throw new Error('storage_full');
           return;
         }
         throw new Error(error.message);
@@ -1246,7 +1273,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
                 </p>
               )}
-              {!isOnline && (
+              {!isOnline && status !== 'error' && (
                 <span className="flex items-center gap-1 text-[10px] text-[#b07840] shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#b07840]" />
                   {t('offline.saving')}
@@ -1258,7 +1285,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   {t('form.saving')}
                 </span>
               )}
-              {isOnline && status === 'error' && (
+              {status === 'error' && (
                 <span className="text-[10px] text-[#b5541e] font-medium shrink-0">
                   {t('view.autoSaveError')}
                 </span>
@@ -1563,10 +1590,22 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
         </PatternViewer>
 
         {/* Image loading overlay — shown while new image is loading after a tab switch */}
-        {isImageLoading && (
+        {(isImageLoading || imageLoadError) && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#fdf6e8]/70 backdrop-blur-[1px]">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 border-[3px] border-[#b07840] border-t-[#b5541e] rounded-full animate-spin" />
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
+              {imageLoadError ? (
+                <>
+                  <p className="text-sm text-[#7a5c46] leading-relaxed whitespace-pre-line">{t('viewer.imageLoadError')}</p>
+                  <button
+                    onClick={() => setImageLoadError(false)}
+                    className="text-xs font-semibold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] px-4 py-2 rounded-lg hover:bg-[#9a4318] active:scale-95 transition-all"
+                  >
+                    {t('viewer.imageLoadErrorClose')}
+                  </button>
+                </>
+              ) : (
+                <div className="w-8 h-8 border-[3px] border-[#b07840] border-t-[#b5541e] rounded-full animate-spin" />
+              )}
             </div>
           </div>
         )}

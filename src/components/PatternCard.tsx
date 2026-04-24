@@ -63,6 +63,9 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
                   PDF{fmtSize(pattern.file_size) ? ` · ${fmtSize(pattern.file_size)}` : ''}
                 </span>
               )}
+              {imgFailed && pattern.file_type === 'image' && (
+                <span className="text-[9px] text-[#c08060] font-medium">{t('viewer.imageLoadError').split('\n')[0]}</span>
+              )}
             </div>
           )}
           {/* Type badge */}
