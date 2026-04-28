@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createClient } from '@/lib/supabase/client';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import monkeyImg from '@/assets/monkey-knitting.png';
 
@@ -245,6 +246,14 @@ export default function Landing() {
   const navigate = useNavigate();
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // OAuth 콜백 또는 광고 hash 변조 후 Landing에 착지한 경우,
+  // 이미 세션이 있으면 Dashboard로 보낸다.
+  useEffect(() => {
+    createClient().auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate('/dashboard', { replace: true });
+    });
+  }, [navigate]);
 
   const handleMonkeyTap = () => {
     tapCount.current += 1;

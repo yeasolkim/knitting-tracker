@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { createClient } from './lib/supabase/client';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
@@ -13,7 +14,6 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { createClient } from './lib/supabase/client';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -114,6 +114,20 @@ function OfflineManager() {
   );
 }
 
+function FallbackRedirect() {
+  const navigate = useNavigate();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    createClient().auth.getSession().then(({ data: { session } }) => {
+      navigate(session ? '/dashboard' : '/login', { replace: true });
+      setChecked(true);
+    });
+  }, [navigate]);
+
+  return checked ? null : null;
+}
+
 // Passes current path as resetKey so ErrorBoundary resets on navigation
 function AppRoutes() {
   const location = useLocation();
@@ -133,8 +147,8 @@ function AppRoutes() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        {/* 미매칭 경로(광고 팝업 등으로 hash 변조 시) → 홈으로 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 미매칭 경로(광고 등으로 hash 변조 시) → 세션 있으면 dashboard, 없으면 login */}
+        <Route path="*" element={<FallbackRedirect />} />
       </Routes>
     </ErrorBoundary>
   );
