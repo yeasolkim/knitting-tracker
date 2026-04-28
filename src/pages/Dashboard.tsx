@@ -9,7 +9,6 @@ import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import { cachePatterns, getCachedPatterns } from '@/lib/offlineQueue';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
-const PATTERN_LIMIT = 20;
 
 type TypeFilter = 'all' | 'knitting' | 'crochet';
 type StatusFilter = 'all' | 'inProgress' | 'completed';
@@ -362,15 +361,8 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                 </p>
               </div>
               <button
-                onClick={() => {
-                  if (patterns.length >= PATTERN_LIMIT) {
-                    showToast(t('dashboard.patternLimitAlert'), 4000);
-                    return;
-                  }
-                  navigate('/patterns/new');
-                }}
-                aria-disabled={patterns.length >= PATTERN_LIMIT}
-                className={`inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px] ${patterns.length >= PATTERN_LIMIT ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => navigate('/patterns/new')}
+                className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-4 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

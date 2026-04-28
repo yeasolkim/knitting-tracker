@@ -199,7 +199,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
-  const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 50);
+  const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
   const [rulerHeight, setRulerHeight] = useState(img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0.3);
   const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0));
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
@@ -773,7 +773,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     // Load state for the image we're switching to
     const next = imageStatesRef.current[activeFileIdx];
 
-    setRulerY(next?.ruler_position_y ?? 50);
+    setRulerY(next?.ruler_position_y ?? 10);
     setRulerHeight(next?.ruler_height ?? 0.3);
     setMaxRulerHeight(Math.max(1.35, next?.ruler_height ?? 0));
     setRulerX(next?.ruler_position_x ?? 50);

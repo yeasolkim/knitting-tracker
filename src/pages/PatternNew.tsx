@@ -187,10 +187,7 @@ function UploadForm() {
       if (!session?.user) throw new Error(t('form.error.login'));
       const user = session.user;
 
-      const { count } = await supabase.from('patterns').select('id', { count: 'exact', head: true });
-      if ((count ?? 0) >= 20) throw new Error(t('form.error.patternLimit'));
-
-      const thumbPromise = isPdf
+const thumbPromise = isPdf
         ? Promise.race([
             generatePdfThumbnail(primaryFile),
             new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
