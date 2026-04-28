@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
 import type { TranslationKey } from '@/lib/i18n';
@@ -111,11 +111,6 @@ function EditForm() {
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-
-  const blocker = useBlocker(isDirty && !saving);
-  useEffect(() => {
-    if (blocker.state === 'blocked') setShowLeaveConfirm(true);
-  }, [blocker.state]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -383,8 +378,8 @@ function EditForm() {
             <button
               type="button"
               onClick={() => {
-                if (blocker.state === 'blocked') blocker.proceed();
-                else navigate(`/patterns/${id}`);
+                setIsDirty(false);
+                navigate(`/patterns/${id}`);
               }}
               className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
             >
@@ -392,7 +387,7 @@ function EditForm() {
             </button>
             <button
               type="button"
-              onClick={() => { blocker.reset?.(); setShowLeaveConfirm(false); }}
+              onClick={() => setShowLeaveConfirm(false)}
               className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1"
             >
               {t('card.cancel')}
