@@ -138,3 +138,7 @@ alter table patterns add column if not exists extra_image_urls jsonb not null de
 -- Migration: per-image state isolation
 -- Stores ruler/marks/notes state for each image index independently
 alter table pattern_progress add column if not exists image_states jsonb not null default '[]';
+
+-- Migration: image names & order
+-- Stores display name for each image (index 0 = primary, 1+ = extras)
+alter table patterns add column if not exists image_names jsonb not null default '[]';

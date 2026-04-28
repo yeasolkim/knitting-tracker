@@ -5,6 +5,7 @@ export interface ExtraPatternFile {
   url: string;
   thumbnail_url: string | null;
   file_type?: FileType;
+  name?: string;
 }
 
 export interface Pattern {
@@ -20,6 +21,7 @@ export interface Pattern {
   yarn: string;
   needle: string;
   file_size?: number | null;
+  image_names?: string[];
   created_at: string;
   updated_at: string;
 }

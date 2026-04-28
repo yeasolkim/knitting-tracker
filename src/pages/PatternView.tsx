@@ -951,6 +951,19 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     });
   }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
 
+  // Flush save when page is hidden (tab switch, home button, device lock, iOS swipe).
+  // This is a second line of defence alongside the unmount flush in useAutoSave.
+  useEffect(() => {
+    const flush = () => {
+      if (document.visibilityState === 'hidden') {
+        imageStatesRef.current[activeFileIdxRef.current] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+        saveAll().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', flush);
+    return () => document.removeEventListener('visibilitychange', flush);
+  }, [saveAll]);
+
   // Explicit "save view" button
   const [saveViewStatus, setSaveViewStatus] = useState<'idle' | 'saving' | 'done'>('idle');
   const [isSavingBack, setIsSavingBack] = useState(false);
@@ -1246,7 +1259,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             onClick={async () => {
               if (isSavingBack) return;
               setIsSavingBack(true);
-              await saveAll();
+              try {
+                await saveAll();
+              } catch {
+                // Save failed — navigate anyway so the user is never stuck
+              } finally {
+                setIsSavingBack(false);
+              }
               navigate('/dashboard');
             }}
             disabled={isSavingBack}
@@ -1375,7 +1394,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                     : 'border-transparent bg-transparent text-[#a08060] hover:text-[#7a5c46]'
                 }`}
               >
-                {t('form.imageN').replace('{n}', String(i + 1))}
+                {(pattern.image_names?.[i] && pattern.image_names[i] !== '')
+                  ? pattern.image_names[i]
+                  : t('form.imageN').replace('{n}', String(i + 1))}
                 {hasProgress && !isActive && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[#b5541e] opacity-70 flex-shrink-0" />
                 )}

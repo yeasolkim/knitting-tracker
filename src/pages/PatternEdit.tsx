@@ -9,6 +9,13 @@ import FileDropZone from '@/components/FileDropZone';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+interface OrderedImage {
+  url: string;
+  thumbUrl: string | null;
+  fileType: 'image' | 'pdf';
+  name: string;
+}
+
 async function generatePdfThumbnail(file: File): Promise<Blob> {
   const pdfjsLib = await import('pdfjs-dist');
   pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -84,36 +91,32 @@ function EditForm() {
   const [type, setType] = useState<PatternType>('knitting');
   const [yarn, setYarn] = useState('');
   const [needle, setNeedle] = useState('');
-  const [currentFileUrl, setCurrentFileUrl] = useState('');
-  const [currentFileType, setCurrentFileType] = useState<'image' | 'pdf'>('image');
-  const [currentThumbnailUrl, setCurrentThumbnailUrl] = useState<string | null>(null);
 
-  // Existing extra images from DB
-  const [currentExtraFiles, setCurrentExtraFiles] = useState<ExtraPatternFile[]>([]);
-  // Extra files to delete (URLs)
-  const [extraToDelete, setExtraToDelete] = useState<string[]>([]);
-  // New extra files to upload
-  const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]);
-  const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]);
+  // All existing images in display order (primary first, then extras)
+  const [orderedImages, setOrderedImages] = useState<OrderedImage[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
   const extraInputRef = useRef<HTMLInputElement>(null);
 
-  // New primary file (optional replacement)
+  // New primary file (optional replacement of orderedImages[0])
   const [newFile, setNewFile] = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
+
+  // New extra files (not yet uploaded, always appended to end)
+  const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]);
+  const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]);
+  const [newExtraNames, setNewExtraNames] = useState<string[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // Block in-app route changes (browser back button, link clicks) when there are unsaved changes
   const blocker = useBlocker(isDirty && !saving);
   useEffect(() => {
     if (blocker.state === 'blocked') setShowLeaveConfirm(true);
   }, [blocker.state]);
 
-  // Warn on browser tab close / hard refresh when there are unsaved changes
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
@@ -133,10 +136,23 @@ function EditForm() {
         setType(data.type as PatternType);
         setYarn(data.yarn || '');
         setNeedle(data.needle || '');
-        setCurrentFileUrl(data.file_url);
-        setCurrentFileType(data.file_type as 'image' | 'pdf');
-        setCurrentThumbnailUrl(data.thumbnail_url);
-        setCurrentExtraFiles((data.extra_image_urls as ExtraPatternFile[]) || []);
+
+        const names = (data.image_names as string[] | null) || [];
+        const imgs: OrderedImage[] = [
+          {
+            url: data.file_url,
+            thumbUrl: data.thumbnail_url,
+            fileType: data.file_type as 'image' | 'pdf',
+            name: names[0] || '',
+          },
+          ...((data.extra_image_urls as ExtraPatternFile[]) || []).map((e, i) => ({
+            url: e.url,
+            thumbUrl: e.thumbnail_url,
+            fileType: (e.file_type ?? (e.url.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')) as 'image' | 'pdf',
+            name: names[i + 1] || '',
+          })),
+        ];
+        setOrderedImages(imgs);
         setLoading(false);
       });
   }, [id, navigate, supabase]);
@@ -160,17 +176,39 @@ function EditForm() {
     );
     setNewExtraFiles((prev) => [...prev, ...selected]);
     setNewExtraPreviews((prev) => [...prev, ...newPreviews]);
+    setNewExtraNames((prev) => [...prev, ...selected.map(() => '')]);
     setIsDirty(true);
     e.target.value = '';
   };
 
-  const removeCurrentExtra = (index: number) => {
-    const removed = currentExtraFiles[index];
-    setExtraToDelete((prev) => [...prev, removed.url]);
-    if (removed.thumbnail_url && removed.thumbnail_url !== removed.url) {
-      setExtraToDelete((prev) => [...prev, removed.thumbnail_url!]);
+  const removeOrderedImage = (index: number) => {
+    if (orderedImages.length <= 1 && newExtraFiles.length === 0) return;
+    const img = orderedImages[index];
+    const toDelete = [img.url];
+    if (img.thumbUrl && img.thumbUrl !== img.url) toDelete.push(img.thumbUrl);
+    setImagesToDelete((prev) => [...prev, ...toDelete]);
+    setOrderedImages((prev) => prev.filter((_, i) => i !== index));
+    if (index === 0 && newFile) {
+      if (newPreview) URL.revokeObjectURL(newPreview);
+      setNewFile(null);
+      setNewPreview(null);
     }
-    setCurrentExtraFiles((prev) => prev.filter((_, i) => i !== index));
+    setIsDirty(true);
+  };
+
+  const moveImage = (index: number, dir: -1 | 1) => {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= orderedImages.length) return;
+    if ((index === 0 || newIdx === 0) && newFile) {
+      if (newPreview) URL.revokeObjectURL(newPreview);
+      setNewFile(null);
+      setNewPreview(null);
+    }
+    setOrderedImages((prev) => {
+      const next = [...prev];
+      [next[index], next[newIdx]] = [next[newIdx], next[index]];
+      return next;
+    });
     setIsDirty(true);
   };
 
@@ -179,6 +217,7 @@ function EditForm() {
     if (url) URL.revokeObjectURL(url);
     setNewExtraFiles((prev) => prev.filter((_, i) => i !== index));
     setNewExtraPreviews((prev) => prev.filter((_, i) => i !== index));
+    setNewExtraNames((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,17 +229,21 @@ function EditForm() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error(t('form.error.login'));
 
-      let fileUrl = currentFileUrl;
-      let fileType = currentFileType;
-      let thumbnailUrl = currentThumbnailUrl;
-      const urlsToDelete: string[] = [...extraToDelete];
+      const primaryImg = orderedImages[0];
+      let fileUrl = primaryImg?.url ?? '';
+      let fileType = primaryImg?.fileType ?? 'image';
+      let thumbnailUrl = primaryImg?.thumbUrl ?? null;
+      const urlsToDelete: string[] = [...imagesToDelete];
 
-      // Upload new primary file if replaced
       if (newFile) {
         const isPdf = newFile.type === 'application/pdf';
         const thumbPromise = isPdf ? generatePdfThumbnail(newFile).catch(() => null) : null;
 
         const uploadedUrl = await uploadFile(supabase, newFile, session.user.id, id!, t);
+
+        if (fileUrl && fileUrl !== uploadedUrl) urlsToDelete.push(fileUrl);
+        if (thumbnailUrl && thumbnailUrl !== fileUrl && thumbnailUrl !== uploadedUrl) urlsToDelete.push(thumbnailUrl);
+
         fileUrl = uploadedUrl;
         fileType = isPdf ? 'pdf' : 'image';
 
@@ -228,12 +271,6 @@ function EditForm() {
         } else {
           thumbnailUrl = fileUrl;
         }
-
-        // Mark old primary file for deletion
-        const newUrls = new Set([fileUrl, thumbnailUrl].filter(Boolean));
-        [currentFileUrl, currentThumbnailUrl]
-          .filter((u): u is string => !!u && !newUrls.has(u))
-          .forEach((u) => urlsToDelete.push(u));
       }
 
       // Upload new extra images
@@ -276,24 +313,34 @@ function EditForm() {
         });
       }
 
-      const finalExtraImageUrls: ExtraPatternFile[] = [
-        ...currentExtraFiles,
-        ...uploadedExtraFiles,
+      // orderedImages[1+] are the reordered existing extras
+      const existingExtras: ExtraPatternFile[] = orderedImages.slice(1).map((img) => ({
+        url: img.url,
+        thumbnail_url: img.thumbUrl,
+        file_type: img.fileType,
+      }));
+      const finalExtraImageUrls: ExtraPatternFile[] = [...existingExtras, ...uploadedExtraFiles];
+
+      const finalImageNames: string[] = [
+        ...orderedImages.map((img) => img.name),
+        ...newExtraNames,
       ];
 
       const { error: updateError } = await supabase
         .from('patterns')
         .update({
           title, type, yarn, needle,
-          file_url: fileUrl, file_type: fileType, thumbnail_url: thumbnailUrl,
+          file_url: fileUrl,
+          file_type: fileType,
+          thumbnail_url: thumbnailUrl,
           extra_image_urls: finalExtraImageUrls,
+          image_names: finalImageNames,
           ...(newFile ? { file_size: newFile.size } : {}),
         })
         .eq('id', id!);
 
       if (updateError) throw updateError;
 
-      // Delete removed files (fire-and-forget)
       const uniqueToDelete = [...new Set(urlsToDelete)].filter(Boolean);
       if (uniqueToDelete.length > 0) {
         supabase.functions.invoke('r2-delete', { body: { urls: uniqueToDelete } }).catch(() => {});
@@ -323,7 +370,9 @@ function EditForm() {
     );
   }
 
-  const displayThumb = newPreview || (newFile ? null : (currentThumbnailUrl || (currentFileType === 'image' ? currentFileUrl : null)));
+  const primaryImg = orderedImages[0];
+  const displayThumb = newPreview || (newFile ? null : (primaryImg?.thumbUrl || (primaryImg?.fileType === 'image' ? primaryImg?.url : null)));
+  const totalImageCount = orderedImages.length + newExtraFiles.length;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -409,7 +458,7 @@ function EditForm() {
                     <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                     <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
-                  <p className="text-sm text-[#a08060]">{currentFileType === 'pdf' ? t('form.filePdf') : t('form.fileImage')}</p>
+                  <p className="text-sm text-[#a08060]">{primaryImg?.fileType === 'pdf' ? t('form.filePdf') : t('form.fileImage')}</p>
                 </div>
               )}
             </div>
@@ -421,97 +470,127 @@ function EditForm() {
         )}
       </div>
 
-      {/* Extra images section */}
+      {/* Images section — order, names, delete, add more */}
       <div>
         <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
-          {t('form.extraImagesLabel')}
-          {(currentExtraFiles.length + newExtraFiles.length) > 0 && (
+          {t('form.imageOrderAndName')}
+          {totalImageCount > 0 && (
             <span className="ml-1.5 text-[#a08060] normal-case font-normal tracking-normal">
-              ({currentExtraFiles.length + newExtraFiles.length})
+              ({totalImageCount})
             </span>
           )}
         </label>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-          {/* Existing extra images from DB */}
-          {currentExtraFiles.map((f, i) => {
-            const isPdfFile = f.file_type === 'pdf' || (!f.file_type && f.url.toLowerCase().endsWith('.pdf'));
-            return (
-            <div key={`cur-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-[#b07840] bg-[#fdf6e8]">
-              {f.thumbnail_url ? (
-                <img
-                  src={f.thumbnail_url}
-                  alt={`extra ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : isPdfFile ? (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                  <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
-                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  </svg>
-                  <span className="text-[9px] text-[#a08060]">PDF</span>
-                </div>
-              ) : (
-                <img
-                  src={f.url}
-                  alt={`extra ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              )}
-              <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
-                {i + 1}
+        <div className="space-y-1.5">
+          {/* Existing images */}
+          {orderedImages.map((img, i) => (
+            <div key={`ord-${i}-${img.url}`} className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg overflow-hidden border border-[#b07840] flex-shrink-0 bg-[#fdf6e8]">
+                {img.thumbUrl ? (
+                  <img src={img.thumbUrl} alt="" className="w-full h-full object-cover" />
+                ) : img.fileType !== 'pdf' ? (
+                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => removeCurrentExtra(i)}
-                className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
-              >
-                ×
-              </button>
-            </div>
-          );
-          })}
-
-          {/* New extra images (not yet uploaded) */}
-          {newExtraFiles.map((f, i) => (
-            <div key={`new-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#b07840] bg-[#fdf6e8]">
-              {newExtraPreviews[i] ? (
-                <img
-                  src={newExtraPreviews[i]}
-                  alt={`new extra ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                  <svg width="24" height="16" viewBox="0 0 28 18" fill="none">
-                    <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  </svg>
-                  <span className="text-[9px] text-[#a08060]">PDF</span>
+              {i === 0 && (
+                <span className="text-[9px] font-bold text-[#b5541e] tracking-widest uppercase flex-shrink-0">
+                  {t('form.primaryBadge')}
+                </span>
+              )}
+              <input
+                type="text"
+                value={img.name}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setOrderedImages((prev) => prev.map((item, idx) => idx === i ? { ...item, name: val } : item));
+                  setIsDirty(true);
+                }}
+                placeholder={t('form.imageN').replace('{n}', String(i + 1))}
+                className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+              />
+              {totalImageCount > 1 && (
+                <div className="flex flex-col gap-px flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, -1)}
+                    disabled={i === 0}
+                    className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, 1)}
+                    disabled={i === orderedImages.length - 1 && newExtraFiles.length === 0}
+                    className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
                 </div>
               )}
-              <div className="absolute top-1 left-1 w-5 h-5 bg-[#3d2b1f]/65 rounded-full text-[#fdf6e8] text-[10px] font-bold flex items-center justify-center leading-none">
-                {currentExtraFiles.length + i + 1}
-              </div>
               <button
                 type="button"
-                onClick={() => removeNewExtra(i)}
-                className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+                onClick={() => removeOrderedImage(i)}
+                disabled={orderedImages.length <= 1 && newExtraFiles.length === 0}
+                className="w-7 h-7 flex items-center justify-center text-[#b07840] disabled:opacity-20 hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
               >
-                ×
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
           ))}
 
-          {/* Add more card */}
+          {/* New extras (not yet uploaded) */}
+          {newExtraFiles.map((_, i) => (
+            <div key={`new-${i}`} className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg overflow-hidden border-2 border-dashed border-[#b07840] flex-shrink-0 bg-[#fdf6e8]">
+                {newExtraPreviews[i] ? (
+                  <img src={newExtraPreviews[i]} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
+                  </div>
+                )}
+              </div>
+              <input
+                type="text"
+                value={newExtraNames[i] ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNewExtraNames((prev) => prev.map((n, ni) => ni === i ? val : n));
+                }}
+                placeholder={t('form.imageN').replace('{n}', String(orderedImages.length + i + 1))}
+                className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => removeNewExtra(i)}
+                className="w-7 h-7 flex items-center justify-center text-[#b07840] hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+
+          {/* Add more */}
           <button
             type="button"
             onClick={() => extraInputRef.current?.click()}
-            className="aspect-square rounded-xl border-2 border-dashed border-[#b07840] flex flex-col items-center justify-center gap-1 bg-[#fdf6e8] hover:border-[#b5541e] hover:bg-[#f5edd6] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors pt-1"
           >
-            <span className="text-xl font-light text-[#b07840]">+</span>
-            <span className="text-[9px] text-[#a08060] tracking-wide">{t('form.addMoreImages')}</span>
+            <span className="text-base font-light leading-none">+</span>
+            {t('form.addMoreImages')}
           </button>
         </div>
 

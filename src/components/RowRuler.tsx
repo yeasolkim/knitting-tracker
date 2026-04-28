@@ -257,7 +257,7 @@ const RowRuler = memo(function RowRuler({
             <div className="relative flex flex-col items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
               {/* Close button — top-right */}
               <button
-                onClick={(e) => { e.stopPropagation(); setShowActionBar(false); }}
+                onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="absolute top-1 right-1 z-10 flex items-center justify-center w-5 h-5 rounded-full text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
                 title="닫기"
@@ -418,7 +418,7 @@ const RowRuler = memo(function RowRuler({
             </button>
             <div className="w-px bg-[#d4b896]" />
             <button
-              onClick={(e) => { e.stopPropagation(); setShowActionBar(false); }}
+              onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
               title="닫기"

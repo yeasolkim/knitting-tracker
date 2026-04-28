@@ -96,6 +96,7 @@ function UploadForm() {
   // All selected files: files[0] = primary, files[1+] = extras
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [imageNames, setImageNames] = useState<string[]>([]);
 
   // Track created blob URLs for cleanup on unmount
   const blobUrlsRef = useRef<string[]>([]);
@@ -131,6 +132,7 @@ function UploadForm() {
         setTitle(toAdd[0].name.replace(/\.[^.]+$/, ''));
       }
       setPreviews((p) => [...p, ...newPreviews]);
+      setImageNames((n) => [...n, ...toAdd.map(() => '')]);
       return updated;
     });
   };
@@ -140,6 +142,20 @@ function UploadForm() {
     if (url) URL.revokeObjectURL(url);
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
+    setImageNames((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveFile = (index: number, dir: -1 | 1) => {
+    const swap = <T,>(arr: T[]): T[] => {
+      const next = [...arr];
+      const newIdx = index + dir;
+      if (newIdx < 0 || newIdx >= next.length) return arr;
+      [next[index], next[newIdx]] = [next[newIdx], next[index]];
+      return next;
+    };
+    setFiles((prev) => swap(prev));
+    setPreviews((prev) => swap(prev));
+    setImageNames((prev) => swap(prev));
   };
 
   const handleAddMore = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -289,6 +305,7 @@ function UploadForm() {
             thumbnail_url: thumbnailUrl,
             file_size: primaryFile.size,
             extra_image_urls: extraImageUrls,
+            image_names: imageNames,
           })
           .eq('id', pattern.id),
         supabase.from('pattern_progress').insert({
@@ -483,10 +500,68 @@ function UploadForm() {
         {files.length > 1 && (
           <p className="text-[11px] text-[#a08060] mt-2">{t('form.coverImageHint')}</p>
         )}
+
+        {/* Order and names list */}
+        {files.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+              {t('form.imageOrderAndName')}
+            </p>
+            <div className="space-y-1.5">
+              {files.map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-lg overflow-hidden border border-[#b07840] flex-shrink-0 bg-[#fdf6e8]">
+                    {previews[i] ? (
+                      <img src={previews[i]} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={imageNames[i] ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setImageNames((prev) => prev.map((n, ni) => ni === i ? val : n));
+                    }}
+                    placeholder={t('form.imageN').replace('{n}', String(i + 1))}
+                    className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+                  />
+                  {files.length > 1 && (
+                    <div className="flex flex-col gap-px flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => moveFile(i, -1)}
+                        disabled={i === 0}
+                        className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveFile(i, 1)}
+                        disabled={i === files.length - 1}
+                        className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {files.length > 0 && (
           <button
             type="button"
-            onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); }}
+            onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); setImageNames([]); }}
             className="mt-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             {t('form.resetFiles')}
