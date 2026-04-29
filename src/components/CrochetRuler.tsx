@@ -67,9 +67,14 @@ export default function CrochetRuler({
   const rowHeightPx = rowHeight != null ? Math.max(1, (rowHeight / 100) * containerH) : null;
   const [maxRowHeight, setMaxRowHeight] = useState(() => Math.max(10, rowHeight ?? 5));
 
+  // Action bar state — tap ring body to toggle
+  const [showActionBar, setShowActionBar] = useState(false);
+
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
   const [isDraggingBody, setIsDraggingBody] = useState(false);
   const bodyDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
+  const hasDraggedBodyRef = useRef(false);
+  const pointerDownBodyRef = useRef<{ x: number; y: number } | null>(null);
 
   // Center drag
   const onCenterDown = (e: React.PointerEvent<SVGCircleElement>) => {
@@ -109,22 +114,42 @@ export default function CrochetRuler({
   };
   const onCornerUp = () => { setIsDraggingCorner(false); cornerDragRef.current = null; };
 
-  // Body drag (interior of shape)
+  // Body drag — distinguishes tap (toggle action bar) from drag (move ring)
   const onBodyDown = (e: React.PointerEvent<SVGPathElement>) => {
     e.stopPropagation();
     onDragStart();
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDraggingBody(true);
+    hasDraggedBodyRef.current = false;
+    pointerDownBodyRef.current = { x: e.clientX, y: e.clientY };
     bodyDragRef.current = { sx: e.clientX, sy: e.clientY, cx, cy };
     setSelectedRingIndex(null);
   };
   const onBodyMove = (e: React.PointerEvent<SVGPathElement>) => {
     if (!bodyDragRef.current) return;
-    const dx = (e.clientX - bodyDragRef.current.sx) / containerW * 100;
-    const dy = (e.clientY - bodyDragRef.current.sy) / containerH * 100;
-    onCenterChange?.(bodyDragRef.current.cx + dx, bodyDragRef.current.cy + dy);
+    if (!hasDraggedBodyRef.current && pointerDownBodyRef.current) {
+      const dx = e.clientX - pointerDownBodyRef.current.x;
+      const dy = e.clientY - pointerDownBodyRef.current.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 5) {
+        hasDraggedBodyRef.current = true;
+        setShowActionBar(false);
+      }
+    }
+    if (hasDraggedBodyRef.current) {
+      const dx = (e.clientX - bodyDragRef.current.sx) / containerW * 100;
+      const dy = (e.clientY - bodyDragRef.current.sy) / containerH * 100;
+      onCenterChange?.(bodyDragRef.current.cx + dx, bodyDragRef.current.cy + dy);
+    }
   };
-  const onBodyUp = () => { setIsDraggingBody(false); bodyDragRef.current = null; };
+  const onBodyUp = () => {
+    setIsDraggingBody(false);
+    if (!hasDraggedBodyRef.current) {
+      setShowActionBar(prev => !prev);
+    }
+    hasDraggedBodyRef.current = false;
+    pointerDownBodyRef.current = null;
+    bodyDragRef.current = null;
+  };
 
   // Completed ring drag/selection
   const [selectedRingIndex, setSelectedRingIndex] = useState<number | null>(null);
@@ -172,8 +197,6 @@ export default function CrochetRuler({
   const lastRyPx = lastCompleted
     ? (lastCompleted.ry != null ? Math.max(1, (lastCompleted.ry / 100) * containerH) : lastRPx)
     : 0;
-  // Use rowHeightPx when set; otherwise auto-calculate from last ring.
-  // For 2D shapes, both axes use the same pixel step (vertical as reference).
   const stepRy = rowHeightPx ?? Math.max(ryPx - lastRyPx, ryPx * 0.3);
   const stepRx = (is2D || rowHeightPx != null) ? stepRy : Math.max(rPx - lastRPx, rPx * 0.3);
   const showGhosts = !ringsOnly && (isAdjusting || showSettings || isDraggingCorner);
@@ -186,7 +209,7 @@ export default function CrochetRuler({
     }
   }
 
-  // Nudge button positions — at ring edges
+  // Nudge button positions
   const rHPct = (rPx / containerH) * 100;
   const nudgeTopY = cy - (is2D ? ryActual : rHPct);
   const nudgeBottomY = cy + (is2D ? ryActual : rHPct);
@@ -196,6 +219,9 @@ export default function CrochetRuler({
   // Resize handle position
   const hx = cxPx + rPx;
   const hy = cyPx + ryPx;
+
+  // Action bar position — above ring top edge
+  const ringTopPct = cy - (is2D ? ryActual : rHPct);
 
   // Width icon SVG (↔)
   const WidthIcon = () => (
@@ -215,6 +241,8 @@ export default function CrochetRuler({
     </svg>
   );
 
+  const showOverlay = (showActionBar || showSettings) && !isDraggingBody;
+
   return (
     <>
       <svg
@@ -232,7 +260,7 @@ export default function CrochetRuler({
           </>
         )}
 
-        {/* Completed rings — green, visual only (no pointer events here) */}
+        {/* Completed rings */}
         {completedRings.map((ring, i) => {
           const ringCxPx = (ring.cx / 100) * containerW;
           const ringCyPx = (ring.cy / 100) * containerH;
@@ -251,7 +279,7 @@ export default function CrochetRuler({
 
         {!ringsOnly && (
           <>
-            {/* Current row band — between inner ring and current ring (shown when rowHeight is set) */}
+            {/* Current row band */}
             {rowHeightPx != null && rPx - rowHeightPx > 1 && (
               <path
                 d={`${shapePath(cxPx, cyPx, rPx, ryPx)} ${shapePath(cxPx, cyPx, Math.max(1, rPx - rowHeightPx), Math.max(1, ryPx - rowHeightPx))}`}
@@ -259,7 +287,7 @@ export default function CrochetRuler({
                 fillRule="evenodd"
               />
             )}
-            {/* Current ring — shaded */}
+            {/* Current ring fill */}
             <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
             {/* Ghost preview rings */}
@@ -289,7 +317,7 @@ export default function CrochetRuler({
             <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
             <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6} stroke="#b5541e" strokeWidth={1.5} />
 
-            {/* Interior drag area — whole shape is draggable */}
+            {/* Interior drag area */}
             <path
               d={shapePath(cxPx, cyPx, rPx, ryPx)}
               fill="rgba(0,0,0,0)"
@@ -302,7 +330,7 @@ export default function CrochetRuler({
           </>
         )}
 
-        {/* Completed ring interaction areas — after body drag so they're on top for border clicks */}
+        {/* Completed ring interaction areas */}
         {completedRings.map((ring, i) => {
           const ringCxPx = (ring.cx / 100) * containerW;
           const ringCyPx = (ring.cy / 100) * containerH;
@@ -342,7 +370,7 @@ export default function CrochetRuler({
               onPointerCancel={onCenterUp}
             />
 
-            {/* Bottom-right corner resize handle — all shapes */}
+            {/* Bottom-right corner resize handle */}
             <circle cx={hx} cy={hy} r={9}
               fill="#b07840" stroke="#fdf6e8" strokeWidth={1.5}
               style={{ pointerEvents: 'all', touchAction: 'none', cursor: 'nwse-resize' }}
@@ -351,7 +379,6 @@ export default function CrochetRuler({
               onPointerUp={onCornerUp}
               onPointerCancel={onCornerUp}
             />
-            {/* Diagonal double-arrow resize icon */}
             <line x1={hx - 3} y1={hy - 3} x2={hx + 3} y2={hy + 3}
               stroke="#fdf6e8" strokeWidth={1.5} strokeLinecap="round" style={{ pointerEvents: 'none' }} />
             <polyline points={`${hx - 1},${hy - 4} ${hx - 4},${hy - 4} ${hx - 4},${hy - 1}`}
@@ -362,7 +389,7 @@ export default function CrochetRuler({
         )}
       </svg>
 
-      {/* Completed ring delete buttons — HTML overlay, always top layer, only for selected ring */}
+      {/* Completed ring delete buttons — only for selected ring */}
       {completedRings.map((ring, i) => {
         if (selectedRingIndex !== i) return null;
         const ringCxPx = (ring.cx / 100) * containerW;
@@ -372,11 +399,7 @@ export default function CrochetRuler({
           <div
             key={i}
             className="absolute z-50 pointer-events-auto"
-            style={{
-              left: ringCxPx,
-              top: ringCyPx - ringRyPx,
-              transform: 'translate(-50%, -50%)',
-            }}
+            style={{ left: ringCxPx, top: ringCyPx - ringRyPx, transform: 'translate(-50%, -50%)' }}
           >
             <button
               onPointerDown={(e) => e.stopPropagation()}
@@ -391,10 +414,9 @@ export default function CrochetRuler({
         );
       })}
 
-      {/* Nudge buttons — visible when settings open */}
-      {!ringsOnly && showSettings && (
+      {/* Nudge buttons — visible when action bar or settings open */}
+      {!ringsOnly && showOverlay && (
         <>
-          {/* Up */}
           <div className="absolute pointer-events-auto z-20"
             style={{ left: `${cx}%`, top: `${nudgeTopY}%`, transform: 'translate(-50%, -100%)' }}>
             <button
@@ -407,8 +429,6 @@ export default function CrochetRuler({
               </svg>
             </button>
           </div>
-
-          {/* Down */}
           <div className="absolute pointer-events-auto z-20"
             style={{ left: `${cx}%`, top: `${nudgeBottomY}%`, transform: 'translate(-50%, 0%)' }}>
             <button
@@ -421,8 +441,6 @@ export default function CrochetRuler({
               </svg>
             </button>
           </div>
-
-          {/* Left */}
           <div className="absolute pointer-events-auto z-20"
             style={{ left: `${nudgeLeftX}%`, top: `${cy}%`, transform: 'translate(-100%, -50%)' }}>
             <button
@@ -435,8 +453,6 @@ export default function CrochetRuler({
               </svg>
             </button>
           </div>
-
-          {/* Right */}
           <div className="absolute pointer-events-auto z-20"
             style={{ left: `${nudgeRightX}%`, top: `${cy}%`, transform: 'translate(0%, -50%)' }}>
             <button
@@ -452,202 +468,160 @@ export default function CrochetRuler({
         </>
       )}
 
-      {/* Floating buttons — left side */}
-      {!ringsOnly && (
+      {/* Action bar + settings — tap ring body to show/hide */}
+      {!ringsOnly && showOverlay && (
         <div
-          className="absolute left-1.5 pointer-events-auto z-20"
-          style={{ top: `${cy}%`, transform: 'translateY(-50%)' }}
+          className="absolute pointer-events-auto z-30 flex flex-col items-center"
+          style={{
+            left: `${cx}%`,
+            top: `${ringTopPct}%`,
+            transform: 'translate(-50%, calc(-100% - 8px))',
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            {/* Complete button */}
-            <button
-              onClick={onComplete}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#b5541e] text-[#fdf6e8] shadow-lg hover:bg-[#9a4318] active:bg-[#7a3414] active:scale-95 transition-all border-2 border-[#9a4318]"
-              title={t('ruler.complete')}
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-
-            {/* Delete all rings button */}
-            {completedRings.length > 0 && (
-              <button
-                onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
-                title={t('view.deleteAll')}
-              >
-                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            )}
-
-            {/* Reset button */}
-            <button
-              onClick={() => { if (confirm(t('crochet.ruler.resetConfirm'))) onReset?.(); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all bg-[#fdf6e8]/90 border-[#d4b896] text-[#a08060] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc]"
-              title={t('crochet.ruler.reset')}
-            >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-
-            {/* Settings button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleSettings?.(); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className={`flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-full border shadow-md transition-all ${
-                showSettings
-                  ? 'bg-[#b5541e] border-[#9a4318] text-[#fdf6e8]'
-                  : 'bg-[#fdf6e8]/90 border-[#d4b896] text-[#b07840] hover:bg-[#f5edd6] active:bg-[#ede5cc]'
-              }`}
-              title={t('ruler.heightSettings')}
-            >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Size settings popup — positioned right of buttons */}
+          {/* Settings panel — above action bar */}
           {showSettings && (
-            <div
-              className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex gap-2 items-end"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
+            <div className="mb-1 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex gap-2 items-end">
               {/* Rx / width column */}
               <div className="flex flex-col items-center gap-1.5">
-                {is2D && (
-                  <span className="text-[#a08060]"><WidthIcon /></span>
-                )}
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxR((m) => m * 1.3)}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                >×1.3</button>
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRadiusChange?.(Math.min(maxR, r + maxR / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                >+</button>
-                <input
-                  type="range" min={0} max={10000} step={1}
+                {is2D && <span className="text-[#a08060]"><WidthIcon /></span>}
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => m * 1.3)}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.min(maxR, r + maxR / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+                <input type="range" min={0} max={10000} step={1}
                   value={Math.round(Math.min(r, maxR) / maxR * 10000)}
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onChange={(e) => {
-                    onAdjustingChange?.(true);
-                    onRadiusChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxR));
-                  }}
-                  onPointerUp={() => onAdjustingChange?.(false)}
-                  onPointerCancel={() => onAdjustingChange?.(false)}
+                  onChange={(e) => { onAdjustingChange?.(true); onRadiusChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxR)); }}
+                  onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
                   className="accent-[#b5541e] cursor-pointer"
-                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-                />
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRadiusChange?.(Math.max(0.01, r - maxR / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                >−</button>
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                >÷1.3</button>
-                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                  {r.toFixed(2)}%
-                </span>
+                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.max(0.01, r - maxR / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{r.toFixed(2)}%</span>
               </div>
 
               {/* Ry / height column — 2D shapes only */}
               {is2D && (
                 <div className="flex flex-col items-center gap-1.5">
                   <span className="text-[#a08060]"><HeightIcon /></span>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setMaxRy((m) => m * 1.3)}
-                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                  >×1.3</button>
-                  <button
-                    onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                    onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                  >+</button>
-                  <input
-                    type="range" min={0} max={10000} step={1}
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => m * 1.3)}
+                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                  <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+                  <input type="range" min={0} max={10000} step={1}
                     value={Math.round(Math.min(ryActual, maxRy) / maxRy * 10000)}
                     onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                    onChange={(e) => {
-                      onAdjustingChange?.(true);
-                      onRyChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRy));
-                    }}
-                    onPointerUp={() => onAdjustingChange?.(false)}
-                    onPointerCancel={() => onAdjustingChange?.(false)}
+                    onChange={(e) => { onAdjustingChange?.(true); onRyChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRy)); }}
+                    onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
                     className="accent-[#b5541e] cursor-pointer"
-                    style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-                  />
-                  <button
-                    onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                    onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                  >−</button>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
-                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                  >÷1.3</button>
-                  <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                    {ryActual.toFixed(2)}%
-                  </span>
+                    style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+                  <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
+                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                  <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{ryActual.toFixed(2)}%</span>
                 </div>
               )}
 
-              {/* Row height column — controls step between rings */}
+              {/* Row height column */}
               <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
                 <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxRowHeight((m) => m * 1.3)}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                >×1.3</button>
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                >+</button>
-                <input
-                  type="range" min={0} max={10000} step={1}
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => m * 1.3)}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+                <input type="range" min={0} max={10000} step={1}
                   value={rowHeight != null ? Math.round(Math.min(rowHeight, maxRowHeight) / maxRowHeight * 10000) : 0}
                   onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onChange={(e) => {
-                    onAdjustingChange?.(true);
-                    onRowHeightChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRowHeight));
-                  }}
-                  onPointerUp={() => onAdjustingChange?.(false)}
-                  onPointerCancel={() => onAdjustingChange?.(false)}
+                  onChange={(e) => { onAdjustingChange?.(true); onRowHeightChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRowHeight)); }}
+                  onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
                   className="accent-[#b5541e] cursor-pointer"
-                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
-                />
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-                >−</button>
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                >÷1.3</button>
+                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
                 <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
                   {rowHeight != null ? rowHeight.toFixed(2) : '—'}%
                 </span>
               </div>
             </div>
           )}
+
+          {/* Action bar */}
+          <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
+            {/* 완료 */}
+            <button
+              onClick={() => { setShowActionBar(false); onComplete?.(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              {t('ruler.complete')}
+            </button>
+            <div className="w-px bg-[#d4b896]" />
+            {/* 크기 설정 */}
+            <button
+              onClick={() => onToggleSettings?.()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                showSettings ? 'bg-[#b5541e] text-[#fdf6e8]' : 'text-[#b07840] hover:bg-[#f5edd6] active:scale-95'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              {t('ruler.heightSettings')}
+            </button>
+            {completedRings.length > 0 && (
+              <>
+                <div className="w-px bg-[#d4b896]" />
+                <button
+                  onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="flex items-center justify-center px-3 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+                  title={t('view.deleteAll')}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </>
+            )}
+            <div className="w-px bg-[#d4b896]" />
+            {/* 리셋 */}
+            <button
+              onClick={() => { if (confirm(t('crochet.ruler.resetConfirm'))) { onReset?.(); setShowActionBar(false); } }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center justify-center px-3 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+              title={t('crochet.ruler.reset')}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <div className="w-px bg-[#d4b896]" />
+            {/* 닫기 */}
+            <button
+              onClick={() => { if (showSettings) onToggleSettings?.(); setShowActionBar(false); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+              title="닫기"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Arrow pointing down toward ring */}
+          <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />
         </div>
       )}
     </>
