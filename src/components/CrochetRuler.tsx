@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompletedRingData {
@@ -39,6 +39,31 @@ interface Props {
 }
 
 const NUDGE = 0.3;
+
+const SHAPE_ICON: Record<string, ReactNode> = {
+  line: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeLinecap="round">
+      <line x1="3" y1="5" x2="21" y2="5" strokeWidth="2" />
+      <line x1="3" y1="9" x2="21" y2="9" strokeWidth="2" />
+      <line x1="3" y1="13" x2="21" y2="13" strokeWidth="2" />
+    </svg>
+  ),
+  circle: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="8" r="6" />
+    </svg>
+  ),
+  ellipse: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <ellipse cx="12" cy="8" rx="10" ry="4.5" />
+    </svg>
+  ),
+  rect: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2.5" y="3.5" width="19" height="9" rx="1.5" />
+    </svg>
+  ),
+};
 
 export default function CrochetRuler({
   cx = 50, cy = 50, r = 10, ry,
@@ -581,13 +606,14 @@ export default function CrochetRuler({
                     key={s}
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => { onShapeChange(s); if (s === 'line') onToggleSettings?.(); }}
-                    className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                    title={t(`crochet.shape.${s}`)}
+                    className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                       shape === s
                         ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
                         : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
                     }`}
                   >
-                    {t(`crochet.shape.${s}`)}
+                    {SHAPE_ICON[s]}
                   </button>
                 ))}
               </div>

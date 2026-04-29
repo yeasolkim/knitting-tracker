@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
@@ -158,6 +158,31 @@ type Snapshot = {
 };
 
 const MAX_HISTORY = 20;
+
+const SHAPE_ICON: Record<string, ReactNode> = {
+  line: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeLinecap="round">
+      <line x1="3" y1="5" x2="21" y2="5" strokeWidth="2" />
+      <line x1="3" y1="9" x2="21" y2="9" strokeWidth="2" />
+      <line x1="3" y1="13" x2="21" y2="13" strokeWidth="2" />
+    </svg>
+  ),
+  circle: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="8" r="6" />
+    </svg>
+  ),
+  ellipse: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <ellipse cx="12" cy="8" rx="10" ry="4.5" />
+    </svg>
+  ),
+  rect: (
+    <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2.5" y="3.5" width="19" height="9" rx="1.5" />
+    </svg>
+  ),
+};
 
 function PatternViewerPage({ pattern, isFromCache }: Props) {
   const supabase = useMemo(() => createClient(), []);
@@ -1916,13 +1941,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                             setMaxRulerHeight((prev) => Math.max(prev, 15));
                           }
                         }}
-                        className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                        title={t(`crochet.shape.${s}`)}
+                        className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                           crochetShape === s
                             ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
                             : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
                         }`}
                       >
-                        {t(`crochet.shape.${s}`)}
+                        {SHAPE_ICON[s]}
                       </button>
                     ))}
                   </div>
@@ -2015,13 +2041,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                             setMaxRulerHeight((prev) => Math.max(prev, 15));
                           }
                         }}
-                        className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                        title={t(`crochet.shape.${s}`)}
+                        className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                           crochetShape === s
                             ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
                             : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
                         }`}
                       >
-                        {t(`crochet.shape.${s}`)}
+                        {SHAPE_ICON[s]}
                       </button>
                     ))}
                   </div>
