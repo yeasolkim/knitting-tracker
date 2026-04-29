@@ -1524,7 +1524,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               orientation={rulerOrientation}
               positionX={screenRulerX}
               isAdjusting={isAdjustingRuler}
-              isPlacingMarker={isPlacingKnittingMarker}
+              isPlacingMarker={isCrochet ? isPlacingMarker : isPlacingKnittingMarker}
               showSettings={showRulerSettings}
               onChangePosition={handleRulerPositionChange}
               onChangePositionX={handleRulerPositionXChange}
