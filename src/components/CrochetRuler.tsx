@@ -14,6 +14,7 @@ interface Props {
   cy?: number;
   r?: number;
   ry?: number;
+  rowHeight?: number;
   shape?: 'circle' | 'ellipse' | 'rect';
   completedRings: CompletedRingData[];
   containerW: number;
@@ -24,6 +25,7 @@ interface Props {
   onCenterChange?: (cx: number, cy: number) => void;
   onRadiusChange?: (r: number) => void;
   onRyChange?: (ry: number) => void;
+  onRowHeightChange?: (v: number) => void;
   onAdjustingChange?: (v: boolean) => void;
   onComplete?: () => void;
   onToggleSettings?: () => void;
@@ -38,13 +40,14 @@ const NUDGE = 0.3;
 
 export default function CrochetRuler({
   cx = 50, cy = 50, r = 10, ry,
+  rowHeight,
   shape = 'circle',
   completedRings,
   containerW, containerH,
   showSettings = false,
   isAdjusting = false,
   ringsOnly = false,
-  onCenterChange, onRadiusChange, onRyChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
   const { t } = useLanguage();
@@ -61,6 +64,8 @@ export default function CrochetRuler({
 
   const [maxR, setMaxR] = useState(() => Math.max(49, r));
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
+  const rowHeightPx = rowHeight != null ? Math.max(1, (rowHeight / 100) * containerH) : null;
+  const [maxRowHeight, setMaxRowHeight] = useState(() => Math.max(10, rowHeight ?? 5));
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
   const [isDraggingBody, setIsDraggingBody] = useState(false);
@@ -167,11 +172,10 @@ export default function CrochetRuler({
   const lastRyPx = lastCompleted
     ? (lastCompleted.ry != null ? Math.max(1, (lastCompleted.ry / 100) * containerH) : lastRPx)
     : 0;
-  // For 2D shapes (rect/ellipse), use vertical step as reference so both axes
-  // grow by the same pixel amount — otherwise portrait screens make horizontal
-  // steps visually smaller than vertical steps.
-  const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
-  const stepRx = is2D ? stepRy : Math.max(rPx - lastRPx, rPx * 0.3);
+  // Use rowHeightPx when set; otherwise auto-calculate from last ring.
+  // For 2D shapes, both axes use the same pixel step (vertical as reference).
+  const stepRy = rowHeightPx ?? Math.max(ryPx - lastRyPx, ryPx * 0.3);
+  const stepRx = (is2D || rowHeightPx != null) ? stepRy : Math.max(rPx - lastRPx, rPx * 0.3);
   const showGhosts = !ringsOnly && (isAdjusting || showSettings || isDraggingCorner);
   const ghostRings: { rx: number; ry: number }[] = [];
   if (showGhosts) {
@@ -247,6 +251,14 @@ export default function CrochetRuler({
 
         {!ringsOnly && (
           <>
+            {/* Current row band — between inner ring and current ring (shown when rowHeight is set) */}
+            {rowHeightPx != null && rPx - rowHeightPx > 1 && (
+              <path
+                d={`${shapePath(cxPx, cyPx, rPx, ryPx)} ${shapePath(cxPx, cyPx, Math.max(1, rPx - rowHeightPx), Math.max(1, ryPx - rowHeightPx))}`}
+                fill="rgba(181,84,30,0.18)"
+                fillRule="evenodd"
+              />
+            )}
             {/* Current ring — shaded */}
             <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
 
@@ -593,6 +605,47 @@ export default function CrochetRuler({
                   </span>
                 </div>
               )}
+
+              {/* Row height column — controls step between rings */}
+              <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
+                <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRowHeight((m) => m * 1.3)}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                >×1.3</button>
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                >+</button>
+                <input
+                  type="range" min={0} max={10000} step={1}
+                  value={rowHeight != null ? Math.round(Math.min(rowHeight, maxRowHeight) / maxRowHeight * 10000) : 0}
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onChange={(e) => {
+                    onAdjustingChange?.(true);
+                    onRowHeightChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRowHeight));
+                  }}
+                  onPointerUp={() => onAdjustingChange?.(false)}
+                  onPointerCancel={() => onAdjustingChange?.(false)}
+                  className="accent-[#b5541e] cursor-pointer"
+                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }}
+                />
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                >−</button>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
+                >÷1.3</button>
+                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                  {rowHeight != null ? rowHeight.toFixed(2) : '—'}%
+                </span>
+              </div>
             </div>
           )}
         </div>

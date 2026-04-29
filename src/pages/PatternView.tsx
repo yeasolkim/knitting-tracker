@@ -228,6 +228,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { ry?: number; r?: number } | undefined;
     return saved?.ry ?? saved?.r ?? 3;
   });
+  const [crochetRowHeight, setCrochetRowHeight] = useState<number | null>(() => {
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { rowHeight?: number } | undefined;
+    return saved?.rowHeight ?? null;
+  });
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
     const savedCx = saved?.cx ?? 50;
@@ -403,8 +407,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   // Ref for stable callbacks that need latest transform/ruler values.
   // Updated directly in render (not via useEffect) so it is always current
   // before any pointer event fires — even in the same frame as a state change.
-  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings });
-  latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings };
+  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight });
+  latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight };
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -662,6 +666,12 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRy(Math.max(0.1, (screenRPct / 100) * H / t.scale / refH * 100));
   }, []);
 
+  const handleCrochetRowHeightChange = useCallback((screenHPct: number) => {
+    const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
+    const refH = iH > 0 ? iH : H;
+    setCrochetRowHeight(Math.max(0.01, (screenHPct / 100) * H / t.scale / refH * 100));
+  }, []);
+
   const handleCrochetRingUpdate = useCallback((i: number, ring: { cx: number; cy: number; r: number; ry?: number; shape?: string }) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
     const refW = iW > 0 ? iW : W;
@@ -717,7 +727,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
     crochet_marks: crochetMarks,
-    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings },
+    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings },
     notes,
     note_positions: notePositions,
     // Save view as image-relative % so it restores correctly on any screen size.
@@ -789,6 +799,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetCy(crd?.cy ?? 50);
     setCrochetR(crd?.r ?? 3);
     setCrochetRy(crd?.ry ?? crd?.r ?? 3);
+    setCrochetRowHeight(crd?.rowHeight ?? null);
     const crdCx = crd?.cx ?? 50;
     const crdCy = crd?.cy ?? 50;
     setCompletedCrochetRings(
@@ -830,14 +841,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
-    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H } = latestRef.current;
+    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H, crochetRowHeight: rowH } = latestRef.current;
     const is2D = shape === 'ellipse' || shape === 'rect';
     const lastRing = rings.length > 0 ? rings[rings.length - 1] : null;
-    const lastR = lastRing ? lastRing.r : 0;
     const lastRy = lastRing ? (lastRing.ry ?? lastRing.r) : 0;
-    const stepRy = Math.max(cry - lastRy, cry * 0.3);
-    // For 2D shapes: grow horizontal axis by same pixel amount as vertical axis
-    const stepR = is2D && W > 0 && H > 0
+    const lastR = lastRing ? lastRing.r : 0;
+    // rowH is % of containerH; convert to same pixel step for both axes
+    const stepRy = rowH ?? Math.max(cry - lastRy, cry * 0.3);
+    const stepR = (is2D || rowH != null) && W > 0 && H > 0
       ? (stepRy / 100) * H / W * 100
       : Math.max(cr - lastR, cr * 0.3);
     setCompletedCrochetRings(prev => [...prev, {
@@ -847,6 +858,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     }]);
     setCrochetR(cr + stepR);
     if (is2D) setCrochetRy(cry + stepRy);
+    else if (rowH != null) setCrochetRy(cry + stepRy);
     updateActiveSub(s => ({ ...s, current_row: s.current_row + 1 }));
   }, [captureHistory, updateActiveSub]);
 
@@ -927,7 +939,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings, save]);
+  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
@@ -1539,6 +1551,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onCenterChange={handleCrochetCenterChange}
               onRadiusChange={handleCrochetRadiusChange}
               onRyChange={(crochetShape === 'ellipse' || crochetShape === 'rect') ? handleCrochetRyChange : undefined}
+              rowHeight={crochetRowHeight ?? undefined}
+              onRowHeightChange={handleCrochetRowHeightChange}
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               showSettings={showCrochetSettings}
