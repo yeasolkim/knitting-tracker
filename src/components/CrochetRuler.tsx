@@ -33,6 +33,7 @@ interface Props {
   onDeleteRing: (index: number) => void;
   onDeleteAllRings: () => void;
   onRotate?: () => void;
+  onShapeChange?: (shape: 'line' | 'circle' | 'ellipse' | 'rect') => void;
   onReset?: () => void;
   onUpdateRing: (i: number, updates: CompletedRingData) => void;
 }
@@ -48,7 +49,7 @@ export default function CrochetRuler({
   showSettings = false,
   isAdjusting = false,
   ringsOnly = false,
-  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onRotate, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onRotate, onShapeChange, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
   const { t } = useLanguage();
@@ -569,6 +570,29 @@ export default function CrochetRuler({
               </span>
             </div>
           </div>
+
+          {/* Shape selector */}
+          {onShapeChange && (
+            <>
+              <div className="border-t border-[#d4b896] w-full" />
+              <div className="flex gap-1 w-full">
+                {(['line', 'circle', 'ellipse', 'rect'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => { onShapeChange(s); if (s === 'line') onToggleSettings?.(); }}
+                    className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                      shape === s
+                        ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                        : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
+                    }`}
+                  >
+                    {t(`crochet.shape.${s}`)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -1584,6 +1584,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               onRotate={handleCrochetRotate}
+              onShapeChange={(shape) => {
+                if (shape === 'line') {
+                  setShowCrochetSettings(false);
+                  if (rulerHeight <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
+                }
+                setCrochetShape(shape);
+              }}
               showSettings={showCrochetSettings}
               isAdjusting={isAdjustingCrochetRadius}
               onAdjustingChange={setIsAdjustingCrochetRadius}
@@ -1806,38 +1813,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           </div>
         )}
 
-        {/* Crochet shape selector */}
-        {isCrochet && (
-          <div className="absolute top-3 right-3 z-30 flex flex-col gap-1">
-            {([
-              { key: 'line', label: t('crochet.shape.line') },
-              { key: 'circle', label: t('crochet.shape.circle') },
-              { key: 'ellipse', label: t('crochet.shape.ellipse') },
-              { key: 'rect', label: t('crochet.shape.rect') },
-            ] as { key: string; label: string; disabled?: boolean }[]).map(({ key, label, disabled }) => (
-              <button
-                key={key}
-                disabled={disabled}
-                onClick={() => {
-                  if (key === 'line' && crochetShape !== 'line' && rulerHeight <= 0.3) {
-                    setRulerHeight(10);
-                    setMaxRulerHeight(prev => Math.max(prev, 15));
-                  }
-                  setCrochetShape(key as 'line' | 'circle' | 'ellipse' | 'rect');
-                }}
-                className={`px-2.5 py-1.5 min-h-[36px] rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
-                  crochetShape === key
-                    ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] shadow-[1px_1px_0_#9a4318]'
-                    : disabled
-                    ? 'bg-[#fdf6e8]/60 text-[#c4a882] border-[#d4b896] cursor-not-allowed opacity-50'
-                    : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:border-[#b5541e]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Ruler height settings popup — layout depends on orientation */}
         {showRulerSettings && (!isCrochet || crochetShape === 'line') && (() => {
@@ -1925,6 +1900,34 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                     {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
                   </span>
                 </div>
+              {isCrochet && (
+                <>
+                  <div className="border-t border-[#d4b896] -mx-2.5" />
+                  <div className="flex gap-1">
+                    {(['line', 'circle', 'ellipse', 'rect'] as const).map((s) => (
+                      <button
+                        key={s}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => {
+                          setCrochetShape(s);
+                          setShowRulerSettings(false);
+                          if (s !== 'line' && rulerHeight <= 0.3) {
+                            setRulerHeight(10);
+                            setMaxRulerHeight((prev) => Math.max(prev, 15));
+                          }
+                        }}
+                        className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                          crochetShape === s
+                            ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                            : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
+                        }`}
+                      >
+                        {t(`crochet.shape.${s}`)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               </div>
             );
           }
@@ -1996,6 +1999,34 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <span className="text-[9px] text-[#b5541e] font-mono text-center leading-tight">
                 {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
               </span>
+              {isCrochet && (
+                <>
+                  <div className="border-t border-[#d4b896] w-full" />
+                  <div className="flex gap-1 w-full">
+                    {(['line', 'circle', 'ellipse', 'rect'] as const).map((s) => (
+                      <button
+                        key={s}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => {
+                          setCrochetShape(s);
+                          setShowRulerSettings(false);
+                          if (s !== 'line' && rulerHeight <= 0.3) {
+                            setRulerHeight(10);
+                            setMaxRulerHeight((prev) => Math.max(prev, 15));
+                          }
+                        }}
+                        className={`flex-1 py-1 rounded text-[9px] font-bold border-2 transition-colors ${
+                          crochetShape === s
+                            ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                            : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
+                        }`}
+                      >
+                        {t(`crochet.shape.${s}`)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           );
         })()}
