@@ -675,6 +675,19 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRowHeight(Math.max(0.01, (screenHPct / 100) * H / t.scale / refH * 100));
   }, []);
 
+  const handleCrochetRotate = useCallback(() => {
+    captureHistory();
+    const { crochetR: r, crochetRy: ry, imgW: iW, imgH: iH } = latestRef.current;
+    // Swap rx/ry preserving pixel size: new_r% = ry_px/imgW*100, new_ry% = r_px/imgH*100
+    if (iW > 0 && iH > 0) {
+      setCrochetR((ry / 100) * iH / iW * 100);
+      setCrochetRy((r / 100) * iW / iH * 100);
+    } else {
+      setCrochetR(ry);
+      setCrochetRy(r);
+    }
+  }, [captureHistory]);
+
   const handleCrochetRingUpdate = useCallback((i: number, ring: { cx: number; cy: number; r: number; ry?: number; shape?: string }) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
     const refW = iW > 0 ? iW : W;
@@ -1558,6 +1571,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onRowHeightChange={handleCrochetRowHeightChange}
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
+              onRotate={handleCrochetRotate}
               showSettings={showCrochetSettings}
               isAdjusting={isAdjustingCrochetRadius}
               onAdjustingChange={setIsAdjustingCrochetRadius}

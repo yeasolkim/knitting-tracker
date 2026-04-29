@@ -32,6 +32,7 @@ interface Props {
   onDragStart: () => void;
   onDeleteRing: (index: number) => void;
   onDeleteAllRings: () => void;
+  onRotate?: () => void;
   onReset?: () => void;
   onUpdateRing: (i: number, updates: CompletedRingData) => void;
 }
@@ -47,7 +48,7 @@ export default function CrochetRuler({
   showSettings = false,
   isAdjusting = false,
   ringsOnly = false,
-  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onRotate, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
   const { t } = useLanguage();
@@ -468,7 +469,110 @@ export default function CrochetRuler({
         </>
       )}
 
-      {/* Action bar + settings — tap ring body to show/hide */}
+      {/* Settings panel — fixed top-left (like knitting) */}
+      {!ringsOnly && showSettings && (
+        <div
+          className="absolute pointer-events-auto z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2 flex flex-col items-center gap-1.5"
+          style={{ top: '8px', left: '8px' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+        >
+          {/* Header row: rotate (2D only) + close */}
+          <div className="flex items-center justify-between w-full gap-1">
+            {is2D ? (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => { onDragStart(); onRotate?.(); }}
+                className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none"
+              >
+                <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {t('ruler.rotate')}
+              </button>
+            ) : <div />}
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onToggleSettings?.()}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
+              title="닫기"
+            >×</button>
+          </div>
+          <div className="border-t border-[#d4b896] w-full" />
+
+          {/* Sliders row */}
+          <div className="flex gap-2 items-end">
+            {/* Rx / width column */}
+            <div className="flex flex-col items-center gap-1.5">
+              {is2D && <span className="text-[#a08060]"><WidthIcon /></span>}
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => m * 1.3)}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+              <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.min(maxR, r + maxR / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+              <input type="range" min={0} max={10000} step={1}
+                value={Math.round(Math.min(r, maxR) / maxR * 10000)}
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onChange={(e) => { onAdjustingChange?.(true); onRadiusChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxR)); }}
+                onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
+                className="accent-[#b5541e] cursor-pointer"
+                style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+              <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.max(0.01, r - maxR / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{r.toFixed(2)}%</span>
+            </div>
+
+            {/* Ry / height column — 2D shapes only */}
+            {is2D && (
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[#a08060]"><HeightIcon /></span>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => m * 1.3)}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+                <input type="range" min={0} max={10000} step={1}
+                  value={Math.round(Math.min(ryActual, maxRy) / maxRy * 10000)}
+                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                  onChange={(e) => { onAdjustingChange?.(true); onRyChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRy)); }}
+                  onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
+                  className="accent-[#b5541e] cursor-pointer"
+                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
+                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{ryActual.toFixed(2)}%</span>
+              </div>
+            )}
+
+            {/* Row height column */}
+            <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
+              <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => m * 1.3)}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+              <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
+              <input type="range" min={0} max={10000} step={1}
+                value={rowHeight != null ? Math.round(Math.min(rowHeight, maxRowHeight) / maxRowHeight * 10000) : 0}
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onChange={(e) => { onAdjustingChange?.(true); onRowHeightChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRowHeight)); }}
+                onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
+                className="accent-[#b5541e] cursor-pointer"
+                style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
+              <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
+                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+              <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
+                {rowHeight != null ? rowHeight.toFixed(2) : '—'}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action bar — tap ring body to show/hide */}
       {!ringsOnly && showOverlay && (
         <div
           className="absolute pointer-events-auto z-30 flex flex-col items-center"
@@ -480,78 +584,6 @@ export default function CrochetRuler({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          {/* Settings panel — above action bar */}
-          {showSettings && (
-            <div className="mb-1 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2.5 flex gap-2 items-end">
-              {/* Rx / width column */}
-              <div className="flex flex-col items-center gap-1.5">
-                {is2D && <span className="text-[#a08060]"><WidthIcon /></span>}
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => m * 1.3)}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
-                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.min(maxR, r + maxR / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
-                <input type="range" min={0} max={10000} step={1}
-                  value={Math.round(Math.min(r, maxR) / maxR * 10000)}
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onChange={(e) => { onAdjustingChange?.(true); onRadiusChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxR)); }}
-                  onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
-                  className="accent-[#b5541e] cursor-pointer"
-                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
-                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.max(0.01, r - maxR / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
-                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{r.toFixed(2)}%</span>
-              </div>
-
-              {/* Ry / height column — 2D shapes only */}
-              {is2D && (
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-[#a08060]"><HeightIcon /></span>
-                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => m * 1.3)}
-                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
-                  <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
-                  <input type="range" min={0} max={10000} step={1}
-                    value={Math.round(Math.min(ryActual, maxRy) / maxRy * 10000)}
-                    onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                    onChange={(e) => { onAdjustingChange?.(true); onRyChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRy)); }}
-                    onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
-                    className="accent-[#b5541e] cursor-pointer"
-                    style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
-                  <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
-                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
-                    className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
-                  <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{ryActual.toFixed(2)}%</span>
-                </div>
-              )}
-
-              {/* Row height column */}
-              <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
-                <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => m * 1.3)}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
-                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
-                <input type="range" min={0} max={10000} step={1}
-                  value={rowHeight != null ? Math.round(Math.min(rowHeight, maxRowHeight) / maxRowHeight * 10000) : 0}
-                  onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
-                  onChange={(e) => { onAdjustingChange?.(true); onRowHeightChange?.(Math.max(0.01, Number(e.target.value) / 10000 * maxRowHeight)); }}
-                  onPointerUp={() => onAdjustingChange?.(false)} onPointerCancel={() => onAdjustingChange?.(false)}
-                  className="accent-[#b5541e] cursor-pointer"
-                  style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
-                <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
-                <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
-                  {rowHeight != null ? rowHeight.toFixed(2) : '—'}%
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Action bar */}
           <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
             {/* 완료 */}
