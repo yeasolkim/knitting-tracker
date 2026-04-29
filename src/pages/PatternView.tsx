@@ -201,8 +201,18 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
-  const [rulerHeight, setRulerHeight] = useState(img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0.3);
-  const [maxRulerHeight, setMaxRulerHeight] = useState(() => Math.max(1.35, img0?.ruler_height ?? pattern.progress?.ruler_height ?? 0));
+  const [rulerHeight, setRulerHeight] = useState(() => {
+    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
+    if (saved != null) return saved;
+    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
+    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line' ? 10 : 0.3;
+  });
+  const [maxRulerHeight, setMaxRulerHeight] = useState(() => {
+    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
+    if (saved != null) return Math.max(1.35, saved);
+    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
+    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line' ? 15 : 1.35;
+  });
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -800,8 +810,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const next = imageStatesRef.current[activeFileIdx];
 
     setRulerY(next?.ruler_position_y ?? 10);
-    setRulerHeight(next?.ruler_height ?? 0.3);
-    setMaxRulerHeight(Math.max(1.35, next?.ruler_height ?? 0));
+    const nextCrochetShape = ((next?.crochet_ruler_data?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
+    const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10 : 0.3;
+    setRulerHeight(next?.ruler_height ?? defaultRulerH);
+    setMaxRulerHeight(Math.max(isCrochet && nextCrochetShape === 'line' ? 15 : 1.35, next?.ruler_height ?? 0));
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -810,7 +822,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetMarks(next?.crochet_marks ?? []);
 
     const crd = next?.crochet_ruler_data;
-    setCrochetShape((crd?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
+    setCrochetShape(nextCrochetShape);
     setCrochetCx(crd?.cx ?? 50);
     setCrochetCy(crd?.cy ?? 50);
     setCrochetR(crd?.r ?? 3);
@@ -1806,7 +1818,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <button
                 key={key}
                 disabled={disabled}
-                onClick={() => setCrochetShape(key as 'line' | 'circle' | 'ellipse' | 'rect')}
+                onClick={() => {
+                  if (key === 'line' && crochetShape !== 'line' && rulerHeight <= 0.3) {
+                    setRulerHeight(10);
+                    setMaxRulerHeight(prev => Math.max(prev, 15));
+                  }
+                  setCrochetShape(key as 'line' | 'circle' | 'ellipse' | 'rect');
+                }}
                 className={`px-2.5 py-1.5 min-h-[36px] rounded-lg text-[10px] font-bold tracking-wide border-2 transition-colors ${
                   crochetShape === key
                     ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318] shadow-[1px_1px_0_#9a4318]'
