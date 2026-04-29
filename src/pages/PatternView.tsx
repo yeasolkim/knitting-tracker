@@ -153,6 +153,7 @@ type Snapshot = {
   crochetCy: number;
   crochetR: number;
   crochetRy: number;
+  crochetRowHeight: number | null;
   completedCrochetRings: CrochetRing[];
 };
 
@@ -445,6 +446,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     crochetCy,
     crochetR,
     crochetRy,
+    crochetRowHeight,
     completedCrochetRings,
   });
 
@@ -471,6 +473,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetCy(snap.crochetCy);
     setCrochetR(snap.crochetR);
     setCrochetRy(snap.crochetRy);
+    setCrochetRowHeight(snap.crochetRowHeight);
     setCompletedCrochetRings(snap.completedCrochetRings);
   }, []);
 
@@ -703,8 +706,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -933,8 +936,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
       note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
       crochet_ruler_data: activeFileIdx === 0
-        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }
-        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }),
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
@@ -958,13 +961,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
       note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
       crochet_ruler_data: activeFileIdx === 0
-        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }
-        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, completedRings: completedCrochetRings }),
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, completedCrochetRings]);
+  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings]);
 
   // Flush save when page is hidden (tab switch, home button, device lock, iOS swipe).
   // This is a second line of defence alongside the unmount flush in useAutoSave.
@@ -2014,29 +2017,11 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           </div>
 
           {/* Row/round counter */}
-          {isCrochet ? (
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => handleRowChange(Math.max(0, (activeSub?.current_row || 0) - 1))}
-                disabled={(activeSub?.current_row || 0) <= 0}
-                className="w-9 h-9 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-lg font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] disabled:opacity-30 transition-colors"
-              >−</button>
-              <div className="text-center min-w-[38px]">
-                <div className="text-base font-bold text-[#3d2b1f] leading-tight">{activeSub?.current_row || 0}</div>
-                <div className="text-[9px] text-[#a08060] leading-tight">{t('counter.rowOf', { total: activeSub?.total_rows || 1 })}</div>
-              </div>
-              <button
-                onClick={() => handleRowChange((activeSub?.current_row || 0) + 1)}
-                className="w-9 h-9 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-lg font-bold flex items-center justify-center hover:bg-[#9a4318] transition-colors shadow-[2px_2px_0_#9a4318]"
-              >+</button>
-            </div>
-          ) : (
-            <RowCounter
-              current={activeSub?.current_row || 0}
-              total={activeSub?.total_rows || 1}
-              onChange={handleRowChange}
-            />
-          )}
+          <RowCounter
+            current={activeSub?.current_row || 0}
+            total={activeSub?.total_rows || 1}
+            onChange={handleRowChange}
+          />
 
           {/* Marker button(s) */}
           {isCrochet ? (
