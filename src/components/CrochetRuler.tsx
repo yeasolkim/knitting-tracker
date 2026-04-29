@@ -32,7 +32,8 @@ interface Props {
   onDragStart: () => void;
   onDeleteRing: (index: number) => void;
   onDeleteAllRings: () => void;
-  onRotate?: () => void;
+  rotation?: number;
+  onRotationChange?: (deg: number) => void;
   onShapeChange?: (shape: 'line' | 'circle' | 'ellipse' | 'rect') => void;
   onReset?: () => void;
   onUpdateRing: (i: number, updates: CompletedRingData) => void;
@@ -74,7 +75,7 @@ export default function CrochetRuler({
   showSettings = false,
   isAdjusting = false,
   ringsOnly = false,
-  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, onRotate, onShapeChange, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
   const { t } = useLanguage();
@@ -276,114 +277,114 @@ export default function CrochetRuler({
         className="absolute inset-0"
         style={{ width: containerW, height: containerH, pointerEvents: 'none', overflow: 'visible' }}
       >
-        {!ringsOnly && (
-          <>
-            {/* Shadow overlay — outside current ring */}
+        {/* Rotation group — all ring visuals + interactions rotate around ring center */}
+        <g transform={rotation ? `rotate(${rotation} ${cxPx} ${cyPx})` : undefined}>
+          {!ringsOnly && (
             <path
               d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${shapePath(cxPx, cyPx, rPx, ryPx)}`}
               fill="rgba(0,0,0,0.25)"
               fillRule="evenodd"
             />
-          </>
-        )}
+          )}
 
-        {/* Completed rings */}
-        {completedRings.map((ring, i) => {
-          const ringCxPx = (ring.cx / 100) * containerW;
-          const ringCyPx = (ring.cy / 100) * containerH;
-          const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
-          const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-          const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
-          const isSelected = selectedRingIndex === i;
-          return (
-            <g key={i}>
-              <path d={rp} fill={isSelected ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.15)"} fillRule="evenodd" />
-              <path d={rp} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
-                strokeWidth={isSelected ? 2 : 1.5} strokeDasharray="5 3" />
-            </g>
-          );
-        })}
+          {/* Completed rings */}
+          {completedRings.map((ring, i) => {
+            const ringCxPx = (ring.cx / 100) * containerW;
+            const ringCyPx = (ring.cy / 100) * containerH;
+            const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
+            const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
+            const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const isSelected = selectedRingIndex === i;
+            return (
+              <g key={i}>
+                <path d={rp} fill={isSelected ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.15)"} fillRule="evenodd" />
+                <path d={rp} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
+                  strokeWidth={isSelected ? 2 : 1.5} strokeDasharray="5 3" />
+              </g>
+            );
+          })}
 
-        {!ringsOnly && (
-          <>
-            {/* Current row band */}
-            {rowHeightPx != null && rPx - rowHeightPx > 1 && (
+          {!ringsOnly && (
+            <>
+              {/* Current row band */}
+              {rowHeightPx != null && rPx - rowHeightPx > 1 && (
+                <path
+                  d={`${shapePath(cxPx, cyPx, rPx, ryPx)} ${shapePath(cxPx, cyPx, Math.max(1, rPx - rowHeightPx), Math.max(1, ryPx - rowHeightPx))}`}
+                  fill="rgba(181,84,30,0.18)"
+                  fillRule="evenodd"
+                />
+              )}
+              {/* Current ring fill */}
+              <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
+
+              {/* Ghost preview rings */}
+              {ghostRings.map(({ rx: grx, ry: gry }, i) => {
+                const opacity = Math.max(0.15, 0.85 - i * 0.08);
+                const prevRx = i === 0 ? rPx : ghostRings[i - 1].rx;
+                const prevRy = i === 0 ? ryPx : ghostRings[i - 1].ry;
+                const gd = shapePath(cxPx, cyPx, grx, gry) + ' ' + shapePath(cxPx, cyPx, prevRx, prevRy);
+                return (
+                  <g key={i} style={{ opacity }}>
+                    <path d={gd} fill="rgba(181,84,30,0.25)" fillRule="evenodd" />
+                    <path d={shapePath(cxPx, cyPx, grx, gry)}
+                      fill="none" stroke="rgba(181,84,30,0.9)"
+                      strokeWidth={1.5} strokeDasharray="4 3" />
+                    <text x={cxPx + grx + 4} y={cyPx + 4} fontSize={10}
+                      fill="rgba(181,84,30,1)" fontWeight="700" style={{ userSelect: 'none' }}>
+                      +{i + 1}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Current ring border */}
+              <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="none" stroke="#b5541e" strokeWidth={1} />
+
+              {/* Center crosshair */}
+              <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
+              <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6} stroke="#b5541e" strokeWidth={1.5} />
+
+              {/* Interior drag area */}
               <path
-                d={`${shapePath(cxPx, cyPx, rPx, ryPx)} ${shapePath(cxPx, cyPx, Math.max(1, rPx - rowHeightPx), Math.max(1, ryPx - rowHeightPx))}`}
-                fill="rgba(181,84,30,0.18)"
-                fillRule="evenodd"
+                d={shapePath(cxPx, cyPx, rPx, ryPx)}
+                fill="rgba(0,0,0,0)"
+                style={{ pointerEvents: 'all', touchAction: 'none', cursor: isDraggingBody ? 'grabbing' : 'grab' }}
+                onPointerDown={onBodyDown}
+                onPointerMove={onBodyMove}
+                onPointerUp={onBodyUp}
+                onPointerCancel={onBodyUp}
               />
-            )}
-            {/* Current ring fill */}
-            <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="rgba(181,84,30,0.08)" fillRule="evenodd" />
+            </>
+          )}
 
-            {/* Ghost preview rings */}
-            {ghostRings.map(({ rx: grx, ry: gry }, i) => {
-              const opacity = Math.max(0.15, 0.85 - i * 0.08);
-              const prevRx = i === 0 ? rPx : ghostRings[i - 1].rx;
-              const prevRy = i === 0 ? ryPx : ghostRings[i - 1].ry;
-              const gd = shapePath(cxPx, cyPx, grx, gry) + ' ' + shapePath(cxPx, cyPx, prevRx, prevRy);
-              return (
-                <g key={i} style={{ opacity }}>
-                  <path d={gd} fill="rgba(181,84,30,0.25)" fillRule="evenodd" />
-                  <path d={shapePath(cxPx, cyPx, grx, gry)}
-                    fill="none" stroke="rgba(181,84,30,0.9)"
-                    strokeWidth={1.5} strokeDasharray="4 3" />
-                  <text x={cxPx + grx + 4} y={cyPx + 4} fontSize={10}
-                    fill="rgba(181,84,30,1)" fontWeight="700" style={{ userSelect: 'none' }}>
-                    +{i + 1}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Current ring border */}
-            <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="none" stroke="#b5541e" strokeWidth={1} />
-
-            {/* Center crosshair */}
-            <line x1={cxPx - 6} y1={cyPx} x2={cxPx + 6} y2={cyPx} stroke="#b5541e" strokeWidth={1.5} />
-            <line x1={cxPx} y1={cyPx - 6} x2={cxPx} y2={cyPx + 6} stroke="#b5541e" strokeWidth={1.5} />
-
-            {/* Interior drag area */}
-            <path
-              d={shapePath(cxPx, cyPx, rPx, ryPx)}
-              fill="rgba(0,0,0,0)"
-              style={{ pointerEvents: 'all', touchAction: 'none', cursor: isDraggingBody ? 'grabbing' : 'grab' }}
-              onPointerDown={onBodyDown}
-              onPointerMove={onBodyMove}
-              onPointerUp={onBodyUp}
-              onPointerCancel={onBodyUp}
-            />
-          </>
-        )}
-
-        {/* Completed ring interaction areas */}
-        {completedRings.map((ring, i) => {
-          const ringCxPx = (ring.cx / 100) * containerW;
-          const ringCyPx = (ring.cy / 100) * containerH;
-          const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
-          const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-          const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
-          const isSelected = selectedRingIndex === i;
-          return (
-            <path
-              key={i}
-              d={rp}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={20}
-              style={{
-                pointerEvents: 'stroke',
-                cursor: isSelected ? (ringDragRef.current ? 'grabbing' : 'grab') : 'pointer',
-                touchAction: 'none',
-              }}
-              onPointerDown={(e) => onRingDown(e, i)}
-              onPointerMove={(e) => onRingMove(e, i)}
-              onPointerUp={onRingUp}
-              onPointerCancel={onRingUp}
-            />
-          );
-        })}
+          {/* Completed ring interaction areas */}
+          {completedRings.map((ring, i) => {
+            const ringCxPx = (ring.cx / 100) * containerW;
+            const ringCyPx = (ring.cy / 100) * containerH;
+            const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
+            const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
+            const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const isSelected = selectedRingIndex === i;
+            return (
+              <path
+                key={i}
+                d={rp}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={20}
+                style={{
+                  pointerEvents: 'stroke',
+                  cursor: isSelected ? (ringDragRef.current ? 'grabbing' : 'grab') : 'pointer',
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => onRingDown(e, i)}
+                onPointerMove={(e) => onRingMove(e, i)}
+                onPointerUp={onRingUp}
+                onPointerCancel={onRingUp}
+              />
+            );
+          })}
+        </g>
 
         {!ringsOnly && (
           <>
@@ -503,20 +504,8 @@ export default function CrochetRuler({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          {/* Header row: rotate (2D only) + close */}
-          <div className="flex items-center justify-between w-full gap-1">
-            {is2D ? (
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => { onDragStart(); onRotate?.(); }}
-                className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none"
-              >
-                <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                {t('ruler.rotate')}
-              </button>
-            ) : <div />}
+          {/* Header row: close */}
+          <div className="flex items-center justify-end w-full">
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onToggleSettings?.()}
@@ -525,6 +514,46 @@ export default function CrochetRuler({
             >×</button>
           </div>
           <div className="border-t border-[#d4b896] w-full" />
+
+          {/* Rotation control — only for 2D shapes */}
+          {is2D && onRotationChange && (
+            <>
+              <div className="flex items-center gap-1.5 w-full">
+                <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">회전</span>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => { onDragStart(); onRotationChange(Math.max(-180, rotation - 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                >−</button>
+                <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">
+                  {rotation.toFixed(0)}°
+                </span>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => { onDragStart(); onRotationChange(Math.min(180, rotation + 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                >+</button>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => { onDragStart(); onRotationChange(0); }}
+                  title="초기화"
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+              <input
+                type="range" min={-180} max={180} step={1}
+                value={rotation}
+                onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }}
+                onChange={(e) => onRotationChange(Number(e.target.value))}
+                className="w-full accent-[#b5541e] cursor-pointer"
+              />
+              <div className="border-t border-[#d4b896] w-full" />
+            </>
+          )}
 
           {/* Sliders row */}
           <div className="flex gap-2 items-end">

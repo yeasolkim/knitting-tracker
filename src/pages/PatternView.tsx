@@ -154,6 +154,7 @@ type Snapshot = {
   crochetR: number;
   crochetRy: number;
   crochetRowHeight: number | null;
+  crochetRotation: number;
   completedCrochetRings: CrochetRing[];
 };
 
@@ -267,6 +268,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [crochetRowHeight, setCrochetRowHeight] = useState<number | null>(() => {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { rowHeight?: number } | undefined;
     return saved?.rowHeight ?? null;
+  });
+  const [crochetRotation, setCrochetRotation] = useState<number>(() => {
+    const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { rotation?: number } | undefined;
+    return saved?.rotation ?? 0;
   });
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
@@ -443,8 +448,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   // Ref for stable callbacks that need latest transform/ruler values.
   // Updated directly in render (not via useEffect) so it is always current
   // before any pointer event fires — even in the same frame as a state change.
-  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight });
-  latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight };
+  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
+  latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -482,6 +487,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     crochetR,
     crochetRy,
     crochetRowHeight,
+    crochetRotation,
     completedCrochetRings,
   });
 
@@ -509,6 +515,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetR(snap.crochetR);
     setCrochetRy(snap.crochetRy);
     setCrochetRowHeight(snap.crochetRowHeight);
+    setCrochetRotation(snap.crochetRotation);
     setCompletedCrochetRings(snap.completedCrochetRings);
   }, []);
 
@@ -710,18 +717,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRowHeight(Math.max(0.01, (screenHPct / 100) * H / t.scale / refH * 100));
   }, []);
 
-  const handleCrochetRotate = useCallback(() => {
-    captureHistory();
-    const { crochetR: r, crochetRy: ry, imgW: iW, imgH: iH } = latestRef.current;
-    // Swap rx/ry preserving pixel size: new_r% = ry_px/imgW*100, new_ry% = r_px/imgH*100
-    if (iW > 0 && iH > 0) {
-      setCrochetR((ry / 100) * iH / iW * 100);
-      setCrochetRy((r / 100) * iW / iH * 100);
-    } else {
-      setCrochetR(ry);
-      setCrochetRy(r);
-    }
-  }, [captureHistory]);
 
   const handleCrochetRingUpdate = useCallback((i: number, ring: { cx: number; cy: number; r: number; ry?: number; shape?: string }) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
@@ -754,8 +749,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -778,7 +773,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
     crochet_marks: crochetMarks,
-    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings },
+    crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings },
     notes,
     note_positions: notePositions,
     // Save view as image-relative % so it restores correctly on any screen size.
@@ -986,13 +981,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
       note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
       crochet_ruler_data: activeFileIdx === 0
-        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }
-        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }),
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings, save]);
+  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
@@ -1011,13 +1006,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       notes: activeFileIdx === 0 ? notes : (imageStatesRef.current[0]?.notes ?? notes),
       note_positions: activeFileIdx === 0 ? notePositions : (imageStatesRef.current[0]?.note_positions ?? notePositions),
       crochet_ruler_data: activeFileIdx === 0
-        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }
-        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, completedRings: completedCrochetRings }),
+        ? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings }
+        : (imageStatesRef.current[0]?.crochet_ruler_data ?? { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings }),
       sub_patterns: subPatterns,
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, completedCrochetRings]);
+  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
 
   // Flush save when page is hidden (tab switch, home button, device lock, iOS swipe).
   // This is a second line of defence alongside the unmount flush in useAutoSave.
@@ -1608,7 +1603,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onRowHeightChange={handleCrochetRowHeightChange}
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
-              onRotate={handleCrochetRotate}
+              rotation={crochetRotation}
+              onRotationChange={(deg) => { captureHistory(); setCrochetRotation(deg); }}
               onShapeChange={(shape) => {
                 if (shape === 'line') {
                   setShowCrochetSettings(false);
@@ -1650,6 +1646,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               }))}
               containerW={containerW}
               containerH={containerH}
+              rotation={crochetRotation}
               onDragStart={captureHistory}
               onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); }}
               onDeleteAllRings={() => { captureHistory(); setCompletedCrochetRings([]); }}

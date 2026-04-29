@@ -78,6 +78,7 @@ export interface ImagePerState {
     r?: number;
     ry?: number;
     rowHeight?: number;
+    rotation?: number;
     completedRings?: (number | { cx: number; cy: number; r: number; ry?: number; shape?: string })[];
   };
   notes?: Record<string, string>;
