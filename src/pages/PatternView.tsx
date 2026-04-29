@@ -830,13 +830,16 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
-    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape } = latestRef.current;
+    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H } = latestRef.current;
     const is2D = shape === 'ellipse' || shape === 'rect';
     const lastRing = rings.length > 0 ? rings[rings.length - 1] : null;
     const lastR = lastRing ? lastRing.r : 0;
     const lastRy = lastRing ? (lastRing.ry ?? lastRing.r) : 0;
-    const stepR = Math.max(cr - lastR, cr * 0.3);
     const stepRy = Math.max(cry - lastRy, cry * 0.3);
+    // For 2D shapes: grow horizontal axis by same pixel amount as vertical axis
+    const stepR = is2D && W > 0 && H > 0
+      ? (stepRy / 100) * H / W * 100
+      : Math.max(cr - lastR, cr * 0.3);
     setCompletedCrochetRings(prev => [...prev, {
       cx, cy, r: cr,
       ry: is2D ? cry : undefined,

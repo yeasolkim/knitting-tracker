@@ -167,8 +167,11 @@ export default function CrochetRuler({
   const lastRyPx = lastCompleted
     ? (lastCompleted.ry != null ? Math.max(1, (lastCompleted.ry / 100) * containerH) : lastRPx)
     : 0;
-  const stepRx = Math.max(rPx - lastRPx, rPx * 0.3);
+  // For 2D shapes (rect/ellipse), use vertical step as reference so both axes
+  // grow by the same pixel amount — otherwise portrait screens make horizontal
+  // steps visually smaller than vertical steps.
   const stepRy = Math.max(ryPx - lastRyPx, ryPx * 0.3);
+  const stepRx = is2D ? stepRy : Math.max(rPx - lastRPx, rPx * 0.3);
   const showGhosts = !ringsOnly && (isAdjusting || showSettings || isDraggingCorner);
   const ghostRings: { rx: number; ry: number }[] = [];
   if (showGhosts) {
