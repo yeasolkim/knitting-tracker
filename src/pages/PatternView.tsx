@@ -1599,7 +1599,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onCenterChange={handleCrochetCenterChange}
               onRadiusChange={handleCrochetRadiusChange}
               onRyChange={(crochetShape === 'ellipse' || crochetShape === 'rect') ? handleCrochetRyChange : undefined}
-              rowHeight={crochetRowHeight ?? undefined}
+              rowHeight={crochetRowHeight != null ? contentToScreenRy(crochetRowHeight) : undefined}
               onRowHeightChange={handleCrochetRowHeightChange}
               onComplete={handleCrochetCircleComplete}
               onToggleSettings={() => setShowCrochetSettings(v => !v)}

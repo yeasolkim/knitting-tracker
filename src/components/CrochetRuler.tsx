@@ -93,7 +93,16 @@ export default function CrochetRuler({
   const [maxR, setMaxR] = useState(() => Math.max(49, r));
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
   const rowHeightPx = rowHeight != null ? Math.max(1, (rowHeight / 100) * containerH) : null;
-  const [maxRowHeight, setMaxRowHeight] = useState(() => Math.max(10, rowHeight ?? 5));
+  // effectiveMaxRy: pixel-matched max row height in containerH-% units.
+  // For circle (not is2D), ring ry in pixels = rPx = (r/100)*containerW, so max row height in
+  // containerH-% = rPx/containerH*100 = r*containerW/containerH. For ellipse/rect, ry is already
+  // in containerH-%.
+  const effectiveMaxRy = is2D
+    ? ryActual
+    : containerH > 0 ? r * containerW / containerH : r;
+  const [maxRowHeight, setMaxRowHeight] = useState(() =>
+    Math.max(effectiveMaxRy * 1.5, rowHeight ?? effectiveMaxRy * 0.5, 1)
+  );
 
   // Action bar state — tap ring body to toggle
   const [showActionBar, setShowActionBar] = useState(false);
