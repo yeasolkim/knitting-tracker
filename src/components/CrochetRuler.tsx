@@ -5,7 +5,9 @@ interface CompletedRingData {
   cx: number;
   cy: number;
   r: number;
+  rInner?: number;
   ry?: number;
+  ryInner?: number;
   shape?: string;
 }
 
@@ -100,9 +102,12 @@ export default function CrochetRuler({
   const effectiveMaxRy = is2D
     ? ryActual
     : containerH > 0 ? r * containerW / containerH : r;
-  const [maxRowHeight, setMaxRowHeight] = useState(() =>
-    Math.max(effectiveMaxRy * 1.5, rowHeight ?? effectiveMaxRy * 0.5, 1)
-  );
+  // autoMaxRowHeight tracks r dynamically so the slider range always fits the current ring size.
+  const autoMaxRowHeight = Math.max(effectiveMaxRy * 1.5, rowHeight ?? effectiveMaxRy * 0.5, 1);
+  const [maxRowHeightOverride, setMaxRowHeightOverride] = useState<number | null>(null);
+  const maxRowHeight = maxRowHeightOverride != null
+    ? Math.max(maxRowHeightOverride, autoMaxRowHeight)
+    : autoMaxRowHeight;
 
   // Action bar state — tap ring body to toggle
   const [showActionBar, setShowActionBar] = useState(false);
@@ -296,18 +301,23 @@ export default function CrochetRuler({
             />
           )}
 
-          {/* Completed rings */}
+          {/* Completed rings — rendered as bands (outer minus inner) so each row is individually visible */}
           {completedRings.map((ring, i) => {
             const ringCxPx = (ring.cx / 100) * containerW;
             const ringCyPx = (ring.cy / 100) * containerH;
             const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
             const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-            const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const ringRxPxInner = ring.rInner != null ? Math.max(0, (ring.rInner / 100) * containerW) : 0;
+            const ringRyPxInner = ring.ryInner != null ? Math.max(0, (ring.ryInner / 100) * containerH) : ringRxPxInner;
+            const outerPath = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const rp = ringRxPxInner > 0
+              ? outerPath + ' ' + ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPxInner, ringRyPxInner)
+              : outerPath;
             const isSelected = selectedRingIndex === i;
             return (
               <g key={i}>
                 <path d={rp} fill={isSelected ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.15)"} fillRule="evenodd" />
-                <path d={rp} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
+                <path d={outerPath} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
                   strokeWidth={isSelected ? 2 : 1.5} strokeDasharray="5 3" />
               </g>
             );
@@ -513,8 +523,21 @@ export default function CrochetRuler({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          {/* Header row: close */}
-          <div className="flex items-center justify-end w-full">
+          {/* Header row: delete all + close */}
+          <div className="flex items-center justify-between w-full gap-1">
+            {completedRings.length > 0 ? (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
+                className="flex items-center gap-1 px-2 h-9 rounded-lg bg-red-50 text-red-500 text-[10px] font-bold border border-red-200 hover:bg-red-100 active:scale-95 select-none flex-shrink-0"
+                title={t('view.deleteAll')}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {t('view.deleteAll')}
+              </button>
+            ) : <div />}
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onToggleSettings?.()}
@@ -613,7 +636,7 @@ export default function CrochetRuler({
             {/* Row height column */}
             <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
               <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
-              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => m * 1.3)}
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeightOverride((m) => (m ?? autoMaxRowHeight) * 1.3)}
                 className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
@@ -626,7 +649,7 @@ export default function CrochetRuler({
                 style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '28px', height: '120px' }} />
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
-              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeight((m) => Math.max(0.01, m / 1.3))}
+              <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeightOverride((m) => Math.max(0.01, (m ?? autoMaxRowHeight) / 1.3))}
                 className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
               <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
                 {rowHeight != null ? rowHeight.toFixed(2) : '—'}%

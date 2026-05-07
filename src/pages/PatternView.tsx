@@ -136,7 +136,7 @@ interface Props {
   isFromCache?: boolean;
 }
 
-type CrochetRing = { cx: number; cy: number; r: number; ry?: number; shape?: 'circle' | 'ellipse' | 'rect' };
+type CrochetRing = { cx: number; cy: number; r: number; rInner?: number; ry?: number; ryInner?: number; shape?: 'circle' | 'ellipse' | 'rect' };
 
 type Snapshot = {
   subPatterns: SubPattern[];
@@ -889,19 +889,24 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
-    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H, crochetRowHeight: rowH } = latestRef.current;
+    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H, imgW: iW, imgH: iH, crochetRowHeight: rowH } = latestRef.current;
     const is2D = shape === 'ellipse' || shape === 'rect';
     const lastRing = rings.length > 0 ? rings[rings.length - 1] : null;
     const lastRy = lastRing ? (lastRing.ry ?? lastRing.r) : 0;
     const lastR = lastRing ? lastRing.r : 0;
-    // rowH is % of containerH; convert to same pixel step for both axes
+    // rowH is image-relative % of imgH; convert to image-relative % of imgW for rx step
     const stepRy = rowH ?? Math.max(cry - lastRy, cry * 0.3);
-    const stepR = (is2D || rowH != null) && W > 0 && H > 0
-      ? (stepRy / 100) * H / W * 100
+    const refW = iW > 0 ? iW : W;
+    const refH = iH > 0 ? iH : H;
+    const stepR = (is2D || rowH != null) && refW > 0 && refH > 0
+      ? (stepRy / 100) * refH / refW * 100
       : Math.max(cr - lastR, cr * 0.3);
     setCompletedCrochetRings(prev => [...prev, {
-      cx, cy, r: cr,
+      cx, cy,
+      r: cr,
+      rInner: Math.max(0, cr - stepR),
       ry: is2D ? cry : undefined,
+      ryInner: is2D ? Math.max(0, cry - stepRy) : undefined,
       shape: shape === 'circle' ? undefined : shape as 'ellipse' | 'rect',
     }]);
     setCrochetR(cr + stepR);
@@ -1591,7 +1596,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 cx: contentToScreenX(ring.cx),
                 cy: contentToScreenY(ring.cy),
                 r: contentToScreenR(ring.r),
+                rInner: ring.rInner != null ? contentToScreenR(ring.rInner) : undefined,
                 ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
+                ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
                 shape: ring.shape,
               }))}
               containerW={containerW}
@@ -1641,7 +1648,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 cx: contentToScreenX(ring.cx),
                 cy: contentToScreenY(ring.cy),
                 r: contentToScreenR(ring.r),
+                rInner: ring.rInner != null ? contentToScreenR(ring.rInner) : undefined,
                 ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
+                ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
                 shape: ring.shape,
               }))}
               containerW={containerW}
