@@ -42,9 +42,20 @@ const RowRuler = memo(function RowRuler({
   const [showActionBar, setShowActionBar] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => () => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
   const triggerPreview = useCallback(() => {
@@ -52,6 +63,36 @@ const RowRuler = memo(function RowRuler({
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     previewTimerRef.current = setTimeout(() => setShowPreview(false), 2000);
   }, []);
+  const isHorizontal = orientation === 'horizontal';
+
+  // Shadow overlay path: full-container rect minus rotated ruler band (evenodd cutout)
+  const shadowPath = useMemo(() => {
+    const { w, h } = containerSize;
+    if (w === 0 || h === 0) return null;
+    let cxPx: number, cyPx: number, hwPx: number, hhPx: number;
+    if (isHorizontal) {
+      cxPx = w * (positionX + height / 2) / 100;
+      cyPx = h / 2;
+      hwPx = w * height / 200;
+      hhPx = h / 2;
+    } else {
+      cxPx = w / 2;
+      cyPx = h * (positionY + height / 2) / 100;
+      hwPx = w / 2;
+      hhPx = h * height / 200;
+    }
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const pt = (dx: number, dy: number) => ({
+      x: (cxPx + dx * cos - dy * sin) / w * 100,
+      y: (cyPx + dx * sin + dy * cos) / h * 100,
+    });
+    const tl = pt(-hwPx, -hhPx), tr = pt(hwPx, -hhPx);
+    const br = pt(hwPx, hhPx), bl = pt(-hwPx, hhPx);
+    return `M 0 0 L 100 0 L 100 100 L 0 100 Z M ${tl.x} ${tl.y} L ${tr.x} ${tr.y} L ${br.x} ${br.y} L ${bl.x} ${bl.y} Z`;
+  }, [containerSize, isHorizontal, positionX, positionY, height, rotation]);
+
   const dragStartRef = useRef<{
     clientY: number; startY: number;
     clientX: number; startX: number;
@@ -59,8 +100,6 @@ const RowRuler = memo(function RowRuler({
   const hasDraggedRef = useRef(false);
   const pointerDownClientRef = useRef<{ x: number; y: number } | null>(null);
   const { t } = useLanguage();
-
-  const isHorizontal = orientation === 'horizontal';
 
   const toPercentY = useCallback((clientY: number) => {
     if (!containerRef.current) return 0;
@@ -164,16 +203,17 @@ const RowRuler = memo(function RowRuler({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {/* Shadow left */}
-        <div
-          className="absolute top-0 bottom-0 left-0 pointer-events-none bg-black/25"
-          style={{ width: `${positionX}%` }}
-        />
-        {/* Shadow right */}
-        <div
-          className="absolute top-0 bottom-0 right-0 pointer-events-none bg-black/25"
-          style={{ left: `${positionX + height}%` }}
-        />
+        {/* Shadow overlay with rotated cutout */}
+        {shadowPath ? (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d={shadowPath} fill="rgba(0,0,0,0.25)" fillRule="evenodd" />
+          </svg>
+        ) : (
+          <>
+            <div className="absolute top-0 bottom-0 left-0 pointer-events-none bg-black/25" style={{ width: `${positionX}%` }} />
+            <div className="absolute top-0 bottom-0 right-0 pointer-events-none bg-black/25" style={{ left: `${positionX + height}%` }} />
+          </>
+        )}
 
         {/* Ghost preview lines */}
         {(isAdjusting || isDragging || showSettings || showPreview) && previewLines.map((x, i) => {
@@ -313,17 +353,17 @@ const RowRuler = memo(function RowRuler({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Shadow overlay — ABOVE ruler */}
-      <div
-        className="absolute left-0 right-0 top-0 pointer-events-none bg-black/25"
-        style={{ height: `${positionY}%` }}
-      />
-
-      {/* Shadow overlay — BELOW ruler */}
-      <div
-        className="absolute left-0 right-0 bottom-0 pointer-events-none bg-black/25"
-        style={{ top: `${positionY + height}%` }}
-      />
+      {/* Shadow overlay with rotated cutout */}
+      {shadowPath ? (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d={shadowPath} fill="rgba(0,0,0,0.25)" fillRule="evenodd" />
+        </svg>
+      ) : (
+        <>
+          <div className="absolute left-0 right-0 top-0 pointer-events-none bg-black/25" style={{ height: `${positionY}%` }} />
+          <div className="absolute left-0 right-0 bottom-0 pointer-events-none bg-black/25" style={{ top: `${positionY + height}%` }} />
+        </>
+      )}
 
       {/* Ghost preview lines */}
       {(isAdjusting || isDragging || showSettings || showPreview) && previewLines.map((y, i) => {
