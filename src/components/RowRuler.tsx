@@ -8,6 +8,7 @@ interface RowRulerProps {
   direction: RulerDirection;
   orientation?: RulerOrientation;
   positionX?: number;
+  rotation?: number;
   isAdjusting?: boolean;
   isPlacingMarker?: boolean;
   showSettings?: boolean;
@@ -25,6 +26,7 @@ const RowRuler = memo(function RowRuler({
   direction,
   orientation = 'vertical',
   positionX = 50,
+  rotation = 0,
   isAdjusting = false,
   isPlacingMarker = false,
   showSettings = false,
@@ -180,7 +182,7 @@ const RowRuler = memo(function RowRuler({
             <div
               key={i}
               className="absolute top-0 bottom-0 pointer-events-none"
-              style={{ left: `${x}%`, width: `${height}%`, opacity, transition: 'none' }}
+              style={{ left: `${x}%`, width: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
             >
               <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
               <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
@@ -198,7 +200,7 @@ const RowRuler = memo(function RowRuler({
         {/* Active ruler band */}
         <div
           className="absolute top-0 bottom-0"
-          style={{ left: `${positionX}%`, width: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto' }}
+          style={{ left: `${positionX}%`, width: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
         >
           <div
             className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
@@ -330,7 +332,7 @@ const RowRuler = memo(function RowRuler({
           <div
             key={i}
             className="absolute left-0 right-0 pointer-events-none"
-            style={{ top: `${y}%`, height: `${height}%`, opacity, transition: 'none' }}
+            style={{ top: `${y}%`, height: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
           >
             <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
             <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
@@ -345,7 +347,7 @@ const RowRuler = memo(function RowRuler({
       {/* Active ruler band */}
       <div
         className="absolute left-0 right-0"
-        style={{ top: `${positionY}%`, height: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto' }}
+        style={{ top: `${positionY}%`, height: `${height}%`, pointerEvents: isPlacingMarker ? 'none' : 'auto', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
       >
         <div
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"

@@ -445,18 +445,29 @@ export default function CrochetRuler({
         return (
           <div
             key={i}
-            className="absolute z-50 pointer-events-auto"
+            className="absolute z-50 pointer-events-auto flex items-center gap-1"
             style={{ left: ringCxPx, top: ringCyPx - ringRyPx, transform: 'translate(-50%, -50%)' }}
           >
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onDeleteRing(i); setSelectedRingIndex(null); }}
               className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 shadow-md active:scale-95 transition-all"
+              title="이 단 삭제"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            {completedRings.length > 1 && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); if (confirm(t('view.deleteAllMarks'))) { onDeleteAllRings(); setSelectedRingIndex(null); } }}
+                className="h-5 px-1.5 rounded-full bg-red-100 text-red-600 text-[9px] font-bold flex items-center hover:bg-red-200 shadow-md active:scale-95 transition-all whitespace-nowrap border border-red-300"
+                title={t('view.deleteAll')}
+              >
+                {t('view.deleteAll')}
+              </button>
+            )}
           </div>
         );
       })}

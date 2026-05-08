@@ -146,6 +146,7 @@ type Snapshot = {
   rulerDirection: RulerDirection;
   rulerOrientation: RulerOrientation;
   rulerX: number;
+  rulerRotation: number;
   completedMarks: CompletedMark[];
   crochetMarks: CrochetMark[];
   knittingMarks: KnittingMark[];
@@ -287,6 +288,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   );
   const [rulerX, setRulerX] = useState<number>(
     img0?.ruler_position_x ?? (pattern.progress?.ruler_position_x as number) ?? 50
+  );
+  const [rulerRotation, setRulerRotation] = useState<number>(
+    img0?.ruler_rotation ?? (pattern.progress?.ruler_rotation as number) ?? 0
   );
   const [completedMarks, setCompletedMarks] = useState<CompletedMark[]>(
     img0?.completed_marks ?? (pattern.progress?.completed_marks as CompletedMark[]) ?? []
@@ -479,6 +483,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     rulerDirection,
     rulerOrientation,
     rulerX,
+    rulerRotation,
     completedMarks,
     crochetMarks: [],
     knittingMarks: [],
@@ -507,6 +512,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setRulerDirection(snap.rulerDirection);
     setRulerOrientation(snap.rulerOrientation);
     setRulerX(snap.rulerX);
+    setRulerRotation(snap.rulerRotation);
     setCompletedMarks(snap.completedMarks);
     setCrochetMarks(snap.crochetMarks);
     setKnittingMarks(snap.knittingMarks);
@@ -749,8 +755,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -769,6 +775,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     ruler_position_x: rulerX,
     ruler_direction: rulerDirection,
     ruler_orientation: rulerOrientation,
+    ruler_rotation: rulerRotation || undefined,
     active_sub_id: activeSubId,
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
@@ -837,6 +844,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
+    setRulerRotation(next?.ruler_rotation ?? 0);
     setCompletedMarks(next?.completed_marks ?? []);
     setKnittingMarks(next?.knitting_marks ?? []);
     setCrochetMarks(next?.crochet_marks ?? []);
@@ -992,7 +1000,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, save]);
+  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
@@ -1017,7 +1025,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
+  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
 
   // Flush save when page is hidden (tab switch, home button, device lock, iOS swipe).
   // This is a second line of defence alongside the unmount flush in useAutoSave.
@@ -1573,6 +1581,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               direction={rulerDirection}
               orientation={rulerOrientation}
               positionX={screenRulerX}
+              rotation={rulerRotation}
               isAdjusting={isAdjustingRuler}
               isPlacingMarker={isCrochet ? isPlacingMarker : isPlacingKnittingMarker}
               showSettings={showRulerSettings}
@@ -1893,6 +1902,26 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   {closeBtn}
                 </div>
                 <div className="border-t border-[#d4b896] -mx-2.5" />
+                {/* Slant (rotation) controls */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">−</button>
+                  <input type="range" min={-45} max={45} step={1} value={rulerRotation}
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onChange={(e) => setRulerRotation(Number(e.target.value))}
+                    className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px', maxWidth: '80px' }} />
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(0); }}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0" title="초기화">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                  <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
+                </div>
+                <div className="border-t border-[#d4b896] -mx-2.5" />
                 {/* Width controls */}
                 <div className="flex items-center gap-1">
                   <button
@@ -1993,6 +2022,26 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   </button>
                 </div>
                 {closeBtn}
+              </div>
+              <div className="border-t border-[#d4b896] w-full" />
+              {/* Slant (rotation) controls */}
+              <div className="flex items-center gap-1 w-full">
+                <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">−</button>
+                <input type="range" min={-45} max={45} step={1} value={rulerRotation}
+                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                  onChange={(e) => setRulerRotation(Number(e.target.value))}
+                  className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px' }} />
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
+                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(0); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0" title="초기화">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
               <div className="border-t border-[#d4b896] w-full" />
               {/* Height controls */}

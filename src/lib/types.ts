@@ -67,6 +67,7 @@ export interface ImagePerState {
   ruler_position_x?: number;
   ruler_direction?: RulerDirection;
   ruler_orientation?: RulerOrientation;
+  ruler_rotation?: number;
   active_sub_id?: string;
   completed_marks?: CompletedMark[];
   knitting_marks?: KnittingMark[];
@@ -116,6 +117,7 @@ export interface PatternProgress {
   crochet_ruler_data?: unknown;
   ruler_orientation?: string | null;
   ruler_position_x?: number | null;
+  ruler_rotation?: number | null;
   image_states?: ImagePerState[];
   updated_at: string;
 }
