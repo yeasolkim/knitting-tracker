@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompletedOverlayProps {
   marks: CompletedMark[];
+  rotation?: number;
   onUpdate: (index: number, mark: CompletedMark) => void;
   onDelete: (index: number) => void;
   onDeleteAll: () => void;
@@ -13,7 +14,7 @@ interface CompletedOverlayProps {
 
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
-const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart }: CompletedOverlayProps) {
+const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart }: CompletedOverlayProps) {
   const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
@@ -128,7 +129,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
             <div
               key={i}
               className="absolute top-0 bottom-0 pointer-events-auto"
-              style={{ left: `${mark.y}%`, width: `${mark.height}%` }}
+              style={{ left: `${mark.y}%`, width: `${mark.height}%`, transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedIndex(isSelected ? null : i);
@@ -194,7 +195,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, onUpdate, onDel
           <div
             key={i}
             className="absolute left-0 right-0 pointer-events-auto"
-            style={{ top: `${mark.y}%`, height: `${mark.height}%` }}
+            style={{ top: `${mark.y}%`, height: `${mark.height}%`, transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
             onClick={(e) => {
               e.stopPropagation();
               setSelectedIndex(isSelected ? null : i);

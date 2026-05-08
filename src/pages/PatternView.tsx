@@ -1568,6 +1568,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           )}
           <CompletedOverlay
             marks={screenCompletedMarks}
+            rotation={(!isCrochet || crochetShape === 'line') ? rulerRotation : 0}
             onUpdate={handleCompletedMarkUpdate}
             onDelete={handleCompletedMarkDelete}
             onDeleteAll={handleCompletedMarkDeleteAll}
