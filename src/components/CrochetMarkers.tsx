@@ -13,13 +13,13 @@ interface CrochetMarkersProps {
 }
 
 function PinIcon({ label, selected, dragging }: { label: string; selected: boolean; dragging: boolean }) {
-  const fill = selected ? 'rgba(244,63,94,0.92)' : 'rgba(251,113,133,0.72)';
-  const stroke = selected ? 'rgba(244,63,94,1)' : 'rgba(244,63,94,0.85)';
+  const fill = selected ? 'rgba(181,84,30,0.92)' : 'rgba(181,84,30,0.6)';
+  const stroke = selected ? 'rgba(154,67,24,1)' : 'rgba(181,84,30,0.85)';
   return (
     <svg
       className="w-[18px] sm:w-6 h-auto"
       viewBox="0 0 24 30"
-      style={{ overflow: 'visible', filter: dragging ? 'drop-shadow(0 3px 6px rgba(244,63,94,0.5))' : selected ? 'drop-shadow(0 2px 4px rgba(244,63,94,0.4))' : 'drop-shadow(0 1px 3px rgba(0,0,0,0.25))' }}
+      style={{ overflow: 'visible', filter: dragging ? 'drop-shadow(0 3px 6px rgba(181,84,30,0.5))' : selected ? 'drop-shadow(0 2px 4px rgba(181,84,30,0.4))' : 'drop-shadow(0 1px 3px rgba(0,0,0,0.25))' }}
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
