@@ -753,12 +753,13 @@ export default function CrochetRuler({
             <button
               onClick={() => { if (confirm(t('crochet.ruler.resetConfirm'))) { onReset?.(); setShowActionBar(false); } }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center px-3 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
               title={t('crochet.ruler.reset')}
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
+              {t('crochet.ruler.reset')}
             </button>
             <div className="w-px bg-[#d4b896]" />
             {/* 닫기 */}
