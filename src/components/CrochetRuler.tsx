@@ -677,7 +677,7 @@ export default function CrochetRuler({
                   <button
                     key={s}
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => { onShapeChange(s); if (s === 'line') onToggleSettings?.(); }}
+                    onClick={() => { onShapeChange(s); }}
                     title={t(`crochet.shape.${s}`)}
                     className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                       shape === s

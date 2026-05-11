@@ -723,6 +723,26 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRowHeight(Math.max(0.01, (screenHPct / 100) * H / t.scale / refH * 100));
   }, []);
 
+  const handleCrochetShapeChange = useCallback((newShape: 'line' | 'circle' | 'ellipse' | 'rect') => {
+    const { imgW: iW, imgH: iH, crochetShape: prevShape, crochetR: prevR, rulerHeight: prevRulerH } = latestRef.current;
+    captureHistory();
+    const prevIs2D = prevShape === 'ellipse' || prevShape === 'rect';
+    const newIs2D = newShape === 'ellipse' || newShape === 'rect';
+    if (newShape === 'line') {
+      setShowCrochetSettings(false);
+      setShowRulerSettings(false);
+      if (prevRulerH <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
+    } else if (prevShape === 'line') {
+      setShowRulerSettings(false);
+      const baseR = prevR < 1 ? 20 : prevR;
+      if (prevR < 1) setCrochetR(baseR);
+      if (newIs2D) { setCrochetRy(iW > 0 && iH > 0 ? baseR * iW / iH : baseR); }
+      if (prevRulerH <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
+    } else if (!prevIs2D && newIs2D) {
+      setCrochetRy(iW > 0 && iH > 0 ? prevR * iW / iH : prevR);
+    }
+    setCrochetShape(newShape);
+  }, [captureHistory]);
 
   const handleCrochetRingUpdate = useCallback((i: number, ring: { cx: number; cy: number; r: number; ry?: number; shape?: string }) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
@@ -1622,13 +1642,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               rotation={crochetRotation}
               onRotationChange={(deg) => { captureHistory(); setCrochetRotation(deg); }}
-              onShapeChange={(shape) => {
-                if (shape === 'line') {
-                  setShowCrochetSettings(false);
-                  if (rulerHeight <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
-                }
-                setCrochetShape(shape);
-              }}
+              onShapeChange={handleCrochetShapeChange}
               showSettings={showCrochetSettings}
               isAdjusting={isAdjustingCrochetRadius}
               onAdjustingChange={setIsAdjustingCrochetRadius}
@@ -1969,14 +1983,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                       <button
                         key={s}
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => {
-                          setCrochetShape(s);
-                          setShowRulerSettings(false);
-                          if (s !== 'line' && rulerHeight <= 0.3) {
-                            setRulerHeight(10);
-                            setMaxRulerHeight((prev) => Math.max(prev, 15));
-                          }
-                        }}
+                        onClick={() => handleCrochetShapeChange(s)}
                         title={t(`crochet.shape.${s}`)}
                         className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                           crochetShape === s
@@ -2089,14 +2096,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                       <button
                         key={s}
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => {
-                          setCrochetShape(s);
-                          setShowRulerSettings(false);
-                          if (s !== 'line' && rulerHeight <= 0.3) {
-                            setRulerHeight(10);
-                            setMaxRulerHeight((prev) => Math.max(prev, 15));
-                          }
-                        }}
+                        onClick={() => handleCrochetShapeChange(s)}
                         title={t(`crochet.shape.${s}`)}
                         className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
                           crochetShape === s
