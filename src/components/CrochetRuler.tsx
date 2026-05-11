@@ -376,23 +376,29 @@ export default function CrochetRuler({
             </>
           )}
 
-          {/* Completed ring interaction areas */}
+          {/* Completed ring interaction areas — rendered above interior drag area; use band path so each ring captures only its own donut zone */}
           {completedRings.map((ring, i) => {
             const ringCxPx = (ring.cx / 100) * containerW;
             const ringCyPx = (ring.cy / 100) * containerH;
             const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
             const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-            const rp = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const ringRxPxInner = ring.rInner != null ? Math.max(0, (ring.rInner / 100) * containerW) : 0;
+            const ringRyPxInner = ring.ryInner != null ? Math.max(0, (ring.ryInner / 100) * containerH) : ringRxPxInner;
+            const outerPath = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
+            const rp = ringRxPxInner > 0
+              ? outerPath + ' ' + ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPxInner, ringRyPxInner)
+              : outerPath;
             const isSelected = selectedRingIndex === i;
             return (
               <path
                 key={i}
                 d={rp}
-                fill="none"
+                fill="rgba(0,0,0,0)"
+                fillRule="evenodd"
                 stroke="transparent"
-                strokeWidth={20}
+                strokeWidth={8}
                 style={{
-                  pointerEvents: 'stroke',
+                  pointerEvents: 'all',
                   cursor: isSelected ? (ringDragRef.current ? 'grabbing' : 'grab') : 'pointer',
                   touchAction: 'none',
                 }}
