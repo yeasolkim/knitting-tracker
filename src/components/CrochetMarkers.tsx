@@ -157,7 +157,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
     >
       {isPlacing && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-          <div className="flex items-center gap-2 bg-rose-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
+          <div className="flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
             <span className="animate-pulse w-2 h-2 bg-white rounded-full" />
             도안을 탭하여 마커 배치
             <button
@@ -208,7 +208,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
                     onDelete(mark.id);
                     setSelectedId(null);
                   }}
-                  className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-red-600"
+                  className="w-5 h-5 bg-[#9a4318] text-[#fdf6e8] rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-[#7a3310]"
                 >
                   ✕
                 </button>
@@ -228,7 +228,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
                 setSelectedId(null);
               }
             }}
-            className="text-[11px] text-red-400 bg-white/90 border border-red-200 px-2.5 py-1 rounded-full hover:bg-red-50 shadow-sm"
+            className="text-[11px] bg-[#9a4318]/90 text-[#fdf6e8] border border-[#7a3310] px-2.5 py-1 rounded-full hover:bg-[#9a4318] shadow-sm"
           >
             전체 삭제
           </button>

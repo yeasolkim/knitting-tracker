@@ -451,7 +451,7 @@ export default function CrochetRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onDeleteRing(i); setSelectedRingIndex(null); }}
-              className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 shadow-md active:scale-95 transition-all"
+              className="w-5 h-5 rounded-full bg-[#9a4318] text-[#fdf6e8] flex items-center justify-center hover:bg-[#7a3310] shadow-md active:scale-95 transition-all"
               title="이 단 삭제"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -462,7 +462,7 @@ export default function CrochetRuler({
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); if (confirm(t('view.deleteAllMarks'))) { onDeleteAllRings(); setSelectedRingIndex(null); } }}
-                className="h-5 px-1.5 rounded-full bg-red-100 text-red-600 text-[9px] font-bold flex items-center hover:bg-red-200 shadow-md active:scale-95 transition-all whitespace-nowrap border border-red-300"
+                className="h-5 px-1.5 rounded-full bg-[#9a4318]/90 text-[#fdf6e8] text-[9px] font-bold flex items-center hover:bg-[#9a4318] shadow-md active:scale-95 transition-all whitespace-nowrap border border-[#7a3310]"
                 title={t('view.deleteAll')}
               >
                 {t('view.deleteAll')}
@@ -480,7 +480,7 @@ export default function CrochetRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onCenterChange?.(cx, cy - NUDGE)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -492,7 +492,7 @@ export default function CrochetRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onCenterChange?.(cx, cy + NUDGE)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -504,7 +504,7 @@ export default function CrochetRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onCenterChange?.(cx - NUDGE, cy)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -516,7 +516,7 @@ export default function CrochetRuler({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onCenterChange?.(cx + NUDGE, cy)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -540,7 +540,7 @@ export default function CrochetRuler({
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
-                className="flex items-center gap-1 px-2 h-9 rounded-lg bg-red-50 text-red-500 text-[10px] font-bold border border-red-200 hover:bg-red-100 active:scale-95 select-none flex-shrink-0"
+                className="flex items-center gap-1 px-2 h-9 rounded-lg bg-[#fdf6e8] text-[#9a4318] text-[10px] font-bold border border-[#b07840] hover:bg-[#e8d8c0] active:scale-95 select-none flex-shrink-0"
                 title={t('view.deleteAll')}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
