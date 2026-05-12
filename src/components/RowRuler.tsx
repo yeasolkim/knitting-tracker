@@ -15,7 +15,6 @@ interface RowRulerProps {
   onChangePosition: (y: number) => void;
   onChangePositionX?: (x: number) => void;
   onChangeHeight: (h: number) => void;
-  onComplete: () => void;
   onToggleSettings: () => void;
   onDragStart?: () => void;
 }
@@ -33,7 +32,6 @@ const RowRuler = memo(function RowRuler({
   onChangePosition,
   onChangePositionX,
   onChangeHeight,
-  onComplete,
   onToggleSettings,
   onDragStart,
 }: RowRulerProps) {
