@@ -2159,7 +2159,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           {/* Complete button — prominent, fills the flex-1 space formerly used by the progress bar */}
           <button
             onClick={(!isCrochet || crochetShape === 'line') ? handleComplete : handleCrochetCircleComplete}
-            className="flex-1 min-w-0 flex items-center justify-center gap-2 h-10 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 h-9 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
             title={t('ruler.complete')}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
