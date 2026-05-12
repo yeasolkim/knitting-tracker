@@ -784,8 +784,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
-  const [prevRow, setPrevRow] = useState(activeSub?.current_row || 0);
-
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
   const perImageStateLatest = useRef<ImagePerState>({});
@@ -876,6 +874,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetR(crd?.r ?? 3);
     setCrochetRy(crd?.ry ?? crd?.r ?? 3);
     setCrochetRowHeight(crd?.rowHeight ?? null);
+    setCrochetRotation(crd?.rotation ?? 0);
     const crdCx = crd?.cx ?? 50;
     const crdCy = crd?.cy ?? 50;
     setCompletedCrochetRings(
@@ -1076,7 +1075,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   const handleRowChange = (row: number) => {
     captureHistory();
-    setPrevRow(row);
     updateActiveSub((s) => ({ ...s, current_row: row }));
   };
 
