@@ -1645,7 +1645,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onRyChange={(crochetShape === 'ellipse' || crochetShape === 'rect') ? handleCrochetRyChange : undefined}
               rowHeight={crochetRowHeight != null ? contentToScreenRy(crochetRowHeight) : undefined}
               onRowHeightChange={handleCrochetRowHeightChange}
-              onComplete={handleCrochetCircleComplete}
+
               onToggleSettings={() => setShowCrochetSettings(v => !v)}
               rotation={crochetRotation}
               onRotationChange={(deg) => { captureHistory(); setCrochetRotation(deg); }}

@@ -29,7 +29,6 @@ interface Props {
   onRyChange?: (ry: number) => void;
   onRowHeightChange?: (v: number) => void;
   onAdjustingChange?: (v: boolean) => void;
-  onComplete?: () => void;
   onToggleSettings?: () => void;
   onDragStart: () => void;
   onDeleteRing: (index: number) => void;
@@ -77,7 +76,7 @@ export default function CrochetRuler({
   showSettings = false,
   isAdjusting = false,
   ringsOnly = false,
-  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onComplete, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
+  onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
   const { t } = useLanguage();
@@ -714,18 +713,6 @@ export default function CrochetRuler({
         >
           {/* Action bar */}
           <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
-            {/* 완료 */}
-            <button
-              onClick={() => { setShowActionBar(false); onComplete?.(); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
-            >
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              {t('ruler.complete')}
-            </button>
-            <div className="w-px bg-[#d4b896]" />
             {/* 크기 설정 */}
             <button
               onClick={() => onToggleSettings?.()}
