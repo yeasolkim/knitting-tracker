@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, memo, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, memo, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
@@ -314,6 +314,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [imageLoadError, setImageLoadError] = useState(false);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
+  // Separate ref for useLayoutEffect (runs before useEffect and before onLoad)
+  const prevFileIdxLayoutRef = useRef(0);
   // Set of image indices that have been visited (and thus have saved per-image state)
   const [visitedImageIndices, setVisitedImageIndices] = useState<Set<number>>(() => {
     const visited = new Set<number>([0]); // image 0 always considered visited
@@ -828,6 +830,19 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     );
   }, [activeSubId]);
 
+  // Runs synchronously after DOM commit (before browser can fire onLoad for the new image).
+  // Cached images may dispatch onLoad before the passive useEffect below, so we reset
+  // the critical refs here to guarantee handleImageSize sees the correct values.
+  useLayoutEffect(() => {
+    if (prevFileIdxLayoutRef.current === activeFileIdx) return;
+    prevFileIdxLayoutRef.current = activeFileIdx;
+    initialScrollDoneRef.current = false;
+    lastReportedImgH.current = 0;
+    lastReportedImgW.current = 0;
+    isFirstOpenRef.current = !imageStatesRef.current[activeFileIdx];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFileIdx]);
+
   // When the user switches to a different image:
   // 1. Save current image's per-image state into imageStatesRef
   // 2. Restore the target image's saved state (or defaults for first visit)
@@ -898,12 +913,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCanUndo(false);
     setCanRedo(false);
 
-    // Reset view so PatternViewer re-runs fit logic for the new image
-    initialScrollDoneRef.current = false;
-    lastReportedImgH.current = 0;
-    lastReportedImgW.current = 0;
-    // If this image has been visited before, go to ruler; otherwise fit from top
-    isFirstOpenRef.current = !next;
+    // isFirstOpenRef / initialScrollDoneRef are already reset in the useLayoutEffect above.
     // Guides only show on image 0 — close them when switching to any other image
     if (activeFileIdx !== 0) {
       setShowSubPatternGuide(false);
