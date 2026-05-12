@@ -235,7 +235,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                 <div className="p-3 space-y-2">
                   <div className="h-3 bg-[#e8dcc8] rounded w-3/4" />
                   <div className="h-2 bg-[#e8dcc8] rounded w-1/2" />
-                  <div className="h-1.5 bg-[#e8dcc8] rounded-full mt-3" />
                 </div>
               </div>
             ))}

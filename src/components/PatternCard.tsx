@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PatternWithProgress, SubPattern } from '@/lib/types';
+import type { PatternWithProgress } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function fmtSize(bytes: number | null | undefined) {
@@ -22,15 +22,6 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
   const [imgFailed, setImgFailed] = useState(false);
   const { t } = useLanguage();
 
-  const subPatterns = (pattern.progress?.sub_patterns as SubPattern[]) || [];
-  const totalRows = subPatterns.length > 0
-    ? subPatterns.reduce((sum, s) => sum + (s.total_rows || 0), 0)
-    : pattern.total_rows;
-  const currentRows = subPatterns.length > 0
-    ? subPatterns.reduce((sum, s) => sum + (s.current_row || 0), 0)
-    : pattern.progress?.current_row || 0;
-
-  const progress = totalRows > 0 ? Math.min(100, (currentRows / totalRows) * 100) : 0;
   const typeLabel = pattern.type === 'crochet' ? t('card.type.crochet') : t('card.type.knitting');
 
   return (
@@ -160,19 +151,6 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
           )}
         </div>
 
-        {/* Progress */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-[#7a5c46] font-semibold tracking-wide">{t('card.rowCurrent', { n: currentRows })}</span>
-            <span className="text-[10px] text-[#a08060] tracking-wide">{t('card.rowTotal', { n: totalRows })}</span>
-          </div>
-          <div className="h-1.5 bg-[#f5edd6] border border-[#b07840] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#b5541e] rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

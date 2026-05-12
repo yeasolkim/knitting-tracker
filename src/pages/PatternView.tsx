@@ -2149,18 +2149,17 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             onDelete={handleDeleteSubPattern}
           />
 
-          {/* Slim progress bar — fills remaining space */}
-          <div className="flex-1 min-w-0 flex items-center gap-1.5">
-            <div className="flex-1 h-1.5 bg-[#f5edd6] border border-[#b07840] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#b5541e] rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(100, ((activeSub?.current_row || 0) / Math.max(1, activeSub?.total_rows || 1)) * 100)}%` }}
-              />
-            </div>
-            <span className="text-[9px] text-[#a08060] font-mono shrink-0 leading-none">
-              {Math.round(Math.min(100, ((activeSub?.current_row || 0) / Math.max(1, activeSub?.total_rows || 1)) * 100))}%
-            </span>
-          </div>
+          {/* Complete button — prominent, fills the flex-1 space formerly used by the progress bar */}
+          <button
+            onClick={(!isCrochet || crochetShape === 'line') ? handleComplete : handleCrochetCircleComplete}
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 h-10 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
+            title={t('ruler.complete')}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="truncate">{t('ruler.complete')}</span>
+          </button>
 
           {/* Row/round counter */}
           <RowCounter
