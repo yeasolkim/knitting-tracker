@@ -90,6 +90,7 @@ export default function CrochetRuler({
   const rPx = Math.max(4, (r / 100) * containerW);
   const ryActual = ry ?? r;
   const ryPx = is2D ? Math.max(1, (ryActual / 100) * containerH) : rPx;
+  const diagonal = Math.ceil(Math.sqrt(containerW * containerW + containerH * containerH));
 
   const [maxR, setMaxR] = useState(() => Math.max(49, r));
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
@@ -294,7 +295,7 @@ export default function CrochetRuler({
         <g transform={rotation ? `rotate(${rotation} ${cxPx} ${cyPx})` : undefined}>
           {!ringsOnly && (
             <path
-              d={`M 0 0 H ${containerW} V ${containerH} H 0 Z ${shapePath(cxPx, cyPx, rPx, ryPx)}`}
+              d={`M ${cxPx - diagonal} ${cyPx - diagonal} H ${cxPx + diagonal} V ${cyPx + diagonal} H ${cxPx - diagonal} Z ${shapePath(cxPx, cyPx, rPx, ryPx)}`}
               fill="rgba(0,0,0,0.25)"
               fillRule="evenodd"
             />
