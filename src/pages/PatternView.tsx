@@ -324,6 +324,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   });
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
+  const [settingsPopupPos, setSettingsPopupPos] = useState({ x: 8, y: 8 });
+  const settingsPopupDragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   // Current viewer transform — updated every frame during pan/zoom
@@ -1894,11 +1896,21 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
           if (rulerOrientation === 'horizontal') {
             return (
-              /* Horizontal mode: fixed top-left */
+              /* Horizontal mode: draggable popup */
               <div
-                className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2.5 py-2 flex flex-col gap-1.5"
-                style={{ top: '8px', left: '8px', maxWidth: 'calc(100% - 16px)' }}
-                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2.5 py-2 flex flex-col gap-1.5 cursor-grab"
+                style={{ top: `${settingsPopupPos.y}px`, left: `${settingsPopupPos.x}px`, maxWidth: 'calc(100% - 16px)' }}
+                onPointerDown={(e) => {
+                  settingsPopupDragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: settingsPopupPos.x, startPosY: settingsPopupPos.y };
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  e.stopPropagation();
+                }}
+                onPointerMove={(e) => {
+                  if (!settingsPopupDragRef.current) return;
+                  setSettingsPopupPos({ x: Math.max(0, settingsPopupDragRef.current.startPosX + e.clientX - settingsPopupDragRef.current.startX), y: Math.max(0, settingsPopupDragRef.current.startPosY + e.clientY - settingsPopupDragRef.current.startY) });
+                }}
+                onPointerUp={() => { settingsPopupDragRef.current = null; }}
+                onPointerCancel={() => { settingsPopupDragRef.current = null; }}
               >
                 {/* Direction row + close */}
                 <div className="flex items-center gap-2">
@@ -1935,12 +1947,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                     className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px', maxWidth: '80px' }} />
                   <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
                     className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
-                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(0); }}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0" title="초기화">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
                   <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
                 </div>
                 <div className="border-t border-[#d4b896] -mx-2.5" />
@@ -2009,11 +2015,21 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           }
 
           return (
-            /* Vertical mode: fixed top-left */
+            /* Vertical mode: draggable popup */
             <div
-              className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2 flex flex-col items-center gap-1.5"
-              style={{ top: '8px', left: '8px' }}
-              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2 flex flex-col items-center gap-1.5 cursor-grab"
+              style={{ top: `${settingsPopupPos.y}px`, left: `${settingsPopupPos.x}px` }}
+              onPointerDown={(e) => {
+                settingsPopupDragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: settingsPopupPos.x, startPosY: settingsPopupPos.y };
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                e.stopPropagation();
+              }}
+              onPointerMove={(e) => {
+                if (!settingsPopupDragRef.current) return;
+                setSettingsPopupPos({ x: Math.max(0, settingsPopupDragRef.current.startPosX + e.clientX - settingsPopupDragRef.current.startX), y: Math.max(0, settingsPopupDragRef.current.startPosY + e.clientY - settingsPopupDragRef.current.startY) });
+              }}
+              onPointerUp={() => { settingsPopupDragRef.current = null; }}
+              onPointerCancel={() => { settingsPopupDragRef.current = null; }}
             >
               {/* Close button row */}
               <div className="flex items-center justify-between w-full gap-1">
@@ -2050,12 +2066,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px' }} />
                 <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
                   className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(0); }}
-                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0" title="초기화">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
                 <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
               <div className="border-t border-[#d4b896] w-full" />

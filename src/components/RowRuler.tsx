@@ -67,16 +67,19 @@ const RowRuler = memo(function RowRuler({
   const shadowPath = useMemo(() => {
     const { w, h } = containerSize;
     if (w === 0 || h === 0) return null;
+    // Extend the band to the container diagonal so the shadow cutout spans the
+    // full container after rotation, matching the extended visual border lines.
+    const diagonal = Math.ceil(Math.sqrt(w * w + h * h));
     let cxPx: number, cyPx: number, hwPx: number, hhPx: number;
     if (isHorizontal) {
       cxPx = w * (positionX + height / 2) / 100;
       cyPx = h / 2;
       hwPx = w * height / 200;
-      hhPx = h / 2;
+      hhPx = diagonal;
     } else {
       cxPx = w / 2;
       cyPx = h * (positionY + height / 2) / 100;
-      hwPx = w / 2;
+      hwPx = diagonal;
       hhPx = h * height / 200;
     }
     const rad = (rotation * Math.PI) / 180;
@@ -223,8 +226,8 @@ const RowRuler = memo(function RowRuler({
               style={{ left: `${x}%`, width: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
             >
               <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
-              <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
-              <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
+              <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: 'rgba(181,84,30,0.55)' }} />
+              <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: 'rgba(181,84,30,0.55)' }} />
               <div
                 className="absolute left-1/2 -translate-x-1/2 text-[10px] font-semibold select-none"
                 style={{ top: '40%', color: 'rgba(181,84,30,0.75)', writingMode: 'vertical-lr' }}
@@ -244,47 +247,10 @@ const RowRuler = memo(function RowRuler({
             className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
             onPointerDown={handleBodyPointerDown}
           >
-            <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-            <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+            <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+            <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
             </div>
         </div>
-
-        {/* Left nudge — bottom to avoid overlapping the action bar popup (left side) */}
-        {(showActionBar || showSettings) && !isDragging && (
-          <div
-            className="absolute bottom-6 pointer-events-auto z-20"
-            style={{ left: `${positionX}%`, transform: 'translateX(-50%)' }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.1)); }}
-              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
-        {/* Right nudge — bottom to avoid overlapping the action bar popup (left side) */}
-        {(showActionBar || showSettings) && !isDragging && (
-          <div
-            className="absolute bottom-6 pointer-events-auto z-20"
-            style={{ left: `${positionX + height}%`, transform: 'translateX(-50%)' }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.1)); }}
-              className="flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf6e8]/50 text-[#b07840] hover:bg-[#fdf6e8]/80 hover:text-[#b5541e] active:scale-95 transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
 
         {/* Action bar popup — tap ruler to show/hide */}
         {showActionBar && !isDragging && (
@@ -294,22 +260,11 @@ const RowRuler = memo(function RowRuler({
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
           >
-            <div className="relative flex flex-col items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
-              {/* Close button — top-right */}
-              <button
-                onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="absolute top-1 right-1 z-10 flex items-center justify-center w-5 h-5 rounded-full text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-                title="닫기"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 pr-7 text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold transition-all ${
                   showSettings
                     ? 'bg-[#b5541e] text-[#fdf6e8]'
                     : 'text-[#b07840] hover:bg-[#f5edd6] active:scale-95'
@@ -320,6 +275,41 @@ const RowRuler = memo(function RowRuler({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
                 {t('ruler.heightSettings')}
+              </button>
+              <div className="w-px bg-[#d4b896]" />
+              <button
+                onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.1)); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+                title="진행선 왼쪽으로"
+              >
+                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10 L8 5 L8 15 Z" fill="currentColor" />
+                  <line x1="14" y1="3" x2="14" y2="17" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              <div className="w-px bg-[#d4b896]" />
+              <button
+                onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.1)); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+                title="진행선 오른쪽으로"
+              >
+                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
+                  <line x1="6" y1="3" x2="6" y2="17" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 10 L12 5 L12 15 Z" fill="currentColor" />
+                </svg>
+              </button>
+              <div className="w-px bg-[#d4b896]" />
+              <button
+                onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
+                title="닫기"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             {/* Arrow pointing right toward ruler */}
@@ -361,8 +351,8 @@ const RowRuler = memo(function RowRuler({
             style={{ top: `${y}%`, height: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
           >
             <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
-            <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
-            <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: 'rgba(181,84,30,0.55)' }} />
+            <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: 'rgba(181,84,30,0.55)' }} />
+            <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: 'rgba(181,84,30,0.55)' }} />
             <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold select-none" style={{ color: 'rgba(181,84,30,0.75)' }}>
               +{i + 1}
             </div>
@@ -379,8 +369,8 @@ const RowRuler = memo(function RowRuler({
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
           onPointerDown={handleBodyPointerDown}
         >
-          <div className="absolute top-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-          <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+          <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+          <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
         </div>
       </div>
 
