@@ -309,18 +309,6 @@ const RowRuler = memo(function RowRuler({
                 </svg>
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setShowActionBar(false); onComplete(); }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
-                title={t('ruler.complete')}
-              >
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                {t('ruler.complete')}
-              </button>
-              <div className="h-px bg-[#d4b896]" />
-              <button
                 onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className={`flex items-center gap-1.5 px-3.5 py-2.5 pr-7 text-xs font-semibold transition-all ${
@@ -407,18 +395,6 @@ const RowRuler = memo(function RowRuler({
           onPointerUp={(e) => e.stopPropagation()}
         >
           <div className="flex items-stretch bg-[#fdf6e8] rounded-xl shadow-lg border border-[#d4b896] overflow-hidden whitespace-nowrap">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowActionBar(false); onComplete(); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318] active:scale-95 transition-all"
-              title={t('ruler.complete')}
-            >
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              {t('ruler.complete')}
-            </button>
-            <div className="w-px bg-[#d4b896]" />
             <button
               onClick={(e) => { e.stopPropagation(); onToggleSettings(); }}
               onPointerDown={(e) => e.stopPropagation()}
