@@ -1671,6 +1671,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 setCrochetCy(cy);
                 setCrochetR(10);
                 setCrochetRy(10);
+                setCrochetRotation(0);
+                setCrochetRowHeight(null);
               }}
             />
           )}
