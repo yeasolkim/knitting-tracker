@@ -610,7 +610,7 @@ export default function CrochetRuler({
             <div className="flex flex-col items-center gap-1.5">
               {is2D && <span className="text-[#a08060]"><WidthIcon /></span>}
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => m * 1.3)}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.min(maxR, r + maxR / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
               <input type="range" min={0} max={10000} step={1}
@@ -623,7 +623,7 @@ export default function CrochetRuler({
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRadiusChange?.(Math.max(0.01, r - maxR / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxR((m) => Math.max(0.01, m / 1.3))}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
               <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{r.toFixed(2)}%</span>
             </div>
 
@@ -632,7 +632,7 @@ export default function CrochetRuler({
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[#a08060]"><HeightIcon /></span>
                 <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => m * 1.3)}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                  className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
                 <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.min(maxRy, ryActual + maxRy / 10000))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
                 <input type="range" min={0} max={10000} step={1}
@@ -645,7 +645,7 @@ export default function CrochetRuler({
                 <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRyChange?.(Math.max(0.01, ryActual - maxRy / 10000))}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
                 <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRy((m) => Math.max(0.01, m / 1.3))}
-                  className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                  className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
                 <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">{ryActual.toFixed(2)}%</span>
               </div>
             )}
@@ -654,7 +654,7 @@ export default function CrochetRuler({
             <div className="flex flex-col items-center gap-1.5 border-l border-[#d4b896] pl-2">
               <span className="text-[8px] text-[#a08060] font-bold text-center leading-tight whitespace-nowrap">행<br/>높이</span>
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeightOverride((m) => (m ?? autoMaxRowHeight) * 1.3)}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
+                className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">×1.3</button>
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.min(maxRowHeight, (rowHeight ?? 0) + maxRowHeight / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">+</button>
               <input type="range" min={0} max={10000} step={1}
@@ -667,7 +667,7 @@ export default function CrochetRuler({
               <button onPointerDown={(e) => { e.stopPropagation(); onDragStart(); }} onClick={() => onRowHeightChange?.(Math.max(0.01, (rowHeight ?? maxRowHeight / 10000) - maxRowHeight / 10000))}
                 className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-lg hover:bg-[#fdf6e8] active:scale-95 select-none leading-none">−</button>
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setMaxRowHeightOverride((m) => Math.max(0.01, (m ?? autoMaxRowHeight) / 1.3))}
-                className="flex items-center justify-center w-8 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
+                className="flex items-center justify-center w-8 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none">÷1.3</button>
               <span className="text-[10px] text-[#b5541e] font-mono text-center leading-tight">
                 {rowHeight != null ? rowHeight.toFixed(2) : '—'}%
               </span>

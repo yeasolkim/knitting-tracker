@@ -1376,7 +1376,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             className="text-[#a08060] hover:text-[#3d2b1f] shrink-0 p-1 -ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors disabled:opacity-50"
           >
             {isSavingBack ? (
-              <div className="w-4 h-4 border-2 border-[#b07840] border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />
             ) : (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2186,7 +2186,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 <button
                   onClick={onPlace}
                   disabled={isPlacing}
-                  className="flex items-center gap-1 px-2 py-1.5 h-9 text-[11px] font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] disabled:opacity-50 transition-colors shadow-[2px_2px_0_#9a4318]"
+                  className="flex items-center gap-1 px-2 py-1.5 h-9 text-[11px] font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] disabled:opacity-50 transition-colors shadow-[3px_3px_0_#9a4318]"
                   title={t('marker.place')}
                 >
                   <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
