@@ -540,21 +540,8 @@ export default function CrochetRuler({
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          {/* Header row: delete all + close */}
-          <div className="flex items-center justify-between w-full gap-1">
-            {completedRings.length > 0 ? (
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
-                className="flex items-center gap-1 px-2 h-9 rounded-lg bg-[#fdf6e8] text-[#9a4318] text-[10px] font-bold border border-[#b07840] hover:bg-[#e8d8c0] active:scale-95 select-none flex-shrink-0"
-                title={t('view.deleteAll')}
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                {t('view.deleteAll')}
-              </button>
-            ) : <div />}
+          {/* Header row: close */}
+          <div className="flex items-center justify-end w-full">
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onToggleSettings?.()}
@@ -727,22 +714,6 @@ export default function CrochetRuler({
               </svg>
               {t('ruler.heightSettings')}
             </button>
-            {completedRings.length > 0 && (
-              <>
-                <div className="w-px bg-[#d4b896]" />
-                <button
-                  onClick={() => { if (confirm(t('view.deleteAllMarks'))) onDeleteAllRings(); }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-                  title={t('view.deleteAll')}
-                >
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  {t('view.deleteAll')}
-                </button>
-              </>
-            )}
             <div className="w-px bg-[#d4b896]" />
             {/* 리셋 */}
             <button
