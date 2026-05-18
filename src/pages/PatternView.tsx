@@ -324,6 +324,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   });
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
+  const [showOverlays, setShowOverlays] = useState(true);
   const [settingsPopupPos, setSettingsPopupPos] = useState({ x: 8, y: 8 });
   const settingsPopupDragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
@@ -1563,16 +1564,16 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               setShowRulerGuide(true);
             }
           }}
-          contentOverlay={
+          contentOverlay={showOverlays ? (
             <NoteBubbles
               notes={notes}
               positions={screenNotePositions}
               onPositionChange={handleNotePositionChange}
               onDelete={handleNoteDelete}
             />
-          }
+          ) : undefined}
         >
-          {!isCrochet && (
+          {!isCrochet && showOverlays && (
             <KnittingMarkers
               marks={screenKnittingMarks}
               isPlacing={isPlacingKnittingMarker}
@@ -1584,7 +1585,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          {isCrochet && (
+          {isCrochet && showOverlays && (
             <CrochetMarkers
               marks={screenCrochetMarks}
               isPlacing={isPlacingMarker}
@@ -1596,7 +1597,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onDragStart={captureHistory}
             />
           )}
-          <CompletedOverlay
+          {showOverlays && <CompletedOverlay
             marks={screenCompletedMarks}
             rotation={(!isCrochet || crochetShape === 'line') ? rulerRotation : 0}
             onUpdate={handleCompletedMarkUpdate}
@@ -1604,8 +1605,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             onDeleteAll={handleCompletedMarkDeleteAll}
             onSelectionChange={setHasMarkSelection}
             onDragStart={captureHistory}
-          />
-          {(!isCrochet || crochetShape === 'line') && !showGuide && imgH > 0 && (
+          />}
+          {(!isCrochet || crochetShape === 'line') && !showGuide && imgH > 0 && showOverlays && (
             <RowRuler
               positionY={screenRulerY}
               height={rulerOrientation === 'horizontal' ? screenRulerWidth : screenRulerHeight}
@@ -1624,7 +1625,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             />
           )}
 
-          {isCrochet && crochetShape !== 'line' && imgH > 0 && (
+          {isCrochet && crochetShape !== 'line' && imgH > 0 && showOverlays && (
             <CrochetRuler
               cx={contentToScreenX(crochetCx)}
               cy={contentToScreenY(crochetCy)}
@@ -1676,7 +1677,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               }}
             />
           )}
-          {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && imgH > 0 && (
+          {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && imgH > 0 && showOverlays && (
             <CrochetRuler
               ringsOnly
               completedRings={completedCrochetRings.map(ring => ({
@@ -1697,6 +1698,31 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
             />
           )}
+
+          {/* Overlay visibility toggle */}
+          <div className="absolute top-3 right-3 z-40 pointer-events-none">
+            <button
+              className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
+                showOverlays
+                  ? 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
+                  : 'bg-[#3d2b1f]/80 text-[#fdf6e8] border-[#3d2b1f] hover:bg-[#3d2b1f]'
+              }`}
+              onClick={() => setShowOverlays(v => !v)}
+              onPointerDown={(e) => e.stopPropagation()}
+              title={showOverlays ? t('view.hideOverlays') : t('view.showOverlays')}
+            >
+              {showOverlays ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           {/* Note placement overlay */}
           {placingNoteKey !== null && (
@@ -1881,7 +1907,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
 
         {/* Ruler height settings popup — layout depends on orientation */}
-        {showRulerSettings && (!isCrochet || crochetShape === 'line') && (() => {
+        {showRulerSettings && showOverlays && (!isCrochet || crochetShape === 'line') && (() => {
           const facingDeg =
             rulerOrientation === 'vertical' && rulerDirection === 'up' ? 0 :
             rulerOrientation === 'horizontal' && rulerDirection === 'down' ? 90 :
@@ -2134,7 +2160,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
         })()}
 
 
-        {hasMarkSelection && completedMarks.length > 1 && (
+        {hasMarkSelection && showOverlays && completedMarks.length > 1 && (
           <div className="absolute top-4 right-4 z-30">
             <button
               onClick={() => {
