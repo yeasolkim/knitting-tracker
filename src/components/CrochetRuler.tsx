@@ -90,7 +90,6 @@ export default function CrochetRuler({
   const rPx = Math.max(4, (r / 100) * containerW);
   const ryActual = ry ?? r;
   const ryPx = is2D ? Math.max(1, (ryActual / 100) * containerH) : rPx;
-  const diagonal = Math.ceil(Math.sqrt(containerW * containerW + containerH * containerH));
 
   const [maxR, setMaxR] = useState(() => Math.max(49, r));
   const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
@@ -108,6 +107,9 @@ export default function CrochetRuler({
   const maxRowHeight = maxRowHeightOverride != null
     ? Math.max(maxRowHeightOverride, autoMaxRowHeight)
     : autoMaxRowHeight;
+
+  // Unique mask ID so multiple SVG instances don't conflict
+  const maskIdRef = useRef(`cr-mask-${Math.random().toString(36).slice(2, 8)}`);
 
   // Action bar state — tap ring body to toggle
   const [showActionBar, setShowActionBar] = useState(false);
@@ -291,15 +293,24 @@ export default function CrochetRuler({
         className="absolute inset-0"
         style={{ width: containerW, height: containerH, pointerEvents: 'none', overflow: 'visible' }}
       >
+        {/* Shadow overlay — mask-based so it always covers the full viewport
+            without relying on overflow:visible (avoids Safari SVG clipping bugs) */}
+        {!ringsOnly && (
+          <>
+            <defs>
+              <mask id={maskIdRef.current}>
+                <rect width={containerW} height={containerH} fill="white" />
+                <g transform={rotation ? `rotate(${rotation} ${cxPx} ${cyPx})` : undefined}>
+                  <path d={shapePath(cxPx, cyPx, rPx, ryPx)} fill="black" />
+                </g>
+              </mask>
+            </defs>
+            <rect width={containerW} height={containerH} fill="rgba(0,0,0,0.25)" mask={`url(#${maskIdRef.current})`} />
+          </>
+        )}
+
         {/* Rotation group — all ring visuals + interactions rotate around ring center */}
         <g transform={rotation ? `rotate(${rotation} ${cxPx} ${cyPx})` : undefined}>
-          {!ringsOnly && (
-            <path
-              d={`M ${cxPx - diagonal} ${cyPx - diagonal} H ${cxPx + diagonal} V ${cyPx + diagonal} H ${cxPx - diagonal} Z ${shapePath(cxPx, cyPx, rPx, ryPx)}`}
-              fill="rgba(0,0,0,0.25)"
-              fillRule="evenodd"
-            />
-          )}
 
           {/* Completed rings — rendered as bands (outer minus inner) so each row is individually visible */}
           {completedRings.map((ring, i) => {
