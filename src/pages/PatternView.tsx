@@ -1444,21 +1444,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </Link>
-          {/* Drawing mode toggle */}
-          <button
-            onClick={() => setIsDrawingMode(v => !v)}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
-              isDrawingMode
-                ? 'bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318]'
-                : 'text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840]'
-            }`}
-            title="그림 그리기"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h4l11-11" opacity="0.4" />
-            </svg>
-          </button>
+
           <button
             onClick={handleUndo}
             disabled={!canUndo}
@@ -1855,8 +1841,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             );
           })()}
 
-          {/* Overlay visibility toggle */}
-          <div className="absolute top-3 right-3 z-40 pointer-events-none">
+          {/* Overlay visibility toggle + Drawing mode toggle */}
+          <div className="absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none">
             <button
               className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
                 showOverlays
@@ -1877,6 +1863,21 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                 </svg>
               )}
+            </button>
+            <button
+              className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
+                isDrawingMode
+                  ? 'bg-[#b5541e] text-[#fdf6e8] border-[#b5541e] hover:bg-[#9a4318]'
+                  : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
+              }`}
+              onClick={() => setIsDrawingMode(v => !v)}
+              onPointerDown={(e) => e.stopPropagation()}
+              title="그림 그리기"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h4l11-11" opacity="0.4" />
+              </svg>
             </button>
           </div>
 
