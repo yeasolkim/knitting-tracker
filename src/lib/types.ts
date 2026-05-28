@@ -66,7 +66,7 @@ export interface DrawPoint {
   y: number; // image-relative %
 }
 
-export type DrawTool = 'pen' | 'eraser' | 'line' | 'rect' | 'circle';
+export type DrawTool = 'pen' | 'eraser' | 'line' | 'rect' | 'circle' | 'select';
 
 export interface DrawPath {
   id: string;

@@ -306,6 +306,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [drawingColor, setDrawingColor] = useState('#ef4444');
   const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(4);
   const [drawingOpacity, setDrawingOpacity] = useState(100);
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const [drawingPaths, setDrawingPaths] = useState<DrawPath[]>(
     img0?.drawing_paths ?? []
   );
@@ -577,6 +578,23 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleUndo, handleRedo]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPathId && isDrawingMode && drawingTool === 'select') {
+        e.preventDefault();
+        captureHistory();
+        setDrawingPaths(prev => prev.filter(p => p.id !== selectedPathId));
+        setSelectedPathId(null);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedPathId, isDrawingMode, drawingTool, captureHistory]);
+
+  useEffect(() => {
+    if (!isDrawingMode) setSelectedPathId(null);
+  }, [isDrawingMode]);
 
   // Convert image-relative % → screen % using current transform.
   // rulerY/rulerHeight are stored as % of the rendered IMAGE height,
@@ -925,6 +943,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setNotes(next?.notes ?? {});
     setNotePositions(next?.note_positions ?? {});
     setDrawingPaths(next?.drawing_paths ?? []);
+    setSelectedPathId(null);
 
     // Reset undo/redo history for the new image
     undoStackRef.current = [];
@@ -1730,6 +1749,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             containerH={containerH}
             imgW={imgW}
             imgH={imgH}
+            selectedPathId={selectedPathId}
+            onSelectPath={setSelectedPathId}
+            onDeletePath={(id) => { captureHistory(); setDrawingPaths(prev => prev.filter(p => p.id !== id)); setSelectedPathId(null); }}
             onDrawStart={captureHistory}
             onPathAdd={(path) => { setDrawingPaths(prev => [...prev, path]); }}
             onPathsChange={(paths) => { setDrawingPaths(paths); }}
@@ -1739,6 +1761,11 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           {isDrawingMode && (() => {
             const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
             const TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
+              { id: 'select', label: '선택', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+                </svg>
+              )},
               { id: 'pen', label: '펜', icon: (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
@@ -1900,7 +1927,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   ? 'bg-[#b5541e] text-[#fdf6e8] border-[#b5541e] hover:bg-[#9a4318]'
                   : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
               }`}
-              onClick={() => setIsDrawingMode(v => !v)}
+              onClick={() => { setIsDrawingMode(v => !v); setSelectedPathId(null); }}
               onPointerDown={(e) => e.stopPropagation()}
               title="그림 그리기"
             >

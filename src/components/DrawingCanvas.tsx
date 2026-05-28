@@ -1,10 +1,17 @@
 import { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import type { DrawPath, DrawPoint, DrawTool } from '@/lib/types';
 import { screenPxToImagePct, imagePctToScreenPx } from '@/lib/coordUtils';
+import type { ViewTransform } from '@/lib/coordUtils';
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
+
+interface BBox { minX: number; minY: number; maxX: number; maxY: number; }
+
+type DragState =
+  | { type: 'move'; pathId: string; origPoints: DrawPoint[]; startX: number; startY: number; historyDone: boolean }
+  | { type: 'handle'; pathId: string; origPoints: DrawPoint[]; origBbox: BBox; hx: 0|1; hy: 0|1; historyDone: boolean };
 
 interface Props {
   paths: DrawPath[];
@@ -12,18 +19,21 @@ interface Props {
   tool: DrawTool;
   color: string;
   strokeWidth: number;
-  opacity: number; // 0-100
+  opacity: number;
   viewTransform: { scale: number; x: number; y: number };
   containerW: number;
   containerH: number;
   imgW: number;
   imgH: number;
+  selectedPathId: string | null;
+  onSelectPath: (id: string | null) => void;
+  onDeletePath: (id: string) => void;
   onDrawStart: () => void;
   onPathAdd: (path: DrawPath) => void;
   onPathsChange: (paths: DrawPath[]) => void;
 }
 
-function ptsToSvgD(pts: Array<{ x: number; y: number }>): string {
+function ptsToSvgD(pts: DrawPoint[]): string {
   if (pts.length === 0) return '';
   if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y} l 0.01 0.01`;
   let d = `M ${pts[0].x} ${pts[0].y}`;
@@ -49,24 +59,100 @@ function rectPoints(x1: number, y1: number, x2: number, y2: number): DrawPoint[]
   ];
 }
 
+function computeBBox(points: DrawPoint[]): BBox {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function distToSegSq(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return (px - ax) ** 2 + (py - ay) ** 2;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  return (px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2;
+}
+
+function isPathHit(click: DrawPoint, path: DrawPath, threshSq: number): boolean {
+  const pts = path.points;
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (distToSegSq(click.x, click.y, pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y) < threshSq) return true;
+  }
+  if (pts.length > 0) {
+    const p = pts[pts.length - 1];
+    return (click.x - p.x) ** 2 + (click.y - p.y) ** 2 < threshSq;
+  }
+  return false;
+}
+
+function remapPoints(points: DrawPoint[], oldBbox: BBox, newBbox: BBox): DrawPoint[] {
+  const sw = oldBbox.maxX - oldBbox.minX;
+  const sh = oldBbox.maxY - oldBbox.minY;
+  const tw = newBbox.maxX - newBbox.minX;
+  const th = newBbox.maxY - newBbox.minY;
+  return points.map(p => ({
+    x: sw === 0 ? (newBbox.minX + newBbox.maxX) / 2 : newBbox.minX + (p.x - oldBbox.minX) / sw * tw,
+    y: sh === 0 ? (newBbox.minY + newBbox.maxY) / 2 : newBbox.minY + (p.y - oldBbox.minY) / sh * th,
+  }));
+}
+
+const SEL_PAD = 10; // screen-px padding around selection bbox
+
+function getSelectionLayout(
+  selPath: DrawPath | null,
+  vt: ViewTransform,
+  cW: number, cH: number, iW: number, iH: number,
+) {
+  if (!selPath || selPath.points.length === 0) return null;
+  const bbox = computeBBox(selPath.points);
+  const tl = imagePctToScreenPx(bbox.minX, bbox.minY, vt, cW, cH, iW, iH);
+  const br = imagePctToScreenPx(bbox.maxX, bbox.maxY, vt, cW, cH, iW, iH);
+  const P = SEL_PAD;
+  const rectX = Math.min(tl.x, br.x) - P;
+  const rectY = Math.min(tl.y, br.y) - P;
+  const rectW = Math.abs(br.x - tl.x) + 2 * P;
+  const rectH = Math.abs(br.y - tl.y) + 2 * P;
+  const tlX = Math.min(tl.x, br.x), tlY = Math.min(tl.y, br.y);
+  const brX = Math.max(tl.x, br.x), brY = Math.max(tl.y, br.y);
+  const handles: Array<{ x: number; y: number; hx: 0|1; hy: 0|1; cursor: string }> = [
+    { x: tlX - P, y: tlY - P, hx: 0, hy: 0, cursor: 'nwse-resize' },
+    { x: brX + P, y: tlY - P, hx: 1, hy: 0, cursor: 'nesw-resize' },
+    { x: tlX - P, y: brY + P, hx: 0, hy: 1, cursor: 'nesw-resize' },
+    { x: brX + P, y: brY + P, hx: 1, hy: 1, cursor: 'nwse-resize' },
+  ];
+  const deletePos = { x: brX + P + 1, y: tlY - P - 1 };
+  return { bbox, rectX, rectY, rectW, rectH, handles, deletePos, tlX, tlY, brX, brY };
+}
+
 export default function DrawingCanvas({
   paths, isDrawingMode, tool, color, strokeWidth, opacity,
   viewTransform, containerW, containerH, imgW, imgH,
+  selectedPathId, onSelectPath, onDeletePath,
   onDrawStart, onPathAdd, onPathsChange,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const livePathRef = useRef<SVGPathElement | null>(null);
   const cursorGroupRef = useRef<SVGGElement>(null);
   const isActiveRef = useRef(false);
+  const dragRef = useRef<DragState | null>(null);
   const currentImagePtsRef = useRef<DrawPoint[]>([]);
   const currentScreenDRef = useRef('');
   const shapeStartRef = useRef<DrawPoint | null>(null);
 
-  // Keep stable ref for latest props so event handlers don't go stale
-  const propsRef = useRef({ paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange });
-  useEffect(() => { propsRef.current = { paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange }; });
+  const propsRef = useRef({
+    paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH,
+    selectedPathId, onSelectPath, onDeletePath, onDrawStart, onPathAdd, onPathsChange,
+  });
+  useEffect(() => {
+    propsRef.current = {
+      paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH,
+      selectedPathId, onSelectPath, onDeletePath, onDrawStart, onPathAdd, onPathsChange,
+    };
+  });
 
-  // Cursor is hidden until pointer enters the SVG
   useLayoutEffect(() => {
     if (cursorGroupRef.current) cursorGroupRef.current.style.display = 'none';
   }, []);
@@ -115,8 +201,7 @@ export default function DrawingCanvas({
     const next = paths.filter(path => {
       return !path.points.some(pt => {
         const sp = imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
-        const dx = sp.x - sx;
-        const dy = sp.y - sy;
+        const dx = sp.x - sx, dy = sp.y - sy;
         return dx * dx + dy * dy < radius * radius;
       });
     });
@@ -124,10 +209,7 @@ export default function DrawingCanvas({
   }, []);
 
   useEffect(() => {
-    if (!isDrawingMode) {
-      hideCursor();
-      return;
-    }
+    if (!isDrawingMode) { hideCursor(); return; }
     const svg = svgRef.current;
     if (!svg) return;
 
@@ -135,38 +217,82 @@ export default function DrawingCanvas({
       if (!e.isPrimary) return;
       e.preventDefault();
       e.stopPropagation();
-      const { tool, color, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onDrawStart } = propsRef.current;
-      if (imgW === 0 || imgH === 0) return;
-
-      isActiveRef.current = true;
-      svg.setPointerCapture(e.pointerId);
+      const p = propsRef.current;
       const pos = getPointerPos(e);
-      moveCursor(pos.x, pos.y);
+      const { tool } = p;
 
-      onDrawStart();
+      // ── SELECT MODE ──
+      if (tool === 'select') {
+        const { paths, selectedPathId, viewTransform, containerW, containerH, imgW, imgH, onSelectPath, onDeletePath } = p;
+        const selPath = selectedPathId ? paths.find(x => x.id === selectedPathId) ?? null : null;
+        const layout = getSelectionLayout(selPath, viewTransform, containerW, containerH, imgW, imgH);
 
-      if (tool === 'eraser') {
-        eraseNearby(pos.x, pos.y);
+        // 1. Delete button hit
+        if (layout) {
+          const dp = layout.deletePos;
+          const delBtnX = dp.x + 14, delBtnY = dp.y - 14;
+          if ((pos.x - delBtnX) ** 2 + (pos.y - delBtnY) ** 2 < 15 * 15) {
+            onDeletePath(selectedPathId!);
+            return;
+          }
+          // 2. Corner handle hit
+          for (const h of layout.handles) {
+            if (Math.abs(pos.x - h.x) < 9 && Math.abs(pos.y - h.y) < 9) {
+              svg.setPointerCapture(e.pointerId);
+              isActiveRef.current = true;
+              dragRef.current = { type: 'handle', pathId: selectedPathId!, origPoints: selPath!.points, origBbox: layout.bbox, hx: h.hx, hy: h.hy, historyDone: false };
+              return;
+            }
+          }
+          // 3. Inside bbox → move
+          const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+          if (imgPt.x >= layout.bbox.minX && imgPt.x <= layout.bbox.maxX && imgPt.y >= layout.bbox.minY && imgPt.y <= layout.bbox.maxY) {
+            svg.setPointerCapture(e.pointerId);
+            isActiveRef.current = true;
+            dragRef.current = { type: 'move', pathId: selectedPathId!, origPoints: selPath!.points, startX: imgPt.x, startY: imgPt.y, historyDone: false };
+            return;
+          }
+        }
+
+        // 4. Hit-test all paths (reverse order = topmost first)
+        const iW2 = imgW > 0 ? imgW : containerW;
+        let foundPath: DrawPath | null = null;
+        for (let i = paths.length - 1; i >= 0; i--) {
+          const path = paths[i];
+          const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+          const hitPx = Math.max(10, path.width * viewTransform.scale / 2 + 6);
+          const hitThresh = (hitPx / (viewTransform.scale * iW2)) * 100;
+          if (isPathHit(imgPt, path, hitThresh * hitThresh)) { foundPath = path; break; }
+        }
+        onSelectPath(foundPath ? foundPath.id : null);
         return;
       }
 
-      const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+      // ── DRAWING MODES ──
+      if (p.imgW === 0 || p.imgH === 0) return;
+      isActiveRef.current = true;
+      svg.setPointerCapture(e.pointerId);
+      moveCursor(pos.x, pos.y);
+      onDrawStart();
 
+      if (tool === 'eraser') { eraseNearby(pos.x, pos.y); return; }
+
+      const imgPt = screenPxToImagePct(pos.x, pos.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH);
       if (tool === 'pen') {
         currentImagePtsRef.current = [imgPt];
         currentScreenDRef.current = `M ${pos.x} ${pos.y}`;
         createLivePath();
         if (livePathRef.current) {
-          livePathRef.current.setAttribute('stroke', color);
-          livePathRef.current.setAttribute('stroke-width', String(strokeWidth * viewTransform.scale));
+          livePathRef.current.setAttribute('stroke', p.color);
+          livePathRef.current.setAttribute('stroke-width', String(p.strokeWidth * p.viewTransform.scale));
           livePathRef.current.setAttribute('d', currentScreenDRef.current);
         }
       } else {
         shapeStartRef.current = imgPt;
         createLivePath();
         if (livePathRef.current) {
-          livePathRef.current.setAttribute('stroke', color);
-          livePathRef.current.setAttribute('stroke-width', String(strokeWidth * viewTransform.scale));
+          livePathRef.current.setAttribute('stroke', p.color);
+          livePathRef.current.setAttribute('stroke-width', String(p.strokeWidth * p.viewTransform.scale));
         }
       }
     };
@@ -174,97 +300,143 @@ export default function DrawingCanvas({
     const onPointerMove = (e: PointerEvent) => {
       if (!e.isPrimary) return;
       const pos = getPointerPos(e);
-      // Always update cursor to current pointer position
-      moveCursor(pos.x, pos.y);
+      const p = propsRef.current;
 
-      if (!isActiveRef.current) return;
-      e.preventDefault();
-      const { tool, viewTransform, containerW, containerH, imgW, imgH } = propsRef.current;
+      // ── SELECT MODE ──
+      if (p.tool === 'select') {
+        if (isActiveRef.current && dragRef.current) {
+          e.preventDefault();
+          const drag = dragRef.current;
+          const { viewTransform, containerW, containerH, imgW, imgH, onPathsChange, onDrawStart } = p;
+          if (!drag.historyDone) { onDrawStart(); drag.historyDone = true; }
+          const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
 
-      if (tool === 'eraser') {
-        eraseNearby(pos.x, pos.y);
+          if (drag.type === 'move') {
+            const dx = imgPt.x - drag.startX, dy = imgPt.y - drag.startY;
+            const newPoints = drag.origPoints.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+            onPathsChange(p.paths.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
+          } else {
+            const { origBbox, hx, hy } = drag;
+            const newBbox: BBox = {
+              minX: hx === 0 ? imgPt.x : origBbox.minX,
+              minY: hy === 0 ? imgPt.y : origBbox.minY,
+              maxX: hx === 1 ? imgPt.x : origBbox.maxX,
+              maxY: hy === 1 ? imgPt.y : origBbox.maxY,
+            };
+            const newPoints = remapPoints(drag.origPoints, origBbox, newBbox);
+            onPathsChange(p.paths.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
+          }
+          return;
+        }
+
+        // Update cursor style based on hover position
+        if (svg) {
+          const { selectedPathId, paths, viewTransform, containerW, containerH, imgW, imgH } = p;
+          const selPath = selectedPathId ? paths.find(x => x.id === selectedPathId) ?? null : null;
+          const layout = getSelectionLayout(selPath, viewTransform, containerW, containerH, imgW, imgH);
+          let cursor = 'default';
+          if (layout) {
+            const dp = layout.deletePos;
+            const delBtnX = dp.x + 14, delBtnY = dp.y - 14;
+            if ((pos.x - delBtnX) ** 2 + (pos.y - delBtnY) ** 2 < 15 * 15) {
+              cursor = 'pointer';
+            } else {
+              for (const h of layout.handles) {
+                if (Math.abs(pos.x - h.x) < 9 && Math.abs(pos.y - h.y) < 9) { cursor = h.cursor; break; }
+              }
+              if (cursor === 'default') {
+                const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+                if (imgPt.x >= layout.bbox.minX && imgPt.x <= layout.bbox.maxX && imgPt.y >= layout.bbox.minY && imgPt.y <= layout.bbox.maxY) {
+                  cursor = 'move';
+                }
+              }
+            }
+          }
+          svg.style.cursor = cursor;
+        }
         return;
       }
 
-      if (tool === 'pen') {
+      // ── DRAWING MODES ──
+      moveCursor(pos.x, pos.y);
+      if (!isActiveRef.current) return;
+      e.preventDefault();
+
+      if (p.tool === 'eraser') { eraseNearby(pos.x, pos.y); return; }
+
+      if (p.tool === 'pen') {
         const last = currentImagePtsRef.current[currentImagePtsRef.current.length - 1];
-        const lastScreen = imagePctToScreenPx(last.x, last.y, viewTransform, containerW, containerH, imgW, imgH);
-        const dx = pos.x - lastScreen.x;
-        const dy = pos.y - lastScreen.y;
-        if (dx * dx + dy * dy < 9) return; // skip if < 3px movement
-        const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
-        currentImagePtsRef.current.push(imgPt);
+        const lastScreen = imagePctToScreenPx(last.x, last.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH);
+        const dx = pos.x - lastScreen.x, dy = pos.y - lastScreen.y;
+        if (dx * dx + dy * dy < 9) return;
+        currentImagePtsRef.current.push(screenPxToImagePct(pos.x, pos.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH));
         currentScreenDRef.current += ` L ${pos.x} ${pos.y}`;
         if (livePathRef.current) livePathRef.current.setAttribute('d', currentScreenDRef.current);
       } else if (shapeStartRef.current) {
         const start = shapeStartRef.current;
-        const end = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+        const end = screenPxToImagePct(pos.x, pos.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH);
         let pts: DrawPoint[] = [];
-        if (tool === 'line') {
-          pts = [start, end];
-        } else if (tool === 'rect') {
-          pts = rectPoints(start.x, start.y, end.x, end.y);
-        } else if (tool === 'circle') {
-          const rx = Math.abs(end.x - start.x) / 2;
-          const ry = Math.abs(end.y - start.y) / 2;
-          pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry);
-        }
+        if (p.tool === 'line') pts = [start, end];
+        else if (p.tool === 'rect') pts = rectPoints(start.x, start.y, end.x, end.y);
+        else if (p.tool === 'circle') { const rx = Math.abs(end.x - start.x) / 2, ry = Math.abs(end.y - start.y) / 2; pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry); }
         if (livePathRef.current && pts.length) {
-          const screenPts = pts.map(pt => imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH));
+          const screenPts = pts.map(pt => imagePctToScreenPx(pt.x, pt.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH));
           livePathRef.current.setAttribute('d', ptsToSvgD(screenPts));
         }
       }
     };
 
     const onPointerUp = (e: PointerEvent) => {
-      if (!isActiveRef.current || !e.isPrimary) return;
+      if (!e.isPrimary) return;
+      const p = propsRef.current;
+
+      // ── SELECT MODE ──
+      if (p.tool === 'select') {
+        if (isActiveRef.current) {
+          isActiveRef.current = false;
+          svg.releasePointerCapture(e.pointerId);
+          dragRef.current = null;
+        }
+        return;
+      }
+
+      // ── DRAWING MODES ──
+      if (!isActiveRef.current) return;
       isActiveRef.current = false;
       svg.releasePointerCapture(e.pointerId);
       removeLivePath();
-
-      const { tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onPathAdd } = propsRef.current;
       const pos = getPointerPos(e);
 
-      if (tool === 'eraser') return;
+      if (p.tool === 'eraser') return;
 
-      if (tool === 'pen') {
+      if (p.tool === 'pen') {
         const pts = currentImagePtsRef.current;
-        if (pts.length > 0) {
-          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, opacity, tool: 'pen' });
-        }
+        if (pts.length > 0) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, opacity: p.opacity, tool: 'pen' });
         currentImagePtsRef.current = [];
         currentScreenDRef.current = '';
       } else if (shapeStartRef.current) {
         const start = shapeStartRef.current;
-        const end = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
+        const end = screenPxToImagePct(pos.x, pos.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH);
         let pts: DrawPoint[] = [];
-        if (tool === 'line') {
-          pts = [start, end];
-        } else if (tool === 'rect') {
-          pts = rectPoints(start.x, start.y, end.x, end.y);
-        } else if (tool === 'circle') {
-          const rx = Math.abs(end.x - start.x) / 2;
-          const ry = Math.abs(end.y - start.y) / 2;
-          pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry);
-        }
-        if (pts.length >= 2) {
-          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, opacity, tool });
-        }
+        if (p.tool === 'line') pts = [start, end];
+        else if (p.tool === 'rect') pts = rectPoints(start.x, start.y, end.x, end.y);
+        else if (p.tool === 'circle') { const rx = Math.abs(end.x - start.x) / 2, ry = Math.abs(end.y - start.y) / 2; pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry); }
+        if (pts.length >= 2) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, opacity: p.opacity, tool: p.tool });
         shapeStartRef.current = null;
       }
     };
 
-    // Separate cancel handler — discard in-progress stroke, do NOT commit
     const onPointerCancel = () => {
       if (!isActiveRef.current) return;
       isActiveRef.current = false;
+      dragRef.current = null;
       removeLivePath();
       currentImagePtsRef.current = [];
       currentScreenDRef.current = '';
       shapeStartRef.current = null;
     };
 
-    const onPointerLeave = () => hideCursor();
+    const onPointerLeave = () => { if (propsRef.current.tool !== 'select') hideCursor(); };
 
     svg.addEventListener('pointerdown', onPointerDown);
     svg.addEventListener('pointermove', onPointerMove);
@@ -280,17 +452,17 @@ export default function DrawingCanvas({
       removeLivePath();
       hideCursor();
       isActiveRef.current = false;
+      dragRef.current = null;
     };
   }, [isDrawingMode, getPointerPos, moveCursor, hideCursor, eraseNearby, createLivePath, removeLivePath]);
 
-  // Update live path stroke-width on zoom change while actively drawing
   useEffect(() => {
     if (livePathRef.current) {
       livePathRef.current.setAttribute('stroke-width', String(strokeWidth * viewTransform.scale));
     }
   }, [viewTransform.scale, strokeWidth]);
 
-  // Compute SVG group transform — maps image-% coords to screen px in O(1)
+  // Compute SVG group transform (image-% → screen px)
   const s = viewTransform.scale;
   const refW = imgW > 0 ? imgW : containerW;
   const refH = imgH > 0 ? imgH : containerH;
@@ -301,9 +473,13 @@ export default function DrawingCanvas({
   const groupSx = s * refW / 100;
   const groupSy = s * refH / 100;
 
-  // Cursor circle dimensions in screen px
-  const cursorR = Math.max(4, strokeWidth * viewTransform.scale / 2);
-  const eraserR = Math.max(8, strokeWidth * viewTransform.scale * 2.5);
+  // Cursor size
+  const cursorR  = Math.max(4, strokeWidth * viewTransform.scale / 2);
+  const eraserR  = Math.max(8, strokeWidth * viewTransform.scale * 2.5);
+
+  // Selection layout
+  const selectedPath = selectedPathId ? paths.find(p => p.id === selectedPathId) ?? null : null;
+  const selLayout = tool === 'select' ? getSelectionLayout(selectedPath, viewTransform, containerW, containerH, imgW, imgH) : null;
 
   return (
     <svg
@@ -311,11 +487,11 @@ export default function DrawingCanvas({
       className="absolute inset-0 w-full h-full z-[12]"
       style={{
         pointerEvents: isDrawingMode ? 'auto' : 'none',
-        cursor: isDrawingMode ? 'none' : 'default',
+        cursor: isDrawingMode ? (tool === 'select' ? 'default' : 'none') : 'default',
         touchAction: 'none',
       }}
     >
-      {/* Committed paths — single <g> transform maps image-% to screen coords */}
+      {/* Committed paths */}
       <g transform={`translate(${groupOx},${groupOy}) scale(${groupSx},${groupSy})`}>
         {paths.map(path => (
           <path
@@ -332,20 +508,50 @@ export default function DrawingCanvas({
         ))}
       </g>
 
-      {/* Custom cursor — position managed via direct DOM (style.transform), visuals via React */}
+      {/* Selection overlay */}
+      {selLayout && (
+        <g pointerEvents="none">
+          {/* Dashed bounding rect */}
+          <rect
+            x={selLayout.rectX} y={selLayout.rectY}
+            width={selLayout.rectW} height={selLayout.rectH}
+            fill="rgba(181,84,30,0.04)"
+            stroke="#b5541e" strokeWidth={1.5} strokeDasharray="5 3"
+            rx={3}
+          />
+          {/* Corner handles */}
+          {selLayout.handles.map((h, i) => (
+            <rect
+              key={i}
+              x={h.x - 6} y={h.y - 6}
+              width={12} height={12}
+              rx={2}
+              fill="white"
+              stroke="#b5541e"
+              strokeWidth={1.5}
+              style={{ cursor: h.cursor }}
+            />
+          ))}
+          {/* Delete button: red circle with × above top-right handle */}
+          <g transform={`translate(${selLayout.deletePos.x + 14},${selLayout.deletePos.y - 14})`} style={{ cursor: 'pointer' }}>
+            <circle r={13} fill="#ef4444" stroke="white" strokeWidth={1.5} />
+            <line x1={-4.5} y1={-4.5} x2={4.5} y2={4.5} stroke="white" strokeWidth={2} strokeLinecap="round" />
+            <line x1={4.5} y1={-4.5} x2={-4.5} y2={4.5} stroke="white" strokeWidth={2} strokeLinecap="round" />
+          </g>
+        </g>
+      )}
+
+      {/* Custom cursor — always in DOM so ref is always valid; only shows content for non-select tools */}
       <g ref={cursorGroupRef} pointerEvents="none">
         {tool === 'eraser' ? (
           <>
             <circle r={eraserR} fill="rgba(200,200,200,0.12)" stroke="white" strokeWidth={1.5} />
             <circle r={eraserR} fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth={1} />
           </>
-        ) : (
+        ) : tool === 'select' ? null : (
           <>
-            {/* White halo for contrast against any background */}
             <circle r={cursorR + 1.5} fill="none" stroke="white" strokeWidth={2.5} opacity={0.85} />
-            {/* Colored fill — shows exact pen color and opacity */}
             <circle r={cursorR} fill={color} fillOpacity={opacity / 100} stroke="rgba(0,0,0,0.35)" strokeWidth={1} />
-            {/* Center dot for precision when cursor is large */}
             {cursorR >= 8 && <circle r={1.5} fill="rgba(0,0,0,0.55)" />}
           </>
         )}
