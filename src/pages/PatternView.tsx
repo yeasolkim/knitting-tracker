@@ -1754,7 +1754,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             onDeletePath={(id) => { captureHistory(); setDrawingPaths(prev => prev.filter(p => p.id !== id)); setSelectedPathId(null); }}
             onDrawStart={captureHistory}
             onPathAdd={(path) => { setDrawingPaths(prev => [...prev, path]); }}
-            onPathsChange={(paths) => { setDrawingPaths(paths); }}
+            onPathsChange={setDrawingPaths}
           />
 
           {/* Drawing toolbar — shown when drawing mode is active */}

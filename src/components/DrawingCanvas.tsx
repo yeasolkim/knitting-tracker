@@ -30,7 +30,7 @@ interface Props {
   onDeletePath: (id: string) => void;
   onDrawStart: () => void;
   onPathAdd: (path: DrawPath) => void;
-  onPathsChange: (paths: DrawPath[]) => void;
+  onPathsChange: (updater: DrawPath[] | ((prev: DrawPath[]) => DrawPath[])) => void;
 }
 
 function ptsToSvgD(pts: DrawPoint[]): string {
@@ -76,14 +76,15 @@ function distToSegSq(px: number, py: number, ax: number, ay: number, bx: number,
   return (px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2;
 }
 
-function isPathHit(click: DrawPoint, path: DrawPath, threshSq: number): boolean {
+function isPathHit(click: DrawPoint, path: DrawPath, threshSq: number, scaleY = 1): boolean {
   const pts = path.points;
+  const cy = click.y * scaleY;
   for (let i = 0; i < pts.length - 1; i++) {
-    if (distToSegSq(click.x, click.y, pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y) < threshSq) return true;
+    if (distToSegSq(click.x, cy, pts[i].x, pts[i].y * scaleY, pts[i + 1].x, pts[i + 1].y * scaleY) < threshSq) return true;
   }
   if (pts.length > 0) {
     const p = pts[pts.length - 1];
-    return (click.x - p.x) ** 2 + (click.y - p.y) ** 2 < threshSq;
+    return (click.x - p.x) ** 2 + (cy - p.y * scaleY) ** 2 < threshSq;
   }
   return false;
 }
@@ -141,6 +142,7 @@ export default function DrawingCanvas({
   const currentImagePtsRef = useRef<DrawPoint[]>([]);
   const currentScreenDRef = useRef('');
   const shapeStartRef = useRef<DrawPoint | null>(null);
+  const eraserHistoryDoneRef = useRef(false);
 
   const propsRef = useRef({
     paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH,
@@ -175,6 +177,10 @@ export default function DrawingCanvas({
     if (cursorGroupRef.current) cursorGroupRef.current.style.display = 'none';
   }, []);
 
+  useEffect(() => {
+    if (isDrawingMode && tool === 'select') hideCursor();
+  }, [tool, isDrawingMode, hideCursor]);
+
   const createLivePath = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -196,16 +202,28 @@ export default function DrawingCanvas({
   }, []);
 
   const eraseNearby = useCallback((sx: number, sy: number) => {
-    const { paths, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onPathsChange } = propsRef.current;
+    const { paths: currentPaths, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onPathsChange, onDrawStart } = propsRef.current;
     const radius = strokeWidth * viewTransform.scale * 2.5;
-    const next = paths.filter(path => {
-      return !path.points.some(pt => {
+    const wouldErase = currentPaths.some(path =>
+      path.points.some(pt => {
         const sp = imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
-        const dx = sp.x - sx, dy = sp.y - sy;
-        return dx * dx + dy * dy < radius * radius;
-      });
-    });
-    if (next.length !== paths.length) onPathsChange(next);
+        return (sp.x - sx) ** 2 + (sp.y - sy) ** 2 < radius * radius;
+      })
+    );
+    if (wouldErase && !eraserHistoryDoneRef.current) {
+      onDrawStart();
+      eraserHistoryDoneRef.current = true;
+    }
+    if (wouldErase) {
+      onPathsChange((prevPaths: DrawPath[]) =>
+        prevPaths.filter(path =>
+          !path.points.some(pt => {
+            const sp = imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
+            return (sp.x - sx) ** 2 + (sp.y - sy) ** 2 < radius * radius;
+          })
+        )
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -256,13 +274,15 @@ export default function DrawingCanvas({
 
         // 4. Hit-test all paths (reverse order = topmost first)
         const iW2 = imgW > 0 ? imgW : containerW;
+        const iH2 = imgH > 0 ? imgH : containerH;
+        const scaleY = iH2 > 0 ? iW2 / iH2 : 1; // normalize Y axis to X-axis scale
+        const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
         let foundPath: DrawPath | null = null;
         for (let i = paths.length - 1; i >= 0; i--) {
           const path = paths[i];
-          const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
           const hitPx = Math.max(10, path.width * viewTransform.scale / 2 + 6);
           const hitThresh = (hitPx / (viewTransform.scale * iW2)) * 100;
-          if (isPathHit(imgPt, path, hitThresh * hitThresh)) { foundPath = path; break; }
+          if (isPathHit(imgPt, path, hitThresh * hitThresh, scaleY)) { foundPath = path; break; }
         }
         onSelectPath(foundPath ? foundPath.id : null);
         return;
@@ -273,9 +293,9 @@ export default function DrawingCanvas({
       isActiveRef.current = true;
       svg.setPointerCapture(e.pointerId);
       moveCursor(pos.x, pos.y);
-      onDrawStart();
 
-      if (tool === 'eraser') { eraseNearby(pos.x, pos.y); return; }
+      if (tool === 'eraser') { eraserHistoryDoneRef.current = false; eraseNearby(pos.x, pos.y); return; }
+      onDrawStart();
 
       const imgPt = screenPxToImagePct(pos.x, pos.y, p.viewTransform, p.containerW, p.containerH, p.imgW, p.imgH);
       if (tool === 'pen') {
@@ -314,17 +334,17 @@ export default function DrawingCanvas({
           if (drag.type === 'move') {
             const dx = imgPt.x - drag.startX, dy = imgPt.y - drag.startY;
             const newPoints = drag.origPoints.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
-            onPathsChange(p.paths.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
+            onPathsChange((prev: DrawPath[]) => prev.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
           } else {
             const { origBbox, hx, hy } = drag;
             const newBbox: BBox = {
-              minX: hx === 0 ? imgPt.x : origBbox.minX,
-              minY: hy === 0 ? imgPt.y : origBbox.minY,
-              maxX: hx === 1 ? imgPt.x : origBbox.maxX,
-              maxY: hy === 1 ? imgPt.y : origBbox.maxY,
+              minX: hx === 0 ? Math.min(imgPt.x, origBbox.maxX) : origBbox.minX,
+              minY: hy === 0 ? Math.min(imgPt.y, origBbox.maxY) : origBbox.minY,
+              maxX: hx === 1 ? Math.max(imgPt.x, origBbox.minX) : origBbox.maxX,
+              maxY: hy === 1 ? Math.max(imgPt.y, origBbox.minY) : origBbox.maxY,
             };
             const newPoints = remapPoints(drag.origPoints, origBbox, newBbox);
-            onPathsChange(p.paths.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
+            onPathsChange((prev: DrawPath[]) => prev.map(path => path.id === drag.pathId ? { ...path, points: newPoints } : path));
           }
           return;
         }
@@ -493,7 +513,7 @@ export default function DrawingCanvas({
     >
       {/* Committed paths */}
       <g transform={`translate(${groupOx},${groupOy}) scale(${groupSx},${groupSy})`}>
-        {paths.map(path => (
+        {imgW > 0 && imgH > 0 && paths.map(path => (
           <path
             key={path.id}
             d={ptsToSvgD(path.points)}
@@ -509,7 +529,7 @@ export default function DrawingCanvas({
       </g>
 
       {/* Selection overlay */}
-      {selLayout && (
+      {imgW > 0 && imgH > 0 && selLayout && (
         <g pointerEvents="none">
           {/* Dashed bounding rect */}
           <rect
