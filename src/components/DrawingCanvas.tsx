@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import type { DrawPath, DrawPoint, DrawTool } from '@/lib/types';
 import { screenPxToImagePct, imagePctToScreenPx } from '@/lib/coordUtils';
 
@@ -12,6 +12,7 @@ interface Props {
   tool: DrawTool;
   color: string;
   strokeWidth: number;
+  opacity: number; // 0-100
   viewTransform: { scale: number; x: number; y: number };
   containerW: number;
   containerH: number;
@@ -49,20 +50,26 @@ function rectPoints(x1: number, y1: number, x2: number, y2: number): DrawPoint[]
 }
 
 export default function DrawingCanvas({
-  paths, isDrawingMode, tool, color, strokeWidth,
+  paths, isDrawingMode, tool, color, strokeWidth, opacity,
   viewTransform, containerW, containerH, imgW, imgH,
   onDrawStart, onPathAdd, onPathsChange,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const livePathRef = useRef<SVGPathElement | null>(null);
+  const cursorGroupRef = useRef<SVGGElement>(null);
   const isActiveRef = useRef(false);
   const currentImagePtsRef = useRef<DrawPoint[]>([]);
   const currentScreenDRef = useRef('');
   const shapeStartRef = useRef<DrawPoint | null>(null);
 
   // Keep stable ref for latest props so event handlers don't go stale
-  const propsRef = useRef({ paths, tool, color, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange });
-  useEffect(() => { propsRef.current = { paths, tool, color, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange }; });
+  const propsRef = useRef({ paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange });
+  useEffect(() => { propsRef.current = { paths, tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onDrawStart, onPathAdd, onPathsChange }; });
+
+  // Cursor is hidden until pointer enters the SVG
+  useLayoutEffect(() => {
+    if (cursorGroupRef.current) cursorGroupRef.current.style.display = 'none';
+  }, []);
 
   const getPointerPos = useCallback((e: PointerEvent): { x: number; y: number } => {
     const svg = svgRef.current;
@@ -71,15 +78,27 @@ export default function DrawingCanvas({
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }, []);
 
+  const moveCursor = useCallback((x: number, y: number) => {
+    const el = cursorGroupRef.current;
+    if (!el) return;
+    el.style.transform = `translate(${x}px,${y}px)`;
+    el.style.display = '';
+  }, []);
+
+  const hideCursor = useCallback(() => {
+    if (cursorGroupRef.current) cursorGroupRef.current.style.display = 'none';
+  }, []);
+
   const createLivePath = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
     if (livePathRef.current) livePathRef.current.remove();
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const { color, strokeWidth, viewTransform } = propsRef.current;
+    const { color, strokeWidth, opacity, viewTransform } = propsRef.current;
     el.setAttribute('fill', 'none');
     el.setAttribute('stroke', color);
     el.setAttribute('stroke-width', String(strokeWidth * viewTransform.scale));
+    el.setAttribute('stroke-opacity', String(opacity / 100));
     el.setAttribute('stroke-linecap', 'round');
     el.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(el);
@@ -105,7 +124,10 @@ export default function DrawingCanvas({
   }, []);
 
   useEffect(() => {
-    if (!isDrawingMode) return;
+    if (!isDrawingMode) {
+      hideCursor();
+      return;
+    }
     const svg = svgRef.current;
     if (!svg) return;
 
@@ -119,8 +141,8 @@ export default function DrawingCanvas({
       isActiveRef.current = true;
       svg.setPointerCapture(e.pointerId);
       const pos = getPointerPos(e);
+      moveCursor(pos.x, pos.y);
 
-      // Fix 1: capture undo history once per gesture, not per move event
       onDrawStart();
 
       if (tool === 'eraser') {
@@ -150,10 +172,14 @@ export default function DrawingCanvas({
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!isActiveRef.current || !e.isPrimary) return;
+      if (!e.isPrimary) return;
+      const pos = getPointerPos(e);
+      // Always update cursor to current pointer position
+      moveCursor(pos.x, pos.y);
+
+      if (!isActiveRef.current) return;
       e.preventDefault();
       const { tool, viewTransform, containerW, containerH, imgW, imgH } = propsRef.current;
-      const pos = getPointerPos(e);
 
       if (tool === 'eraser') {
         eraseNearby(pos.x, pos.y);
@@ -196,7 +222,7 @@ export default function DrawingCanvas({
       svg.releasePointerCapture(e.pointerId);
       removeLivePath();
 
-      const { tool, color, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onPathAdd } = propsRef.current;
+      const { tool, color, strokeWidth, opacity, viewTransform, containerW, containerH, imgW, imgH, onPathAdd } = propsRef.current;
       const pos = getPointerPos(e);
 
       if (tool === 'eraser') return;
@@ -204,7 +230,7 @@ export default function DrawingCanvas({
       if (tool === 'pen') {
         const pts = currentImagePtsRef.current;
         if (pts.length > 0) {
-          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, tool: 'pen' });
+          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, opacity, tool: 'pen' });
         }
         currentImagePtsRef.current = [];
         currentScreenDRef.current = '';
@@ -222,13 +248,13 @@ export default function DrawingCanvas({
           pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry);
         }
         if (pts.length >= 2) {
-          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, tool });
+          onPathAdd({ id: generateId(), points: pts, color, width: strokeWidth, opacity, tool });
         }
         shapeStartRef.current = null;
       }
     };
 
-    // Fix 2: separate cancel handler — discard in-progress stroke, do NOT commit
+    // Separate cancel handler — discard in-progress stroke, do NOT commit
     const onPointerCancel = () => {
       if (!isActiveRef.current) return;
       isActiveRef.current = false;
@@ -238,19 +264,24 @@ export default function DrawingCanvas({
       shapeStartRef.current = null;
     };
 
+    const onPointerLeave = () => hideCursor();
+
     svg.addEventListener('pointerdown', onPointerDown);
     svg.addEventListener('pointermove', onPointerMove);
     svg.addEventListener('pointerup', onPointerUp);
     svg.addEventListener('pointercancel', onPointerCancel);
+    svg.addEventListener('pointerleave', onPointerLeave);
     return () => {
       svg.removeEventListener('pointerdown', onPointerDown);
       svg.removeEventListener('pointermove', onPointerMove);
       svg.removeEventListener('pointerup', onPointerUp);
       svg.removeEventListener('pointercancel', onPointerCancel);
+      svg.removeEventListener('pointerleave', onPointerLeave);
       removeLivePath();
+      hideCursor();
       isActiveRef.current = false;
     };
-  }, [isDrawingMode, getPointerPos, eraseNearby, createLivePath, removeLivePath]);
+  }, [isDrawingMode, getPointerPos, moveCursor, hideCursor, eraseNearby, createLivePath, removeLivePath]);
 
   // Update live path stroke-width on zoom change while actively drawing
   useEffect(() => {
@@ -259,8 +290,7 @@ export default function DrawingCanvas({
     }
   }, [viewTransform.scale, strokeWidth]);
 
-  // Fix 4: compute SVG group transform — maps image-% coords to screen px in O(1)
-  // Derivation: screenX = ox + sx * imgPct.x, same for Y (affine, exact match to imagePctToScreenPx)
+  // Compute SVG group transform — maps image-% coords to screen px in O(1)
   const s = viewTransform.scale;
   const refW = imgW > 0 ? imgW : containerW;
   const refH = imgH > 0 ? imgH : containerH;
@@ -271,20 +301,21 @@ export default function DrawingCanvas({
   const groupSx = s * refW / 100;
   const groupSy = s * refH / 100;
 
+  // Cursor circle dimensions in screen px
+  const cursorR = Math.max(4, strokeWidth * viewTransform.scale / 2);
+  const eraserR = Math.max(8, strokeWidth * viewTransform.scale * 2.5);
+
   return (
     <svg
       ref={svgRef}
       className="absolute inset-0 w-full h-full z-[12]"
       style={{
         pointerEvents: isDrawingMode ? 'auto' : 'none',
-        cursor: isDrawingMode
-          ? tool === 'eraser' ? 'cell' : 'crosshair'
-          : 'default',
+        cursor: isDrawingMode ? 'none' : 'default',
         touchAction: 'none',
       }}
     >
-      {/* Fix 4: single transform on <g> maps all image-% paths to screen coords in O(1).
-          vectorEffect="non-scaling-stroke" keeps stroke width in screen-px units. */}
+      {/* Committed paths — single <g> transform maps image-% to screen coords */}
       <g transform={`translate(${groupOx},${groupOy}) scale(${groupSx},${groupSy})`}>
         {paths.map(path => (
           <path
@@ -293,11 +324,31 @@ export default function DrawingCanvas({
             fill="none"
             stroke={path.color}
             strokeWidth={path.width * viewTransform.scale}
+            strokeOpacity={(path.opacity ?? 100) / 100}
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
         ))}
+      </g>
+
+      {/* Custom cursor — position managed via direct DOM (style.transform), visuals via React */}
+      <g ref={cursorGroupRef} pointerEvents="none">
+        {tool === 'eraser' ? (
+          <>
+            <circle r={eraserR} fill="rgba(200,200,200,0.12)" stroke="white" strokeWidth={1.5} />
+            <circle r={eraserR} fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth={1} />
+          </>
+        ) : (
+          <>
+            {/* White halo for contrast against any background */}
+            <circle r={cursorR + 1.5} fill="none" stroke="white" strokeWidth={2.5} opacity={0.85} />
+            {/* Colored fill — shows exact pen color and opacity */}
+            <circle r={cursorR} fill={color} fillOpacity={opacity / 100} stroke="rgba(0,0,0,0.35)" strokeWidth={1} />
+            {/* Center dot for precision when cursor is large */}
+            {cursorR >= 8 && <circle r={1.5} fill="rgba(0,0,0,0.55)" />}
+          </>
+        )}
       </g>
     </svg>
   );

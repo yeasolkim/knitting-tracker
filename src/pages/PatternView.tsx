@@ -305,6 +305,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [drawingTool, setDrawingTool] = useState<DrawTool>('pen');
   const [drawingColor, setDrawingColor] = useState('#ef4444');
   const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(4);
+  const [drawingOpacity, setDrawingOpacity] = useState(100);
   const [drawingPaths, setDrawingPaths] = useState<DrawPath[]>(
     img0?.drawing_paths ?? []
   );
@@ -1723,6 +1724,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             tool={drawingTool}
             color={drawingColor}
             strokeWidth={drawingStrokeWidth}
+            opacity={drawingOpacity}
             viewTransform={viewTransform}
             containerW={containerW}
             containerH={containerH}
@@ -1816,15 +1818,18 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 </div>
                 {/* Stroke width slider */}
                 <div className="flex items-center gap-2 px-1">
-                  <div
-                    className="rounded-full shrink-0"
+                  {/* Preview dot: shows color + opacity */}
+                  <div className="relative rounded-full shrink-0 overflow-hidden"
                     style={{
                       width: Math.min(drawingStrokeWidth, 18),
                       height: Math.min(drawingStrokeWidth, 18),
-                      background: drawingColor,
-                      boxShadow: drawingColor === '#ffffff' ? 'inset 0 0 0 1px #ccc' : undefined,
+                      backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
+                      backgroundSize: '6px 6px',
+                      backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
                     }}
-                  />
+                  >
+                    <div className="absolute inset-0 rounded-full" style={{ background: drawingColor, opacity: drawingOpacity / 100 }} />
+                  </div>
                   <input
                     type="range"
                     min={1}
@@ -1836,6 +1841,31 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                     style={{ minWidth: 100 }}
                   />
                   <span className="text-[11px] font-mono text-[#7a5c46] w-6 text-right shrink-0">{drawingStrokeWidth}</span>
+                </div>
+                {/* Opacity slider */}
+                <div className="flex items-center gap-2 px-1">
+                  {/* Checkerboard icon indicating transparency */}
+                  <div className="relative rounded-sm shrink-0 overflow-hidden border border-[#b07840]/40"
+                    style={{
+                      width: 14, height: 14,
+                      backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
+                      backgroundSize: '6px 6px',
+                      backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
+                    }}
+                  >
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(to right, transparent, ${drawingColor})` }} />
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={drawingOpacity}
+                    onChange={e => setDrawingOpacity(Number(e.target.value))}
+                    className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer"
+                    style={{ minWidth: 100 }}
+                  />
+                  <span className="text-[11px] font-mono text-[#7a5c46] w-8 text-right shrink-0">{drawingOpacity}%</span>
                 </div>
               </div>
             );

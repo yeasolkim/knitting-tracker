@@ -73,6 +73,7 @@ export interface DrawPath {
   points: DrawPoint[];
   color: string;
   width: number; // logical px at scale=1
+  opacity: number; // 0-100, default 100
   tool: DrawTool;
 }
 
