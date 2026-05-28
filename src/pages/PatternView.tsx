@@ -310,6 +310,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [drawingPaths, setDrawingPaths] = useState<DrawPath[]>(
     img0?.drawing_paths ?? []
   );
+  const [toolbarPos, setToolbarPos] = useState<{ x: number; y: number } | null>(null);
+  const toolbarDragRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Multiple images: primary + extra
   const allFiles = useMemo(() => {
@@ -593,8 +596,45 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   }, [selectedPathId, isDrawingMode, drawingTool, captureHistory]);
 
   useEffect(() => {
-    if (!isDrawingMode) setSelectedPathId(null);
+    if (!isDrawingMode) {
+      setSelectedPathId(null);
+      setToolbarPos(null);
+    }
   }, [isDrawingMode]);
+
+  const handleToolbarDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+    const rect = toolbar.getBoundingClientRect();
+    const container = toolbar.offsetParent as HTMLElement;
+    const containerRect = container?.getBoundingClientRect();
+    if (!containerRect) return;
+    toolbarDragRef.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handleToolbarDragMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!toolbarDragRef.current) return;
+    e.stopPropagation();
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+    const container = toolbar.offsetParent as HTMLElement;
+    const containerRect = container?.getBoundingClientRect();
+    if (!containerRect) return;
+    setToolbarPos({
+      x: e.clientX - containerRect.left - toolbarDragRef.current.offsetX,
+      y: e.clientY - containerRect.top - toolbarDragRef.current.offsetY,
+    });
+  }, []);
+
+  const handleToolbarDragEnd = useCallback(() => {
+    toolbarDragRef.current = null;
+  }, []);
 
   // Convert image-relative % → screen % using current transform.
   // rulerY/rulerHeight are stored as % of the rendered IMAGE height,
@@ -1795,9 +1835,38 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             ];
             return (
               <div
-                className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max"
+                ref={toolbarRef}
+                className={`z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max ${toolbarPos ? 'absolute' : 'absolute top-2 sm:top-3 left-1/2 -translate-x-1/2'}`}
+                style={toolbarPos ? { left: toolbarPos.x, top: toolbarPos.y } : undefined}
                 onPointerDown={(e) => e.stopPropagation()}
               >
+                {/* Drag handle header + X close */}
+                <div
+                  className="flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing select-none"
+                  onPointerDown={handleToolbarDragStart}
+                  onPointerMove={handleToolbarDragMove}
+                  onPointerUp={handleToolbarDragEnd}
+                  onPointerCancel={handleToolbarDragEnd}
+                >
+                  <div className="flex items-center gap-0.5 px-1 text-[#b07840]">
+                    {[0,1,2].map(i => (
+                      <svg key={i} className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+                        <circle cx="3" cy="4" r="1.2" /><circle cx="9" cy="4" r="1.2" />
+                        <circle cx="3" cy="8" r="1.2" /><circle cx="9" cy="8" r="1.2" />
+                      </svg>
+                    ))}
+                  </div>
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setIsDrawingMode(false)}
+                    title="그림판 닫기"
+                    className="w-6 h-6 flex items-center justify-center rounded-md text-[#7a5c46] hover:bg-[#ede5cc] transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 {/* Colors */}
                 <div className="flex items-center gap-1.5 justify-center">
                   {COLORS.map(c => (
@@ -1816,18 +1885,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                     />
                   ))}
                 </div>
-                {/* Tools + back + reset */}
+                {/* Tools + reset */}
                 <div className="flex items-center gap-1 justify-center">
-                  <button
-                    onClick={() => setIsDrawingMode(false)}
-                    title="그림판 닫기"
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent text-[#7a5c46] hover:bg-[#ede5cc] transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <div className="w-px h-5 bg-[#b07840] mx-0.5" />
                   {TOOLS.map(({ id, label, icon }) => (
                     <button
                       key={id}
