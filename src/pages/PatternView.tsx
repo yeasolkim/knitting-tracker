@@ -546,6 +546,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRotation(snap.crochetRotation);
     setCompletedCrochetRings(snap.completedCrochetRings);
     setDrawingPaths(snap.drawingPaths);
+    setSelectedPathId(null);
   }, []);
 
   const handleUndo = useCallback(() => {

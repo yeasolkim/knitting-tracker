@@ -95,8 +95,8 @@ function remapPoints(points: DrawPoint[], oldBbox: BBox, newBbox: BBox): DrawPoi
   const tw = newBbox.maxX - newBbox.minX;
   const th = newBbox.maxY - newBbox.minY;
   return points.map(p => ({
-    x: sw === 0 ? (newBbox.minX + newBbox.maxX) / 2 : newBbox.minX + (p.x - oldBbox.minX) / sw * tw,
-    y: sh === 0 ? (newBbox.minY + newBbox.maxY) / 2 : newBbox.minY + (p.y - oldBbox.minY) / sh * th,
+    x: sw === 0 ? (oldBbox.minX + oldBbox.maxX) / 2 : newBbox.minX + (p.x - oldBbox.minX) / sw * tw,
+    y: sh === 0 ? (oldBbox.minY + oldBbox.maxY) / 2 : newBbox.minY + (p.y - oldBbox.minY) / sh * th,
   }));
 }
 
@@ -262,9 +262,10 @@ export default function DrawingCanvas({
               return;
             }
           }
-          // 3. Inside bbox → move
-          const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
-          if (imgPt.x >= layout.bbox.minX && imgPt.x <= layout.bbox.maxX && imgPt.y >= layout.bbox.minY && imgPt.y <= layout.bbox.maxY) {
+          // 3. Inside padded selection rect → move
+          if (pos.x >= layout.rectX && pos.x <= layout.rectX + layout.rectW &&
+              pos.y >= layout.rectY && pos.y <= layout.rectY + layout.rectH) {
+            const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
             svg.setPointerCapture(e.pointerId);
             isActiveRef.current = true;
             dragRef.current = { type: 'move', pathId: selectedPathId!, origPoints: selPath!.points, startX: imgPt.x, startY: imgPt.y, historyDone: false };
@@ -365,8 +366,8 @@ export default function DrawingCanvas({
                 if (Math.abs(pos.x - h.x) < 9 && Math.abs(pos.y - h.y) < 9) { cursor = h.cursor; break; }
               }
               if (cursor === 'default') {
-                const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
-                if (imgPt.x >= layout.bbox.minX && imgPt.x <= layout.bbox.maxX && imgPt.y >= layout.bbox.minY && imgPt.y <= layout.bbox.maxY) {
+                if (pos.x >= layout.rectX && pos.x <= layout.rectX + layout.rectW &&
+                    pos.y >= layout.rectY && pos.y <= layout.rectY + layout.rectH) {
                   cursor = 'move';
                 }
               }
@@ -416,6 +417,7 @@ export default function DrawingCanvas({
           isActiveRef.current = false;
           svg.releasePointerCapture(e.pointerId);
           dragRef.current = null;
+          svg.style.cursor = 'default';
         }
         return;
       }
@@ -449,7 +451,14 @@ export default function DrawingCanvas({
     const onPointerCancel = () => {
       if (!isActiveRef.current) return;
       isActiveRef.current = false;
+      const drag = dragRef.current;
       dragRef.current = null;
+      if (drag) {
+        const { origPoints, pathId } = drag;
+        propsRef.current.onPathsChange((prev: DrawPath[]) =>
+          prev.map(p => p.id === pathId ? { ...p, points: origPoints } : p)
+        );
+      }
       removeLivePath();
       currentImagePtsRef.current = [];
       currentScreenDRef.current = '';
@@ -471,6 +480,7 @@ export default function DrawingCanvas({
       svg.removeEventListener('pointerleave', onPointerLeave);
       removeLivePath();
       hideCursor();
+      svg.style.cursor = '';
       isActiveRef.current = false;
       dragRef.current = null;
     };
