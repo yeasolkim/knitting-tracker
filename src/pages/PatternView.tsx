@@ -1795,7 +1795,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             ];
             return (
               <div
-                className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max"
+                className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max"
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {/* Colors */}
