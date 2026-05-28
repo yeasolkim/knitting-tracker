@@ -206,6 +206,15 @@ export function useGestures(
     setTransform({ scale: 1, x: 0, y: 0 });
   }, []);
 
+  // Fix 5: reset any in-progress drag/touch gesture (call when switching to drawing mode)
+  const resetInteraction = useCallback(() => {
+    isDragging.current = false;
+    lastMouse.current = null;
+    lastTouchDistance.current = null;
+    lastTouchCenter.current = null;
+    setIsPanning(false);
+  }, []);
+
   const setFullTransform = useCallback((t: Transform) => {
     setTransform({ ...t, scale: Math.min(maxScale, Math.max(minScale, t.scale)) });
   }, [minScale, maxScale]);
@@ -228,6 +237,7 @@ export function useGestures(
     panBy,
     setXY,
     resetTransform,
+    resetInteraction,
     setFullTransform,
     isPanning,
   };

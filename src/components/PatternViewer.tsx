@@ -39,6 +39,7 @@ interface PatternViewerProps {
   highlightBringRuler?: boolean;
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
+  isDrawingMode?: boolean;
 }
 
 /** Gap between PDF pages, proportional to page width.
@@ -48,11 +49,11 @@ interface PatternViewerProps {
 const getPdfGap = (currentPw: number) => Math.max(1, Math.round(8 * currentPw / 691));
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, highlightBringRuler = false, contentOverlay, children }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef);
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, resetInteraction, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
@@ -625,6 +626,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       },
     }), [transform, setXY, imageToContentY, imageToContentX, goToRuler, setFullTransform, getStableContentDims, rulerYPercent, rulerXPercent]);
 
+    // Fix 5: cancel any in-progress drag/touch gesture when drawing mode is enabled
+    useEffect(() => { if (isDrawingMode) resetInteraction(); }, [isDrawingMode, resetInteraction]);
+
     // Pan overlap guide — briefly shows boundary line after pan button press
     const [panOverlay, setPanOverlay] = useState<{
       dir: 'up' | 'down' | 'left' | 'right';
@@ -785,8 +789,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       <div className="relative w-full h-full overflow-hidden bg-gray-50 rounded-xl" ref={sizeRef}>
         <div
           ref={containerRef}
-          className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
-          {...handlers}
+          className={`w-full h-full touch-none ${isDrawingMode ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
+          {...(isDrawingMode ? {} : handlers)}
         >
           <div
             style={{

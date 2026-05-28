@@ -61,6 +61,21 @@ export interface SubPattern {
   current_row: number;
 }
 
+export interface DrawPoint {
+  x: number; // image-relative %
+  y: number; // image-relative %
+}
+
+export type DrawTool = 'pen' | 'eraser' | 'line' | 'rect' | 'circle';
+
+export interface DrawPath {
+  id: string;
+  points: DrawPoint[];
+  color: string;
+  width: number; // logical px at scale=1
+  tool: DrawTool;
+}
+
 export interface ImagePerState {
   ruler_position_y?: number;
   ruler_height?: number;
@@ -94,6 +109,7 @@ export interface ImagePerState {
   view_fit_scale?: number;
   view_x?: number;
   view_y?: number;
+  drawing_paths?: DrawPath[];
 }
 
 export interface PatternProgress {

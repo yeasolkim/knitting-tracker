@@ -3,7 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState } from '@/lib/types';
+import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool } from '@/lib/types';
+import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
 import CrochetRuler from '@/components/CrochetRuler';
@@ -157,6 +158,7 @@ type Snapshot = {
   crochetRowHeight: number | null;
   crochetRotation: number;
   completedCrochetRings: CrochetRing[];
+  drawingPaths: DrawPath[];
 };
 
 const MAX_HISTORY = 20;
@@ -297,6 +299,15 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   );
   const [hasMarkSelection, setHasMarkSelection] = useState(false);
   const [isAdjustingRuler, setIsAdjustingRuler] = useState(false);
+
+  // Drawing mode state
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawingTool, setDrawingTool] = useState<DrawTool>('pen');
+  const [drawingColor, setDrawingColor] = useState('#ef4444');
+  const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(4);
+  const [drawingPaths, setDrawingPaths] = useState<DrawPath[]>(
+    img0?.drawing_paths ?? []
+  );
 
   // Multiple images: primary + extra
   const allFiles = useMemo(() => {
@@ -499,6 +510,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     crochetRowHeight,
     crochetRotation,
     completedCrochetRings,
+    drawingPaths,
   });
 
   const captureHistory = useCallback(() => {
@@ -528,6 +540,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     setCrochetRowHeight(snap.crochetRowHeight);
     setCrochetRotation(snap.crochetRotation);
     setCompletedCrochetRings(snap.completedCrochetRings);
+    setDrawingPaths(snap.drawingPaths);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -780,8 +793,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Keep undoStateRef in sync with all undoable state
   useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
+    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
+  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths]);
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -825,6 +838,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     view_y: imgH > 0
       ? (0.5 - viewTransform.y / (viewTransform.scale * imgH)) * 100
       : imageStatesRef.current[activeFileIdx]?.view_y,
+    drawing_paths: drawingPaths,
   };
 
   const updateActiveSub = useCallback((updater: (sub: SubPattern) => SubPattern) => {
@@ -909,6 +923,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
     setNotes(next?.notes ?? {});
     setNotePositions(next?.note_positions ?? {});
+    setDrawingPaths(next?.drawing_paths ?? []);
 
     // Reset undo/redo history for the new image
     undoStackRef.current = [];
@@ -1032,7 +1047,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, save]);
+  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
@@ -1429,6 +1444,21 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </Link>
+          {/* Drawing mode toggle */}
+          <button
+            onClick={() => setIsDrawingMode(v => !v)}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+              isDrawingMode
+                ? 'bg-[#b5541e] text-[#fdf6e8] hover:bg-[#9a4318]'
+                : 'text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840]'
+            }`}
+            title="그림 그리기"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h4l11-11" opacity="0.4" />
+            </svg>
+          </button>
           <button
             onClick={handleUndo}
             disabled={!canUndo}
@@ -1524,6 +1554,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
           highlightBringRuler={showGuide}
+          isDrawingMode={isDrawingMode}
           onResetRuler={isCrochet && crochetShape !== 'line' ? () => {
             const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
             const contentX = W / 2 - t.x / t.scale;
@@ -1698,6 +1729,131 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
             />
           )}
+
+          {/* Drawing canvas — always mounted to preserve paths, active only in drawing mode */}
+          <DrawingCanvas
+            paths={drawingPaths}
+            isDrawingMode={isDrawingMode}
+            tool={drawingTool}
+            color={drawingColor}
+            strokeWidth={drawingStrokeWidth}
+            viewTransform={viewTransform}
+            containerW={containerW}
+            containerH={containerH}
+            imgW={imgW}
+            imgH={imgH}
+            onDrawStart={captureHistory}
+            onPathAdd={(path) => { setDrawingPaths(prev => [...prev, path]); }}
+            onPathsChange={(paths) => { setDrawingPaths(paths); }}
+          />
+
+          {/* Drawing toolbar — shown when drawing mode is active */}
+          {isDrawingMode && (() => {
+            const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
+            const TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
+              { id: 'pen', label: '펜', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
+                </svg>
+              )},
+              { id: 'line', label: '선', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <line x1="5" y1="19" x2="19" y2="5" strokeLinecap="round" />
+                </svg>
+              )},
+              { id: 'rect', label: '사각형', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="4" y="4" width="16" height="16" rx="1.5" />
+                </svg>
+              )},
+              { id: 'circle', label: '원', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+              )},
+              { id: 'eraser', label: '지우개', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 20H7L3 16l10-10 7 7-3.5 3.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 17.5l3-3" />
+                </svg>
+              )},
+            ];
+            return (
+              <div
+                className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                {/* Colors */}
+                <div className="flex items-center gap-1.5 justify-center">
+                  {COLORS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setDrawingColor(c)}
+                      className="rounded-full border-2 transition-transform"
+                      style={{
+                        width: 22, height: 22,
+                        background: c,
+                        borderColor: drawingColor === c ? '#3d2b1f' : 'transparent',
+                        transform: drawingColor === c ? 'scale(1.2)' : 'scale(1)',
+                        boxShadow: c === '#ffffff' ? 'inset 0 0 0 1px #ccc' : undefined,
+                      }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+                {/* Tools + clear */}
+                <div className="flex items-center gap-1 justify-center">
+                  {TOOLS.map(({ id, label, icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => setDrawingTool(id)}
+                      title={label}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${
+                        drawingTool === id
+                          ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+                          : 'text-[#7a5c46] border-transparent hover:bg-[#ede5cc]'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                  <div className="w-px h-5 bg-[#b07840] mx-0.5" />
+                  <button
+                    onClick={() => { captureHistory(); setDrawingPaths([]); }}
+                    title="모두 지우기"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent text-[#7a5c46] hover:bg-[#ede5cc] hover:text-[#b5541e] transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                {/* Stroke width slider */}
+                <div className="flex items-center gap-2 px-1">
+                  <div
+                    className="rounded-full shrink-0"
+                    style={{
+                      width: Math.min(drawingStrokeWidth, 18),
+                      height: Math.min(drawingStrokeWidth, 18),
+                      background: drawingColor,
+                      boxShadow: drawingColor === '#ffffff' ? 'inset 0 0 0 1px #ccc' : undefined,
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={drawingStrokeWidth}
+                    onChange={e => setDrawingStrokeWidth(Number(e.target.value))}
+                    className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer"
+                    style={{ minWidth: 100 }}
+                  />
+                  <span className="text-[11px] font-mono text-[#7a5c46] w-6 text-right shrink-0">{drawingStrokeWidth}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Overlay visibility toggle */}
           <div className="absolute top-3 right-3 z-40 pointer-events-none">
