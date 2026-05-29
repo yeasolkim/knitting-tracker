@@ -162,6 +162,8 @@ type Snapshot = {
 };
 
 const MAX_HISTORY = 20;
+const LOG_RULER_MIN = 0.3;  // % of image dimension — lower bound of log slider
+const LOG_RULER_MAX = 50;   // % of image dimension — upper bound of log slider
 
 const SHAPE_ICON: Record<string, ReactNode> = {
   line: (
@@ -238,18 +240,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     if (isCrochetLine) return 10;
     const rows = pattern.total_rows;
     return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-  });
-  const [maxRulerHeight, setMaxRulerHeight] = useState(() => {
-    const savedMax = img0?.max_ruler_height;
-    if (savedMax != null) return savedMax;
-    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null) return Math.max(15, saved);
-    // Fresh pattern: give 2× headroom so slider starts partway, not pinned at 100%
-    const savedData2 = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    const isCrochetLine2 = pattern.type === 'crochet' && (savedData2?.shape ?? 'circle') === 'line';
-    const rows2 = pattern.total_rows;
-    const defaultH = isCrochetLine2 ? 10 : (rows2 > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows2))) : 5);
-    return Math.max(15, defaultH * 2);
   });
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
@@ -480,8 +470,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Ref for stable callbacks that need latest transform/ruler values.
   // Updated directly in render (not via useEffect) so it is always current
   // before any pointer event fires — even in the same frame as a state change.
-  const latestRef = useRef({ rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
-  latestRef.current = { rulerY, rulerHeight, maxRulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
+  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
+  latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -735,7 +725,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     //   RIGHT(horizontal+ down) → DOWN  (vertical   + down)
     //   DOWN (vertical  + down) → LEFT  (horizontal + up)
     //   LEFT (horizontal+ up)   → UP    (vertical   + up)
-    const { rulerOrientation: o, rulerDirection: d, rulerHeight: rh, maxRulerHeight: mh, imgH: iH, imgW: iW } = latestRef.current;
+    const { rulerOrientation: o, rulerDirection: d, rulerHeight: rh, imgH: iH, imgW: iW } = latestRef.current;
 
     // Convert rulerHeight to preserve the same visual screen size after rotation.
     // vertical rulerHeight is % of imgH; horizontal rulerHeight is % of imgW.
@@ -743,14 +733,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     // screen_px = (h/100) * imgW * scale  (horizontal)
     // Preserving screen_px: newH = h * imgH/imgW  (vertical→horizontal)
     let newRulerHeight = rh;
-    let newMaxRulerHeight = mh;
     if (iH > 0 && iW > 0) {
       const factor = o === 'vertical' ? iH / iW : iW / iH;
-      newRulerHeight = Math.max(0.001, Math.min(100, rh * factor));
-      newMaxRulerHeight = Math.max(newRulerHeight, Math.min(100, mh * factor));
+      newRulerHeight = Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, rh * factor));
     }
     setRulerHeight(newRulerHeight);
-    setMaxRulerHeight(newMaxRulerHeight);
 
     if (o === 'vertical' && d === 'up') {
       setRulerOrientation('horizontal'); setRulerDirection('down');
@@ -769,14 +756,14 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (o === 'horizontal') {
       const contentW_px = (screenHPct / 100) * W / t.scale;
       const refW = iW > 0 ? iW : W;
-      setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentW_px / refW) * 100)));
+      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, (contentW_px / refW) * 100)));
     } else {
       const contentH_px = (screenHPct / 100) * H / t.scale;
       const refH = iH > 0 ? iH : H;
-      setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentH_px / refH) * 100)));
+      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, (contentH_px / refH) * 100)));
     }
     setShowGuide(false);
-  }, [maxRulerHeight]);
+  }, []);
 
   const handleCrochetCenterChange = useCallback((screenCxPct: number, screenCyPct: number) => {
     const { viewTransform: t, containerW: W, containerH: H, imgW: iW, imgH: iH } = latestRef.current;
@@ -816,13 +803,13 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (newShape === 'line') {
       setShowCrochetSettings(false);
       setShowRulerSettings(false);
-      if (prevRulerH <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
+      if (prevRulerH <= 0.3) { setRulerHeight(10); }
     } else if (prevShape === 'line') {
       setShowRulerSettings(false);
       const baseR = prevR < 1 ? 20 : prevR;
       if (prevR < 1) setCrochetR(baseR);
       if (newIs2D) { setCrochetRy(iW > 0 && iH > 0 ? baseR * iW / iH : baseR); }
-      if (prevRulerH <= 0.3) { setRulerHeight(10); setMaxRulerHeight(prev => Math.max(prev, 15)); }
+      if (prevRulerH <= 0.3) { setRulerHeight(10); }
     } else if (!prevIs2D && newIs2D) {
       setCrochetRy(iW > 0 && iH > 0 ? prevR * iW / iH : prevR);
     }
@@ -869,11 +856,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
-  // Ruler height step: targets ~8 screen px per button press, clamped for usability.
-  // Uses imgH × scale so the step feels consistent regardless of pattern image size.
+  // Ruler height step: targets ~2 screen px per button press for fine adjustment.
   const rulerStep = imgH > 0 && viewTransform.scale > 0
-    ? Math.min(maxRulerHeight / 20, Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100))
-    : Math.max(0.01, maxRulerHeight / 60);
+    ? Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100)
+    : 0.1;
 
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
@@ -881,7 +867,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   perImageStateLatest.current = {
     ruler_position_y: rulerY,
     ruler_height: rulerHeight,
-    max_ruler_height: maxRulerHeight,
     ruler_position_x: rulerX,
     ruler_direction: rulerDirection,
     ruler_orientation: rulerOrientation,
@@ -966,10 +951,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
     setRulerHeight(next?.ruler_height ?? defaultRulerH);
-    setMaxRulerHeight(
-      next?.max_ruler_height ??
-      (next?.ruler_height != null ? Math.max(15, next.ruler_height) : Math.max(15, defaultRulerH * 2))
-    );
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -1642,7 +1623,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 ? (iW > 0 && t.scale > 0 ? Math.min(50, (30 * W) / (iW * t.scale)) : 5)
                 : (iH > 0 && t.scale > 0 ? Math.min(50, (30 * H) / (iH * t.scale)) : 5);
               setRulerHeight(initialH);
-              setMaxRulerHeight(prev => Math.max(prev, initialH * 1.5));
               rh = initialH;
             }
             if (orientation === 'horizontal') {
@@ -2257,24 +2237,24 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >+</button>
                 <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
-              {/* Height / Width controls */}
+              {/* Height / Width controls — log-scale slider */}
               <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
-                  className="flex items-center justify-center min-w-[36px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="최대 크기 30% 축소"
-                >÷1.3</button>
-                <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onClick={() => setRulerHeight((h) => Math.max(0.001, h - rulerStep))}
+                  onClick={() => setRulerHeight((h) => Math.max(LOG_RULER_MIN, h - rulerStep))}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                 >−</button>
                 <input
                   type="range" min={0} max={10000} step={1}
-                  value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
+                  value={Math.round(
+                    Math.log(Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, rulerHeight)) / LOG_RULER_MIN)
+                    / Math.log(LOG_RULER_MAX / LOG_RULER_MIN) * 10000
+                  )}
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
+                  onChange={(e) => {
+                    setIsAdjustingRuler(true);
+                    setRulerHeight(LOG_RULER_MIN * Math.pow(LOG_RULER_MAX / LOG_RULER_MIN, Number(e.target.value) / 10000));
+                  }}
                   onPointerUp={() => setIsAdjustingRuler(false)}
                   onPointerCancel={() => setIsAdjustingRuler(false)}
                   className="accent-[#b5541e] cursor-pointer flex-1 min-w-0"
@@ -2282,18 +2262,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 />
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + rulerStep))}
+                  onClick={() => setRulerHeight((h) => Math.min(LOG_RULER_MAX, h + rulerStep))}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                 >+</button>
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                  className="flex items-center justify-center min-w-[36px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="최대 크기 30% 확장"
-                >×1.3</button>
-                <span className="text-[10px] text-[#b5541e] font-mono leading-tight flex-shrink-0">
-                  {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
-                </span>
               </div>
               {/* Close button */}
               <button
