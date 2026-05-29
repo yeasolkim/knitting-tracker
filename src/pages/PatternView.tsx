@@ -1981,7 +1981,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           })()}
 
           {/* Overlay visibility toggle + Drawing mode toggle */}
-          <div className="absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none">
+          <div className={`absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none ${showRulerSettings ? 'hidden' : ''}`}>
             <button
               className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
                 showOverlays
