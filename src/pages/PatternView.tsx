@@ -2215,249 +2215,100 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             rulerOrientation === 'vertical' && rulerDirection === 'up' ? 0 :
             rulerOrientation === 'horizontal' && rulerDirection === 'down' ? 90 :
             rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
-          /* Shared close button */
-          const closeBtn = (
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setShowRulerSettings(false)}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
-              title="닫기"
-            >×</button>
-          );
-
-          if (rulerOrientation === 'horizontal') {
-            return (
-              /* Horizontal mode: draggable popup */
-              <div
-                className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2.5 py-2 flex flex-col gap-1.5 cursor-grab"
-                style={{ top: `${settingsPopupPos.y}px`, left: `${settingsPopupPos.x}px`, maxWidth: 'calc(100% - 16px)' }}
-                onPointerDown={(e) => {
-                  settingsPopupDragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: settingsPopupPos.x, startPosY: settingsPopupPos.y };
-                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  e.stopPropagation();
-                }}
-                onPointerMove={(e) => {
-                  if (!settingsPopupDragRef.current) return;
-                  setSettingsPopupPos({ x: Math.max(0, settingsPopupDragRef.current.startPosX + e.clientX - settingsPopupDragRef.current.startX), y: Math.max(0, settingsPopupDragRef.current.startPosY + e.clientY - settingsPopupDragRef.current.startY) });
-                }}
-                onPointerUp={() => { settingsPopupDragRef.current = null; }}
-                onPointerCancel={() => { settingsPopupDragRef.current = null; }}
-              >
-                {/* Direction row + close */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 flex-1 min-w-0">
-                    <svg
-                      width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
-                    >
-                      <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
-                    </svg>
-                    <button
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() => handleRotateRuler()}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[10px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none"
-                    >
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      {t('ruler.rotate')}
-                    </button>
-                  </div>
-                  {closeBtn}
-                </div>
-                <div className="border-t border-[#d4b896] -mx-2.5" />
-                {/* Slant (rotation) controls */}
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
-                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">−</button>
-                  <input type="range" min={-45} max={45} step={1} value={rulerRotation}
-                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onChange={(e) => setRulerRotation(Number(e.target.value))}
-                    className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px', maxWidth: '80px' }} />
-                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
-                  <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
-                </div>
-                <div className="border-t border-[#d4b896] -mx-2.5" />
-                {/* Width controls */}
-                <div className="flex items-center gap-1">
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
-                    className="flex items-center justify-center min-w-[44px] h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                    title="최대 너비 30% 축소"
-                  >÷1.3</button>
-                  <button
-                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onClick={() => setRulerHeight((h) => Math.max(0.001, h - rulerStep))}
-                    className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                  >−</button>
-                  <input
-                    type="range" min={0} max={10000} step={1}
-                    value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
-                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
-                    onPointerUp={() => setIsAdjustingRuler(false)}
-                    onPointerCancel={() => setIsAdjustingRuler(false)}
-                    className="accent-[#b5541e] cursor-pointer flex-1 min-w-0"
-                    style={{ height: '24px', maxWidth: '80px' }}
-                  />
-                  <button
-                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + rulerStep))}
-                    className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                  >+</button>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                    className="flex items-center justify-center min-w-[44px] h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                    title="최대 너비 30% 확장"
-                  >×1.3</button>
-                  <span className="text-[10px] text-[#b5541e] font-mono leading-tight flex-shrink-0">
-                    {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
-                  </span>
-                </div>
-              {isCrochet && (
-                <>
-                  <div className="border-t border-[#d4b896] -mx-2.5" />
-                  <div className="flex gap-1">
-                    {(['line', 'circle', 'ellipse', 'rect'] as const).map((s) => (
-                      <button
-                        key={s}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => handleCrochetShapeChange(s)}
-                        title={t(`crochet.shape.${s}`)}
-                        className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
-                          crochetShape === s
-                            ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
-                            : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
-                        }`}
-                      >
-                        {SHAPE_ICON[s]}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-              </div>
-            );
-          }
-
           return (
-            /* Vertical mode: draggable popup */
             <div
-              className="absolute z-30 bg-[#fdf6e8]/96 backdrop-blur-sm rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] px-2 py-2 flex flex-col items-center gap-1.5 cursor-grab"
-              style={{ top: `${settingsPopupPos.y}px`, left: `${settingsPopupPos.x}px` }}
-              onPointerDown={(e) => {
-                settingsPopupDragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: settingsPopupPos.x, startPosY: settingsPopupPos.y };
-                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                e.stopPropagation();
-              }}
-              onPointerMove={(e) => {
-                if (!settingsPopupDragRef.current) return;
-                setSettingsPopupPos({ x: Math.max(0, settingsPopupDragRef.current.startPosX + e.clientX - settingsPopupDragRef.current.startX), y: Math.max(0, settingsPopupDragRef.current.startPosY + e.clientY - settingsPopupDragRef.current.startY) });
-              }}
-              onPointerUp={() => { settingsPopupDragRef.current = null; }}
-              onPointerCancel={() => { settingsPopupDragRef.current = null; }}
+              className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex items-center gap-2 flex-wrap"
+              style={{ maxWidth: 'calc(100% - 16px)' }}
+              onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Close button row */}
-              <div className="flex items-center justify-between w-full gap-1">
-                <div className="flex items-center gap-1">
-                  <svg
-                    width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
-                  >
-                    <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
+              {/* Direction indicator + Rotate button */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
+                >
+                  <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
+                </svg>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => handleRotateRuler()}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none flex-shrink-0"
+                >
+                  <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => handleRotateRuler()}
-                    className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none"
-                  >
-                    <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    {t('ruler.rotate')}
-                  </button>
-                </div>
-                {closeBtn}
+                  {t('ruler.rotate')}
+                </button>
               </div>
-              <div className="border-t border-[#d4b896] w-full" />
+              {/* Divider */}
+              <div className="w-px self-stretch bg-[#d4b896] flex-shrink-0" />
               {/* Slant (rotation) controls */}
-              <div className="flex items-center gap-1 w-full">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
-                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">−</button>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                >−</button>
                 <input type="range" min={-45} max={45} step={1} value={rulerRotation}
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                   onChange={(e) => setRulerRotation(Number(e.target.value))}
-                  className="accent-[#b5541e] cursor-pointer flex-1 min-w-0" style={{ height: '20px' }} />
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
-                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0">+</button>
-                <span className="text-[10px] text-[#b5541e] font-mono w-8 text-center flex-shrink-0">{rulerRotation}°</span>
+                  className="accent-[#b5541e] cursor-pointer flex-shrink-0" style={{ width: '72px', height: '20px' }} />
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
+                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                >+</button>
+                <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
-              <div className="border-t border-[#d4b896] w-full" />
-              {/* Height controls */}
+              {/* Divider */}
+              <div className="w-px self-stretch bg-[#d4b896] flex-shrink-0" />
+              {/* Height / Width controls */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
+                  className="flex items-center justify-center min-w-[36px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
+                  title="최대 크기 30% 축소"
+                >÷1.3</button>
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                  onClick={() => setRulerHeight((h) => Math.max(0.001, h - rulerStep))}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
+                >−</button>
+                <input
+                  type="range" min={0} max={10000} step={1}
+                  value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
+                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                  onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
+                  onPointerUp={() => setIsAdjustingRuler(false)}
+                  onPointerCancel={() => setIsAdjustingRuler(false)}
+                  className="accent-[#b5541e] cursor-pointer flex-shrink-0"
+                  style={{ width: '90px', height: '24px' }}
+                />
+                <button
+                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                  onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + rulerStep))}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
+                >+</button>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setMaxRulerHeight((m) => m * 1.3)}
+                  className="flex items-center justify-center min-w-[36px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
+                  title="최대 크기 30% 확장"
+                >×1.3</button>
+                <span className="text-[10px] text-[#b5541e] font-mono leading-tight flex-shrink-0">
+                  {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
+                </span>
+              </div>
+              {/* Close button */}
               <button
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setMaxRulerHeight((m) => m * 1.3)}
-                className="flex items-center justify-center w-11 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                title="최대 높이 30% 확장"
-              >×1.3</button>
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.min(maxRulerHeight, h + rulerStep))}
-                className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-              >+</button>
-              <input
-                type="range" min={0} max={10000} step={1}
-                value={Math.round(Math.min(rulerHeight, maxRulerHeight) / maxRulerHeight * 10000)}
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
-                onPointerUp={() => setIsAdjustingRuler(false)}
-                onPointerCancel={() => setIsAdjustingRuler(false)}
-                className="accent-[#b5541e] cursor-pointer"
-                style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '24px', height: '90px' }}
-              />
-              <button
-                onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                onClick={() => setRulerHeight((h) => Math.max(0.001, h - rulerStep))}
-                className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-              >−</button>
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
-                className="flex items-center justify-center w-11 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
-                title="최대 높이 30% 축소"
-              >÷1.3</button>
-              <span className="text-[9px] text-[#b5541e] font-mono text-center leading-tight">
-                {(rulerHeight / maxRulerHeight * 100).toFixed(0)}%
-              </span>
-              {isCrochet && (
-                <>
-                  <div className="border-t border-[#d4b896] w-full" />
-                  <div className="flex gap-1 w-full">
-                    {(['line', 'circle', 'ellipse', 'rect'] as const).map((s) => (
-                      <button
-                        key={s}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => handleCrochetShapeChange(s)}
-                        title={t(`crochet.shape.${s}`)}
-                        className={`flex-1 py-1 rounded border-2 transition-colors flex items-center justify-center ${
-                          crochetShape === s
-                            ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
-                            : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
-                        }`}
-                      >
-                        {SHAPE_ICON[s]}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                onClick={() => setShowRulerSettings(false)}
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
+                title="닫기"
+              >×</button>
             </div>
           );
         })()}
