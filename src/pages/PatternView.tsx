@@ -164,6 +164,7 @@ type Snapshot = {
 const MAX_HISTORY = 20;
 const LOG_RULER_MIN = 0.3;  // % of image dimension — lower bound of log slider
 const LOG_RULER_MAX = 50;   // % of image dimension — upper bound of log slider
+const LOG_RULER_RANGE = Math.log(LOG_RULER_MAX / LOG_RULER_MIN); // precomputed constant (~5.116)
 
 const SHAPE_ICON: Record<string, ReactNode> = {
   line: (
@@ -234,7 +235,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
   const [rulerHeight, setRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null) return saved;
+    if (saved != null) return Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, saved));
     const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
     if (isCrochetLine) return 10;
@@ -735,9 +736,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     let newRulerHeight = rh;
     if (iH > 0 && iW > 0) {
       const factor = o === 'vertical' ? iH / iW : iW / iH;
-      newRulerHeight = Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, rh * factor));
+      newRulerHeight = rh * factor;
     }
-    setRulerHeight(newRulerHeight);
+    setRulerHeight(Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, newRulerHeight)));
 
     if (o === 'vertical' && d === 'up') {
       setRulerOrientation('horizontal'); setRulerDirection('down');
@@ -950,7 +951,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rows = pattern.total_rows;
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-    setRulerHeight(next?.ruler_height ?? defaultRulerH);
+    setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, next?.ruler_height ?? defaultRulerH)));
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -1620,8 +1621,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             let rh = latestRef.current.rulerHeight;
             if (showGuideRef.current) {
               const initialH = orientation === 'horizontal'
-                ? (iW > 0 && t.scale > 0 ? Math.min(50, (30 * W) / (iW * t.scale)) : 5)
-                : (iH > 0 && t.scale > 0 ? Math.min(50, (30 * H) / (iH * t.scale)) : 5);
+                ? (iW > 0 && t.scale > 0 ? Math.min(LOG_RULER_MAX, (30 * W) / (iW * t.scale)) : 5)
+                : (iH > 0 && t.scale > 0 ? Math.min(LOG_RULER_MAX, (30 * H) / (iH * t.scale)) : 5);
               setRulerHeight(initialH);
               rh = initialH;
             }
@@ -2248,12 +2249,12 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   type="range" min={0} max={10000} step={1}
                   value={Math.round(
                     Math.log(Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, rulerHeight)) / LOG_RULER_MIN)
-                    / Math.log(LOG_RULER_MAX / LOG_RULER_MIN) * 10000
+                    / LOG_RULER_RANGE * 10000
                   )}
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                   onChange={(e) => {
                     setIsAdjustingRuler(true);
-                    setRulerHeight(LOG_RULER_MIN * Math.pow(LOG_RULER_MAX / LOG_RULER_MIN, Number(e.target.value) / 10000));
+                    setRulerHeight(Math.min(LOG_RULER_MAX, LOG_RULER_MIN * Math.exp(Number(e.target.value) / 10000 * LOG_RULER_RANGE)));
                   }}
                   onPointerUp={() => setIsAdjustingRuler(false)}
                   onPointerCancel={() => setIsAdjustingRuler(false)}
