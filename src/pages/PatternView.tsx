@@ -857,10 +857,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
-  // Ruler height step: targets ~2 screen px per button press for fine adjustment.
-  const rulerStep = imgH > 0 && viewTransform.scale > 0
+  // Ruler height step: targets ~2 screen px per button press, scaled by user multiplier.
+  const [rulerStepScale, setRulerStepScale] = useState(1);
+  const rulerStep = (imgH > 0 && viewTransform.scale > 0
     ? Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100)
-    : 0.1;
+    : 0.1) * rulerStepScale;
 
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
@@ -2242,9 +2243,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => { captureHistory(); setRulerHeight((h) => Math.max(LOG_RULER_MIN, h / 2)); }}
+                  onClick={() => setRulerStepScale((s) => s / 2)}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="높이 절반으로"
+                  title="조절 단위 절반으로"
                 >÷2</button>
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
@@ -2274,9 +2275,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >+</button>
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => { captureHistory(); setRulerHeight((h) => Math.min(LOG_RULER_MAX, h * 2)); }}
+                  onClick={() => setRulerStepScale((s) => s * 2)}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="높이 두 배로"
+                  title="조절 단위 두 배로"
                 >×2</button>
               </div>
               {/* Close button */}
