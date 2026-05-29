@@ -350,9 +350,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const [showOverlays, setShowOverlays] = useState(true);
-  const [settingsPopupPos, setSettingsPopupPos] = useState({ x: 8, y: 8 });
-  const settingsPopupDragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
-  const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
+const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   // Current viewer transform — updated every frame during pan/zoom
   const [viewTransform, setViewTransform] = useState({ scale: 1, x: 0, y: 0 });
@@ -2016,7 +2014,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   ? 'bg-[#b5541e] text-[#fdf6e8] border-[#b5541e] hover:bg-[#9a4318]'
                   : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
               }`}
-              onClick={() => { setIsDrawingMode(v => !v); setSelectedPathId(null); }}
+              onClick={() => { setIsDrawingMode(v => !v); setSelectedPathId(null); setShowRulerSettings(false); }}
               onPointerDown={(e) => e.stopPropagation()}
               title="그림 그리기"
             >
@@ -2221,7 +2219,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               onPointerDown={(e) => e.stopPropagation()}
             >
               {/* Direction indicator + Rotate button */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0 border-r border-[#d4b896] pr-2">
                 <svg
                   width="14" height="14" viewBox="0 0 24 24" fill="none"
                   stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
@@ -2240,10 +2238,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                   {t('ruler.rotate')}
                 </button>
               </div>
-              {/* Divider */}
-              <div className="w-px self-stretch bg-[#d4b896] flex-shrink-0" />
               {/* Slant (rotation) controls */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-shrink-0 border-r border-[#d4b896] pr-2">
                 <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
@@ -2261,8 +2257,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 >+</button>
                 <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
-              {/* Divider */}
-              <div className="w-px self-stretch bg-[#d4b896] flex-shrink-0" />
               {/* Height / Width controls */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
@@ -2305,7 +2299,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setShowRulerSettings(false)}
-                className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
                 title="닫기"
               >×</button>
             </div>
