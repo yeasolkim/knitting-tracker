@@ -373,25 +373,27 @@ function EditForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="mb-7">
         {showLeaveConfirm ? (
-          <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
             <span className="text-xs text-[#7a5c46]">{t('edit.unsavedWarning')}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setIsDirty(false);
-                navigate(`/patterns/${id}`);
-              }}
-              className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors"
-            >
-              {t('edit.unsavedLeave')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowLeaveConfirm(false)}
-              className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1"
-            >
-              {t('card.cancel')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDirty(false);
+                  navigate(`/patterns/${id}`);
+                }}
+                className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-3 py-1 min-h-[44px] hover:bg-[#9a4318] transition-colors"
+              >
+                {t('edit.unsavedLeave')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLeaveConfirm(false)}
+                className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[44px] px-2"
+              >
+                {t('card.cancel')}
+              </button>
+            </div>
           </div>
         ) : (
           <button
@@ -430,7 +432,7 @@ function EditForm() {
                     <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                     <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
-                  <p className="text-sm text-[#a08060] truncate max-w-[200px]">{newFile.name}</p>
+                  <p className="text-sm text-[#a08060] truncate min-w-0 flex-1">{newFile.name}</p>
                 </div>
               )}
             </div>
@@ -508,12 +510,12 @@ function EditForm() {
                 className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
               />
               {totalImageCount > 1 && (
-                <div className="flex flex-col gap-px flex-shrink-0">
+                <div className="flex flex-col flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => moveImage(i, -1)}
                     disabled={i === 0}
-                    className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                    className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -523,7 +525,7 @@ function EditForm() {
                     type="button"
                     onClick={() => moveImage(i, 1)}
                     disabled={i === orderedImages.length - 1 && newExtraFiles.length === 0}
-                    className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                    className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -535,7 +537,7 @@ function EditForm() {
                 type="button"
                 onClick={() => removeOrderedImage(i)}
                 disabled={orderedImages.length <= 1 && newExtraFiles.length === 0}
-                className="w-7 h-7 flex items-center justify-center text-[#b07840] disabled:opacity-20 hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
+                className="w-9 h-9 flex items-center justify-center text-[#b07840] disabled:opacity-20 hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -569,7 +571,7 @@ function EditForm() {
               <button
                 type="button"
                 onClick={() => removeNewExtra(i)}
-                className="w-7 h-7 flex items-center justify-center text-[#b07840] hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
+                className="w-9 h-9 flex items-center justify-center text-[#b07840] hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -582,7 +584,7 @@ function EditForm() {
           <button
             type="button"
             onClick={() => extraInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors pt-1"
+            className="min-h-[44px] flex items-center gap-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors"
           >
             <span className="text-base font-light leading-none">+</span>
             {t('form.addMoreImages')}

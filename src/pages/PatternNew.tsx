@@ -467,7 +467,7 @@ const thumbPromise = isPdf
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-[#b5541e] text-[#fdf6e8] rounded-full text-xs flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
+                    className="absolute top-0.5 right-0.5 w-7 h-7 bg-[#b5541e] text-[#fdf6e8] rounded-full text-sm flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
                     aria-label="remove"
                   >
                     ×
@@ -527,12 +527,12 @@ const thumbPromise = isPdf
                     className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
                   />
                   {files.length > 1 && (
-                    <div className="flex flex-col gap-px flex-shrink-0">
+                    <div className="flex flex-col flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => moveFile(i, -1)}
                         disabled={i === 0}
-                        className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                        className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -542,7 +542,7 @@ const thumbPromise = isPdf
                         type="button"
                         onClick={() => moveFile(i, 1)}
                         disabled={i === files.length - 1}
-                        className="w-7 h-6 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
+                        className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -559,7 +559,7 @@ const thumbPromise = isPdf
           <button
             type="button"
             onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); setImageNames([]); }}
-            className="mt-1.5 text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
+            className="mt-1 min-h-[44px] flex items-center text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             {t('form.resetFiles')}
           </button>

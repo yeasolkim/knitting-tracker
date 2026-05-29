@@ -74,7 +74,7 @@ export default function Login() {
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="px-5 sm:px-8 h-14 flex items-center border-b-2 border-[#b07840]">
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5 min-h-[44px]">
           <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
             <path d="M0,6 L4.5,0 L9,6 L13.5,0 L18,6" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             <path d="M0,12 L4.5,6 L9,12 L13.5,6 L18,12" stroke="#b5541e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>

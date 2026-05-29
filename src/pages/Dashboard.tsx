@@ -202,7 +202,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
   };
 
   const chipClass = (active: boolean) =>
-    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[36px] ${
+    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[44px] ${
       active
         ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
         : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
@@ -255,15 +255,15 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
             {isAnonymous ? (
               <button
                 onClick={handleLinkGoogle}
-                className="flex items-center gap-1.5 text-xs font-semibold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-2.5 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all min-h-[36px]"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-2.5 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all min-h-[44px]"
               >
-                <svg className="w-3 h-3" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="currentColor"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"/>
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"/>
                 </svg>
-                {t('dashboard.linkGoogle')}
+                <span className="hidden sm:inline">{t('dashboard.linkGoogle')}</span>
               </button>
             ) : (
               <span className="text-[11px] text-[#a08060] hidden sm:block truncate max-w-[160px] tracking-wide">
@@ -276,13 +276,13 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                 <span className="text-[11px] text-[#7a5c46] hidden sm:inline tracking-wide">{t('nav.logoutConfirm')}</span>
                 <button
                   onClick={handleLogout}
-                  className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[36px] hover:bg-[#9a4318] transition-colors tracking-wide"
+                  className="text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-2.5 py-1 min-h-[44px] hover:bg-[#9a4318] transition-colors tracking-wide"
                 >
                   {t('nav.logout')}
                 </button>
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[36px] px-1 tracking-wide"
+                  className="text-xs text-[#a08060] hover:text-[#3d2b1f] transition-colors min-h-[44px] px-2 tracking-wide"
                 >
                   {t('card.cancel')}
                 </button>
@@ -388,7 +388,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value as SortKey)}
-                  className="appearance-none text-[10px] font-semibold text-[#7a5c46] border-2 border-[#b07840] rounded-full pl-2.5 pr-6 py-1.5 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] focus:text-[#b5541e] min-h-[36px] transition-colors hover:border-[#b5541e]"
+                  className="appearance-none text-[10px] font-semibold text-[#7a5c46] border-2 border-[#b07840] rounded-full pl-2.5 pr-6 py-1.5 bg-[#fdf6e8] cursor-pointer focus:outline-none focus:border-[#b5541e] focus:text-[#b5541e] min-h-[44px] transition-colors hover:border-[#b5541e]"
                 >
                   <option value="updated">{t('dashboard.sort.updated')}</option>
                   <option value="created">{t('dashboard.sort.created')}</option>

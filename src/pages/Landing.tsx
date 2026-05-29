@@ -311,7 +311,7 @@ export default function Landing() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-[2.8rem] sm:text-6xl font-bold text-[#3d2b1f] leading-[1.1] tracking-tight mb-5">
+        <h1 className="text-[2.2rem] sm:text-[2.8rem] lg:text-6xl font-bold text-[#3d2b1f] leading-[1.15] tracking-tight mb-5">
           {t('landing.hero1')}
           <br />
           <span className="text-[#b5541e]">{t('landing.hero2')}</span>
@@ -339,7 +339,7 @@ export default function Landing() {
         <StitchDivider />
 
         {/* App mockup */}
-        <div className="mb-2 px-16">
+        <div className="mb-2 px-6">
           <AppMockup />
         </div>
 
