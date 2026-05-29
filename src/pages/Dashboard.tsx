@@ -11,7 +11,6 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 
 type TypeFilter = 'all' | 'knitting' | 'crochet';
-type StatusFilter = 'all' | 'inProgress' | 'completed';
 type SortKey = 'updated' | 'created' | 'title' | 'progress';
 
 function getProgress(pattern: PatternWithProgress): number {
@@ -52,7 +51,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
 
   // Filter & sort state
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortKey>('updated');
 
   const { t } = useLanguage();
@@ -108,9 +106,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
 
     if (typeFilter !== 'all') result = result.filter(p => p.type === typeFilter);
 
-    if (statusFilter === 'completed') result = result.filter(p => getProgress(p) >= 100);
-    else if (statusFilter === 'inProgress') result = result.filter(p => getProgress(p) < 100);
-
     result.sort((a, b) => {
       if (sortBy === 'updated') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       if (sortBy === 'created') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -120,9 +115,9 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     });
 
     return result;
-  }, [patterns, typeFilter, statusFilter, sortBy]);
+  }, [patterns, typeFilter, sortBy]);
 
-  const isFiltered = typeFilter !== 'all' || statusFilter !== 'all' || sortBy !== 'updated';
+  const isFiltered = typeFilter !== 'all' || sortBy !== 'updated';
 
   const handleDelete = useCallback(async (id: string) => {
     if (!navigator.onLine) {
@@ -388,19 +383,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                   </button>
                 ))}
               </div>
-              <div className="w-px h-4 bg-[#d4b896] hidden sm:block" />
-              {/* 상태 필터 */}
-              <div className="flex items-center gap-1">
-                {(['all', 'inProgress', 'completed'] as StatusFilter[]).map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setStatusFilter(f)}
-                    className={chipClass(statusFilter === f)}
-                  >
-                    {t(`dashboard.filter.${f}`)}
-                  </button>
-                ))}
-              </div>
               {/* 정렬 */}
               <div className="ml-auto relative">
                 <select
@@ -428,7 +410,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                 <p className="text-sm font-semibold text-[#7a5c46] mb-3">{t('dashboard.noResult')}</p>
                 {isFiltered && (
                   <button
-                    onClick={() => { setTypeFilter('all'); setStatusFilter('all'); setSortBy('updated'); }}
+                    onClick={() => { setTypeFilter('all'); setSortBy('updated'); }}
                     className="text-xs text-[#b5541e] hover:underline font-semibold"
                   >
                     {t('dashboard.noResult.reset')}
