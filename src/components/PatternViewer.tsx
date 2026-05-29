@@ -1070,14 +1070,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             className="h-10 sm:h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label={t('viewer.goToRuler')}
           >
-            <div className="flex flex-col items-center gap-0.5">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="2" y1="13" x2="14" y2="13" />
-                <line x1="8" y1="2" x2="8" y2="11" />
-                <polyline points="5,8 8,11 11,8" />
-              </svg>
-              <span className="text-[8px] sm:text-[9px] font-bold leading-none text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
-            </div>
+            <span className="text-[9px] sm:text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.goToRuler')}</span>
           </button>
 
           {onResetRuler && (
@@ -1090,15 +1083,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               }`}
               aria-label={t('viewer.bringRuler')}
             >
-              <div className="flex flex-col items-center gap-0.5">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="2" y1="3" x2="14" y2="3" strokeDasharray="2 2" />
-                  <line x1="2" y1="13" x2="14" y2="13" />
-                  <line x1="8" y1="12" x2="8" y2="5" />
-                  <polyline points="5,8 8,5 11,8" />
-                </svg>
-                <span className="text-[8px] sm:text-[9px] font-bold leading-none text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>
-              </div>
+              <span className="text-[9px] sm:text-[10px] font-bold leading-snug text-center whitespace-pre-line">{t('viewer.bringRuler')}</span>
             </button>
           )}
         </div>
