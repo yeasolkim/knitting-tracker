@@ -234,12 +234,14 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
     if (saved != null) return saved;
     const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line' ? 10 : 3;
+    const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
+    if (isCrochetLine) return 10;
+    const rows = pattern.total_rows;
+    return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
   });
   const [maxRulerHeight, setMaxRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
     if (saved != null) return Math.max(15, saved);
-    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     return 15;
   });
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
@@ -954,7 +956,9 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
     setRulerY(next?.ruler_position_y ?? 10);
     const nextCrochetShape = ((next?.crochet_ruler_data?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
-    const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10 : 3;
+    const rows = pattern.total_rows;
+    const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
+      : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
     setRulerHeight(next?.ruler_height ?? defaultRulerH);
     setMaxRulerHeight(Math.max(15, next?.ruler_height ?? 0));
     setRulerX(next?.ruler_position_x ?? 50);
