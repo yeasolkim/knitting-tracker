@@ -35,7 +35,7 @@ interface Props {
 
 function ptsToSvgD(pts: DrawPoint[]): string {
   if (pts.length === 0) return '';
-  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y} l 0.01 0.01`;
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x} ${pts[0].y}`;
   let d = `M ${pts[0].x} ${pts[0].y}`;
   for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
   return d;
@@ -203,27 +203,35 @@ export default function DrawingCanvas({
 
   const eraseNearby = useCallback((sx: number, sy: number) => {
     const { paths: currentPaths, strokeWidth, viewTransform, containerW, containerH, imgW, imgH, onPathsChange, onDrawStart } = propsRef.current;
-    const radius = strokeWidth * viewTransform.scale * 2.5;
-    const wouldErase = currentPaths.some(path =>
-      path.points.some(pt => {
-        const sp = imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
-        return (sp.x - sx) ** 2 + (sp.y - sy) ** 2 < radius * radius;
-      })
-    );
-    if (wouldErase && !eraserHistoryDoneRef.current) {
+    const radiusSq = (strokeWidth * viewTransform.scale * 2.5) ** 2;
+
+    const toScreen = (pt: DrawPoint) =>
+      imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
+
+    // Segment-based hit: checks all segments so sparse paths (line, rect) are erasable anywhere along their length
+    const hitTest = (path: DrawPath): boolean => {
+      const pts = path.points;
+      if (pts.length === 0) return false;
+      const spts = pts.map(toScreen);
+      for (let i = 0; i < spts.length - 1; i++) {
+        if (distToSegSq(sx, sy, spts[i].x, spts[i].y, spts[i + 1].x, spts[i + 1].y) < radiusSq) return true;
+      }
+      const last = spts[spts.length - 1];
+      return (sx - last.x) ** 2 + (sy - last.y) ** 2 < radiusSq;
+    };
+
+    // Single pass: collect ids to erase, then filter by id (no double coordinate-transform pass)
+    const toErase = new Set<string>();
+    for (const path of currentPaths) {
+      if (hitTest(path)) toErase.add(path.id);
+    }
+    if (toErase.size === 0) return;
+
+    if (!eraserHistoryDoneRef.current) {
       onDrawStart();
       eraserHistoryDoneRef.current = true;
     }
-    if (wouldErase) {
-      onPathsChange((prevPaths: DrawPath[]) =>
-        prevPaths.filter(path =>
-          !path.points.some(pt => {
-            const sp = imagePctToScreenPx(pt.x, pt.y, viewTransform, containerW, containerH, imgW, imgH);
-            return (sp.x - sx) ** 2 + (sp.y - sy) ** 2 < radius * radius;
-          })
-        )
-      );
-    }
+    onPathsChange((prevPaths: DrawPath[]) => prevPaths.filter(p => !toErase.has(p.id)));
   }, []);
 
   useEffect(() => {
