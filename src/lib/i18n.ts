@@ -133,8 +133,8 @@ const ko = {
   'dropzone.errorSize': '파일 크기는 {max}MB 이하여야 합니다.',
   'dropzone.errorType': '이미지 또는 PDF 파일만 업로드할 수 있습니다.',
   // viewer buttons
-  'viewer.goToRuler': '진행선 위치로\n화면이동',
-  'viewer.bringRuler': '현재위치로\n진행선 가져오기',
+  'viewer.goToRuler': '선 위치로\n이동',
+  'viewer.bringRuler': '선\n가져오기',
   'viewer.zoomIn': '확대',
   'viewer.zoomOut': '축소',
   'viewer.fitWidth': '화면\n맞춤',
