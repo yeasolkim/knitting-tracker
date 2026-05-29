@@ -234,7 +234,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
   const [rulerHeight, setRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null) return Math.min(LOG_RULER_MAX, Math.max(0, saved));
+    if (saved != null && saved > 0) return Math.min(LOG_RULER_MAX, saved);
     const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
     if (isCrochetLine) return 10;
@@ -865,7 +865,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [sliderViewMin, setSliderViewMin] = useState(0);
   const [sliderViewMax, setSliderViewMax] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    const rh = saved != null ? Math.min(LOG_RULER_MAX, Math.max(0, saved)) : (() => {
+    const rh = (saved != null && saved > 0) ? Math.min(LOG_RULER_MAX, saved) : (() => {
       const rows = pattern.total_rows;
       return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
     })();
@@ -980,7 +980,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rows = pattern.total_rows;
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-    const restoredRh = Math.min(LOG_RULER_MAX, Math.max(0, next?.ruler_height ?? defaultRulerH));
+    const savedRh = next?.ruler_height;
+    const restoredRh = (savedRh != null && savedRh > 0) ? Math.min(LOG_RULER_MAX, savedRh) : defaultRulerH;
     setRulerHeight(restoredRh);
     setSliderViewMin(0);
     setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
