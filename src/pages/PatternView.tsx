@@ -872,8 +872,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Ruler height step: targets ~8 screen px per button press, clamped for usability.
   // Uses imgH × scale so the step feels consistent regardless of pattern image size.
   const rulerStep = imgH > 0 && viewTransform.scale > 0
-    ? Math.min(maxRulerHeight / 10, Math.max(0.05, 8 / (imgH * viewTransform.scale) * 100))
-    : Math.max(0.05, maxRulerHeight / 30);
+    ? Math.min(maxRulerHeight / 20, Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100))
+    : Math.max(0.01, maxRulerHeight / 60);
 
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
@@ -2258,7 +2258,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
               {/* Height / Width controls */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
@@ -2277,8 +2277,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   onChange={(e) => { setIsAdjustingRuler(true); setRulerHeight(Math.max(0.001, Number(e.target.value) / 10000 * maxRulerHeight)); }}
                   onPointerUp={() => setIsAdjustingRuler(false)}
                   onPointerCancel={() => setIsAdjustingRuler(false)}
-                  className="accent-[#b5541e] cursor-pointer flex-shrink-0"
-                  style={{ width: '90px', height: '24px' }}
+                  className="accent-[#b5541e] cursor-pointer flex-1 min-w-0"
+                  style={{ height: '24px' }}
                 />
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
