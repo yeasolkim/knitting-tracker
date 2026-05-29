@@ -2217,8 +2217,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
             rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
           return (
             <div
-              className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex items-center gap-2 flex-wrap"
-              style={{ maxWidth: 'calc(100% - 16px)' }}
+              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex items-center gap-2 flex-wrap"
               onPointerDown={(e) => e.stopPropagation()}
             >
               {/* Direction indicator + Rotate button */}
