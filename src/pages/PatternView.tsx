@@ -240,9 +240,16 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
   });
   const [maxRulerHeight, setMaxRulerHeight] = useState(() => {
+    const savedMax = img0?.max_ruler_height;
+    if (savedMax != null) return savedMax;
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
     if (saved != null) return Math.max(15, saved);
-    return 15;
+    // Fresh pattern: give 2× headroom so slider starts partway, not pinned at 100%
+    const savedData2 = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
+    const isCrochetLine2 = pattern.type === 'crochet' && (savedData2?.shape ?? 'circle') === 'line';
+    const rows2 = pattern.total_rows;
+    const defaultH = isCrochetLine2 ? 10 : (rows2 > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows2))) : 5);
+    return Math.max(15, defaultH * 2);
   });
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
@@ -764,7 +771,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     if (o === 'horizontal') {
       const contentW_px = (screenHPct / 100) * W / t.scale;
       const refW = iW > 0 ? iW : W;
-      setRulerHeight(Math.max(0.001, (contentW_px / refW) * 100));
+      setRulerHeight(Math.min(maxRulerHeight, Math.max(0.001, (contentW_px / refW) * 100)));
     } else {
       const contentH_px = (screenHPct / 100) * H / t.scale;
       const refH = iH > 0 ? iH : H;
@@ -876,6 +883,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   perImageStateLatest.current = {
     ruler_position_y: rulerY,
     ruler_height: rulerHeight,
+    max_ruler_height: maxRulerHeight,
     ruler_position_x: rulerX,
     ruler_direction: rulerDirection,
     ruler_orientation: rulerOrientation,
@@ -960,7 +968,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
     setRulerHeight(next?.ruler_height ?? defaultRulerH);
-    setMaxRulerHeight(Math.max(15, next?.ruler_height ?? 0));
+    setMaxRulerHeight(
+      next?.max_ruler_height ??
+      (next?.ruler_height != null ? Math.max(15, next.ruler_height) : Math.max(15, defaultRulerH * 2))
+    );
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -2274,7 +2285,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
                 <div className="flex items-center gap-1">
                   <button
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+                    onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
                     className="flex items-center justify-center min-w-[44px] h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
                     title="최대 너비 30% 축소"
                   >÷1.3</button>
@@ -2418,7 +2429,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
               >−</button>
               <button
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setMaxRulerHeight((m) => Math.max(0.001, m / 1.3))}
+                onClick={() => setMaxRulerHeight((m) => Math.max(rulerHeight, Math.max(0.001, m / 1.3)))}
                 className="flex items-center justify-center w-11 h-9 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none"
                 title="최대 높이 30% 축소"
               >÷1.3</button>

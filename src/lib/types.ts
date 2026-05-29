@@ -80,6 +80,7 @@ export interface DrawPath {
 export interface ImagePerState {
   ruler_position_y?: number;
   ruler_height?: number;
+  max_ruler_height?: number;
   ruler_position_x?: number;
   ruler_direction?: RulerDirection;
   ruler_orientation?: RulerOrientation;
