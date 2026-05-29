@@ -163,7 +163,7 @@ type Snapshot = {
 
 const MAX_HISTORY = 20;
 const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
-const MIN_VIEW_RANGE = 0.5;  // minimum slider view window range (%)
+const MIN_VIEW_RANGE = 1e-6; // effectively no lower limit on slider view window
 
 const SHAPE_ICON: Record<string, ReactNode> = {
   line: (
@@ -858,7 +858,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   );
   // Ruler height step: targets ~2 screen px per button press.
   const rulerStep = imgH > 0 && viewTransform.scale > 0
-    ? Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100)
+    ? 2 / (imgH * viewTransform.scale) * 100
     : 0.1;
 
   // Slider view window — defines the linear range the slider covers.
