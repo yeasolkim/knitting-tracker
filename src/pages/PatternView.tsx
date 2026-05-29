@@ -235,7 +235,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
   const [rulerHeight, setRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null) return Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, saved));
+    if (saved != null) return Math.min(LOG_RULER_MAX, Math.max(0, saved));
     const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
     if (isCrochetLine) return 10;
@@ -738,7 +738,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       const factor = o === 'vertical' ? iH / iW : iW / iH;
       newRulerHeight = rh * factor;
     }
-    setRulerHeight(Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, newRulerHeight)));
+    setRulerHeight(Math.max(0, Math.min(LOG_RULER_MAX, newRulerHeight)));
 
     if (o === 'vertical' && d === 'up') {
       setRulerOrientation('horizontal'); setRulerDirection('down');
@@ -757,11 +757,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (o === 'horizontal') {
       const contentW_px = (screenHPct / 100) * W / t.scale;
       const refW = iW > 0 ? iW : W;
-      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, (contentW_px / refW) * 100)));
+      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(0, (contentW_px / refW) * 100)));
     } else {
       const contentH_px = (screenHPct / 100) * H / t.scale;
       const refH = iH > 0 ? iH : H;
-      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, (contentH_px / refH) * 100)));
+      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(0, (contentH_px / refH) * 100)));
     }
     setShowGuide(false);
   }, []);
@@ -952,7 +952,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rows = pattern.total_rows;
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-    setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(LOG_RULER_MIN, next?.ruler_height ?? defaultRulerH)));
+    setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(0, next?.ruler_height ?? defaultRulerH)));
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -2249,7 +2249,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >÷2</button>
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onClick={() => setRulerHeight((h) => Math.max(LOG_RULER_MIN, h - rulerStep))}
+                  onClick={() => setRulerHeight((h) => Math.max(0, h - rulerStep))}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                 >−</button>
                 <input
@@ -2261,7 +2261,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                   onChange={(e) => {
                     setIsAdjustingRuler(true);
-                    setRulerHeight(Math.min(LOG_RULER_MAX, LOG_RULER_MIN * Math.exp(Number(e.target.value) / 10000 * LOG_RULER_RANGE)));
+                    const v = Number(e.target.value);
+                    setRulerHeight(v === 0 ? 0 : Math.min(LOG_RULER_MAX, LOG_RULER_MIN * Math.exp(v / 10000 * LOG_RULER_RANGE)));
                   }}
                   onPointerUp={() => setIsAdjustingRuler(false)}
                   onPointerCancel={() => setIsAdjustingRuler(false)}
