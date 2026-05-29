@@ -162,9 +162,8 @@ type Snapshot = {
 };
 
 const MAX_HISTORY = 20;
-const LOG_RULER_MIN = 0.3;  // % of image dimension — lower bound of log slider
-const LOG_RULER_MAX = 50;   // % of image dimension — upper bound of log slider
-const LOG_RULER_RANGE = Math.log(LOG_RULER_MAX / LOG_RULER_MIN); // precomputed constant (~5.116)
+const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
+const MIN_VIEW_RANGE = 0.5;  // minimum slider view window range (%)
 
 const SHAPE_ICON: Record<string, ReactNode> = {
   line: (
@@ -857,11 +856,40 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
-  // Ruler height step: targets ~2 screen px per button press, scaled by user multiplier.
-  const [rulerStepScale, setRulerStepScale] = useState(1);
-  const rulerStep = (imgH > 0 && viewTransform.scale > 0
+  // Ruler height step: targets ~2 screen px per button press.
+  const rulerStep = imgH > 0 && viewTransform.scale > 0
     ? Math.max(0.01, 2 / (imgH * viewTransform.scale) * 100)
-    : 0.1) * rulerStepScale;
+    : 0.1;
+
+  // Slider view window — defines the linear range the slider covers.
+  const [sliderViewMin, setSliderViewMin] = useState(0);
+  const [sliderViewMax, setSliderViewMax] = useState(() => {
+    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
+    const rh = saved != null ? Math.min(LOG_RULER_MAX, Math.max(0, saved)) : (() => {
+      const rows = pattern.total_rows;
+      return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
+    })();
+    return Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, rh * 4));
+  });
+  const sliderViewRef = useRef({ min: sliderViewMin, max: sliderViewMax });
+  sliderViewRef.current = { min: sliderViewMin, max: sliderViewMax };
+
+  // Auto-shift view window when rulerHeight is near the edge (triggered by +/− buttons)
+  useEffect(() => {
+    if (isAdjustingRuler) return;
+    const { min, max } = sliderViewRef.current;
+    const range = max - min;
+    const margin = range * 0.15;
+    if (rulerHeight < min + margin && min > 0) {
+      const newMin = Math.max(0, rulerHeight - range * 0.3);
+      setSliderViewMin(newMin);
+      setSliderViewMax(newMin + range);
+    } else if (rulerHeight > max - margin && max < LOG_RULER_MAX) {
+      const newMax = Math.min(LOG_RULER_MAX, rulerHeight + range * 0.3);
+      setSliderViewMax(newMax);
+      setSliderViewMin(Math.max(0, newMax - range));
+    }
+  }, [rulerHeight, isAdjustingRuler]);
 
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
@@ -952,7 +980,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rows = pattern.total_rows;
     const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
       : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-    setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(0, next?.ruler_height ?? defaultRulerH)));
+    const restoredRh = Math.min(LOG_RULER_MAX, Math.max(0, next?.ruler_height ?? defaultRulerH));
+    setRulerHeight(restoredRh);
+    setSliderViewMin(0);
+    setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
@@ -2239,36 +2270,58 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >+</button>
                 <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
               </div>
-              {/* Height / Width controls — log-scale slider */}
+              {/* Height / Width controls — linear slider with dynamic view window */}
               <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setRulerStepScale((s) => s / 2)}
+                  onClick={() => {
+                    const range = sliderViewMax - sliderViewMin;
+                    const newRange = Math.max(MIN_VIEW_RANGE, range / 2);
+                    const newMin = Math.max(0, Math.min(rulerHeight - newRange / 2, LOG_RULER_MAX - newRange));
+                    setSliderViewMin(newMin);
+                    setSliderViewMax(newMin + newRange);
+                  }}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="조절 단위 절반으로"
+                  title="슬라이더 범위 절반으로 (세밀 조절)"
                 >÷2</button>
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                   onClick={() => setRulerHeight((h) => Math.max(0, h - rulerStep))}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                 >−</button>
-                <input
-                  type="range" min={0} max={10000} step={1}
-                  value={Math.round(
-                    Math.log(Math.max(LOG_RULER_MIN, Math.min(LOG_RULER_MAX, rulerHeight)) / LOG_RULER_MIN)
-                    / LOG_RULER_RANGE * 10000
-                  )}
-                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onChange={(e) => {
-                    setIsAdjustingRuler(true);
-                    const v = Number(e.target.value);
-                    setRulerHeight(v === 0 ? 0 : Math.min(LOG_RULER_MAX, LOG_RULER_MIN * Math.exp(v / 10000 * LOG_RULER_RANGE)));
-                  }}
-                  onPointerUp={() => setIsAdjustingRuler(false)}
-                  onPointerCancel={() => setIsAdjustingRuler(false)}
-                  className="accent-[#b5541e] cursor-pointer flex-1 min-w-0"
-                  style={{ height: '24px' }}
-                />
+                <div className="flex-1 min-w-0 flex flex-col" style={{ gap: '1px' }}>
+                  <input
+                    type="range" min={0} max={10000} step={1}
+                    value={Math.round(Math.max(0, Math.min(10000,
+                      (rulerHeight - sliderViewMin) / (sliderViewMax - sliderViewMin) * 10000
+                    )))}
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onChange={(e) => {
+                      setIsAdjustingRuler(true);
+                      setRulerHeight(Math.min(LOG_RULER_MAX, Math.max(0,
+                        sliderViewMin + Number(e.target.value) / 10000 * (sliderViewMax - sliderViewMin)
+                      )));
+                    }}
+                    onPointerUp={() => setIsAdjustingRuler(false)}
+                    onPointerCancel={() => setIsAdjustingRuler(false)}
+                    className="accent-[#b5541e] cursor-pointer w-full"
+                    style={{ height: '20px' }}
+                  />
+                  {/* Tick scale — 10 major + 40 minor divisions */}
+                  <svg width="100%" height="7" style={{ display: 'block' }}>
+                    {Array.from({ length: 51 }, (_, i) => {
+                      const isMajor = i % 5 === 0;
+                      return (
+                        <line key={i}
+                          x1={`${i * 2}%`} x2={`${i * 2}%`}
+                          y1={0} y2={isMajor ? 7 : 3}
+                          stroke={isMajor ? '#b07840' : '#d4b896'}
+                          strokeWidth={isMajor ? 0.9 : 0.5}
+                        />
+                      );
+                    })}
+                  </svg>
+                </div>
                 <button
                   onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                   onClick={() => setRulerHeight((h) => Math.min(LOG_RULER_MAX, h + rulerStep))}
@@ -2276,9 +2329,15 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >+</button>
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setRulerStepScale((s) => s * 2)}
+                  onClick={() => {
+                    const range = sliderViewMax - sliderViewMin;
+                    const newRange = Math.min(LOG_RULER_MAX, range * 2);
+                    const newMin = Math.max(0, Math.min(rulerHeight - newRange / 2, LOG_RULER_MAX - newRange));
+                    setSliderViewMin(newMin);
+                    setSliderViewMax(newMin + newRange);
+                  }}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="조절 단위 두 배로"
+                  title="슬라이더 범위 두 배로 (빠른 조절)"
                 >×2</button>
               </div>
               {/* Close button */}
