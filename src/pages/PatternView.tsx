@@ -2210,49 +2210,59 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
           return (
             <div
-              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex items-center gap-2 flex-wrap"
+              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Direction indicator + Rotate button */}
-              <div className="flex items-center gap-1.5 flex-shrink-0 border-r border-[#d4b896] pr-2">
-                <svg
-                  width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-                  style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
-                >
-                  <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
-                </svg>
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => handleRotateRuler()}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none flex-shrink-0"
-                >
-                  <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              {/* Row 1 on mobile: Direction + Slant + (mobile close) */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Direction indicator + Rotate button */}
+                <div className="flex items-center gap-1.5 flex-shrink-0 border-r border-[#d4b896] pr-2">
+                  <svg
+                    width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#b5541e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transform: `rotate(${facingDeg}deg)`, transition: 'transform 0.2s ease', flexShrink: 0 }}
+                  >
+                    <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
                   </svg>
-                  {t('ruler.rotate')}
-                </button>
-              </div>
-              {/* Slant (rotation) controls */}
-              <div className="flex items-center gap-1 flex-shrink-0 border-r border-[#d4b896] pr-2">
-                <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => handleRotateRuler()}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#b07840] bg-white text-[#b5541e] text-[9px] font-semibold hover:bg-[#fdf6e8] active:scale-95 transition-all select-none flex-shrink-0"
+                  >
+                    <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {t('ruler.rotate')}
+                  </button>
+                </div>
+                {/* Slant (rotation) controls */}
+                <div className="flex items-center gap-1 flex-shrink-0 sm:border-r sm:border-[#d4b896] sm:pr-2">
+                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                  >−</button>
+                  <input type="range" min={-45} max={45} step={1} value={rulerRotation}
+                    onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
+                    onChange={(e) => setRulerRotation(Number(e.target.value))}
+                    className="accent-[#b5541e] cursor-pointer flex-shrink-0" style={{ width: '64px', height: '20px' }} />
+                  <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                  >+</button>
+                  <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
+                </div>
+                {/* Close button — mobile only */}
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, r - 1)); }}
-                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
-                >−</button>
-                <input type="range" min={-45} max={45} step={1} value={rulerRotation}
-                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onChange={(e) => setRulerRotation(Number(e.target.value))}
-                  className="accent-[#b5541e] cursor-pointer flex-shrink-0" style={{ width: '72px', height: '20px' }} />
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, r + 1)); }}
-                  className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
-                >+</button>
-                <span className="text-[10px] text-[#b5541e] font-mono w-7 text-center flex-shrink-0">{rulerRotation}°</span>
+                  onClick={() => setShowRulerSettings(false)}
+                  className="sm:hidden flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
+                  title="닫기"
+                >×</button>
               </div>
-              {/* Height / Width controls — linear slider with dynamic view window */}
+              {/* Row 2 on mobile / continues inline on desktop: Height slider */}
               <div className="flex items-center gap-1 flex-1 min-w-0">
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
@@ -2304,27 +2314,21 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     const viewPct = (v: number) => Math.max(0, Math.min(100, v / LOG_RULER_MAX * 100));
                     return (
                       <svg width="100%" height="22" style={{ display: 'block', overflow: 'visible' }}>
-                        {/* Major ticks (11개) */}
                         {Array.from({ length: 11 }, (_, i) => (
                           <line key={`mj${i}`} x1={`${i * 10}%`} x2={`${i * 10}%`} y1={0} y2={7} stroke="#b07840" strokeWidth={0.9} />
                         ))}
-                        {/* Minor ticks (40개) */}
                         {Array.from({ length: 51 }, (_, i) => {
                           if (i % 5 === 0) return null;
                           return <line key={`mn${i}`} x1={`${i * 2}%`} x2={`${i * 2}%`} y1={0} y2={3} stroke="#d4b896" strokeWidth={0.5} />;
                         })}
-                        {/* Range labels */}
                         <text x="1" y="15" fontSize="6" fill="#7a5c46" fontFamily="monospace">{fmtV(sliderViewMin)}%</text>
                         <text x="99%" y="15" fontSize="6" fill="#7a5c46" fontFamily="monospace" textAnchor="end">{fmtV(sliderViewMax)}%</text>
-                        {/* Overview bar background */}
                         <rect x="0" y="18" width="100%" height="3" fill="#e8d8c0" rx="1.5" />
-                        {/* View window band */}
                         <rect
                           x={`${viewPct(sliderViewMin)}%`} y="17.5"
                           width={`${Math.max(0.5, viewPct(sliderViewMax) - viewPct(sliderViewMin))}%`}
                           height="4" fill="#b07840" opacity="0.55" rx="1"
                         />
-                        {/* Current value marker */}
                         <line
                           x1={`${viewPct(rulerHeight)}%`} x2={`${viewPct(rulerHeight)}%`}
                           y1="16.5" y2="21.5" stroke="#b5541e" strokeWidth="1.5"
@@ -2359,14 +2363,14 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
                   title="슬라이더 범위 두 배로 (빠른 조절)"
                 >×2</button>
+                {/* Close button — desktop only */}
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setShowRulerSettings(false)}
+                  className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
+                  title="닫기"
+                >×</button>
               </div>
-              {/* Close button */}
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setShowRulerSettings(false)}
-                className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
-                title="닫기"
-              >×</button>
             </div>
           );
         })()}
