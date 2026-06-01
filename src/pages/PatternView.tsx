@@ -232,13 +232,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
-  // true = skip screen-relative init (pattern has a saved value or is crochet-line)
-  const rulerHeightInitializedRef = useRef((() => {
-    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null && saved > 0) return true;
-    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
-  })());
+  // false = useEffect should run; set to true after first screen-relative check per image
+  const rulerHeightInitializedRef = useRef(false);
   const [rulerHeight, setRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
     if (saved != null && saved > 0) return Math.min(LOG_RULER_MAX, saved);
@@ -493,15 +488,19 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     []
   );
 
-  // One-shot: set initial ruler height to 1/20 of screen height for patterns without a saved value.
-  // Fires after layout when image dimensions are known; skipped if a saved ruler_height exists.
+  // One-shot per image: if the ruler's visual height exceeds 1/20 of screen, correct it.
+  // Runs for every pattern (including those with saved values from the old row-based formula).
   useEffect(() => {
     if (rulerHeightInitializedRef.current) return;
     if (imgH <= 0 || containerH <= 0 || containerW <= 0 || imgW <= 0) return;
     const fitScale = Math.min(10, Math.max(0.5, containerW / imgW));
-    const newH = Math.min(LOG_RULER_MAX, (containerH / 20) / (imgH * fitScale) * 100);
-    setRulerHeight(newH);
-    setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, newH * 4)));
+    const targetVisualH = containerH / 20;
+    const currentVisualH = (latestRef.current.rulerHeight / 100) * imgH * fitScale;
+    if (currentVisualH > targetVisualH) {
+      const newH = Math.min(LOG_RULER_MAX, targetVisualH / (imgH * fitScale) * 100);
+      setRulerHeight(newH);
+      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, newH * 4)));
+    }
     rulerHeightInitializedRef.current = true;
   }, [imgH, imgW, containerH, containerW]);
 
@@ -981,19 +980,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       setRulerHeight(restoredRh);
       setSliderViewMin(0);
       setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
-      rulerHeightInitializedRef.current = true;
     } else if (isCrochet && nextCrochetShape === 'line') {
       setRulerHeight(10);
       setSliderViewMin(0);
       setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 10 * 4)));
-      rulerHeightInitializedRef.current = true;
     } else {
-      // No saved value: use placeholder and let the useEffect compute screen-relative height after new image loads
       setRulerHeight(5);
       setSliderViewMin(0);
       setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 5 * 4)));
-      rulerHeightInitializedRef.current = false;
     }
+    // Always reset so useEffect re-checks visual height for the new image
+    rulerHeightInitializedRef.current = false;
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
