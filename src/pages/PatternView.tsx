@@ -403,31 +403,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               setShowSubPatternGuide(true);
             }
           } else {
-            // 재방문: 저장된 뷰 위치가 있으면 복원, 없으면 진행선 중앙 정렬
-            const savedState = imageStatesRef.current[activeFileIdxRef.current];
-            if (savedState?.view_scale && h > 0) {
-              // view_fit_scale이 저장된 경우: s = view_scale × (현재 fit-width / 저장 fit-width)
-              // → 기기가 달라도 같은 상대적 줌 레벨로 복원.
-              // 구버전 데이터(view_fit_scale 없음): 절대값 그대로 사용 (기존 동작 유지).
-              const cW = latestRef.current.containerW;
-              const cH = latestRef.current.containerH;
-              const currentFitW = cW > 0 && w > 0 ? cW / w : 0;
-              const s = currentFitW > 0 && savedState.view_fit_scale
-                ? savedState.view_scale * (currentFitW / savedState.view_fit_scale)
-                : savedState.view_scale;
-              const cx = savedState.view_x ?? 50;
-              const cy = savedState.view_y ?? 50;
-              // cx/cy는 도안 이미지 대비 % → 픽셀 변환 후 transform.x/y 계산
-              // w=0(PDF preParse 단계)이면 tx=0(가로 중앙)으로 fallback
-              const tx = w > 0 ? -(cx / 100 * w - w / 2) * s : 0;
-              const rawTy = -(cy / 100 * h - h / 2) * s;
-              const maxTy = cH > 0 ? Math.max(0, (h * s - cH) / 2) : 0;
-              const ty = Math.max(-maxTy, Math.min(maxTy, rawTy));
-              viewerRef.current?.restoreTransform(s, tx, ty);
-            } else {
-              // 저장된 뷰 없음: fit-width 배율로 진행선 중앙 정렬
-              viewerRef.current?.fitWidthGoToRuler();
-            }
+            // 재방문: 항상 화면 맞춤(fit-width) + 진행선 중앙 정렬
+            viewerRef.current?.fitWidthGoToRuler();
           }
         });
       });
@@ -443,26 +420,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       if (goToRulerCorrectionTimerRef.current) clearTimeout(goToRulerCorrectionTimerRef.current);
       goToRulerCorrectionTimerRef.current = setTimeout(() => {
         requestAnimationFrame(() => {
-          const latestW = lastReportedImgW.current;
-          const latestH = lastReportedImgH.current;
-          const savedState = imageStatesRef.current[activeFileIdxRef.current];
-          if (savedState?.view_scale && latestW > 0 && latestH > 0) {
-            const cW = latestRef.current.containerW;
-            const cH = latestRef.current.containerH;
-            const currentFitW = cW > 0 && latestW > 0 ? cW / latestW : 0;
-            const s = currentFitW > 0 && savedState.view_fit_scale
-              ? savedState.view_scale * (currentFitW / savedState.view_fit_scale)
-              : savedState.view_scale;
-            const cx = savedState.view_x ?? 50;
-            const cy = savedState.view_y ?? 50;
-            const tx = -(cx / 100 * latestW - latestW / 2) * s;
-            const rawTy = -(cy / 100 * latestH - latestH / 2) * s;
-            const maxTy = cH > 0 ? Math.max(0, (latestH * s - cH) / 2) : 0;
-            const ty = Math.max(-maxTy, Math.min(maxTy, rawTy));
-            viewerRef.current?.restoreTransform(s, tx, ty);
-          } else {
-            viewerRef.current?.fitWidthGoToRuler();
-          }
+          viewerRef.current?.fitWidthGoToRuler();
         });
       }, 300);
     }
