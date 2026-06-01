@@ -873,9 +873,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
   // Ruler height step: targets ~2 screen px per button press.
-  const rulerStep = imgH > 0 && viewTransform.scale > 0
-    ? 2 / (imgH * viewTransform.scale) * 100
-    : 0.1;
+  const rulerStep = useMemo(
+    () => imgH > 0 && viewTransform.scale > 0 ? 2 / (imgH * viewTransform.scale) * 100 : 0.1,
+    [imgH, viewTransform.scale]
+  );
 
   // Slider view window — defines the linear range the slider covers.
   const [sliderViewMin, setSliderViewMin] = useState(0);
@@ -964,7 +965,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     }, 8000);
 
     // Save current state for the image we're leaving (deep copy to prevent shared array refs)
-    imageStatesRef.current[prevIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+    imageStatesRef.current[prevIdx] = structuredClone(perImageStateLatest.current);
     // Mark both images as visited
     setVisitedImageIndices(prev => new Set([...prev, prevIdx, activeFileIdx]));
 
@@ -1127,7 +1128,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   useEffect(() => {
     // Keep imageStatesRef in sync with current image state before saving
-    imageStatesRef.current[activeFileIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+    imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
     save({
       current_row: activeSub?.current_row || 0,
       // Keep top-level columns for backward compat (image 0 values)
@@ -1153,7 +1154,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
     // Ensure current image state is flushed to imageStatesRef before saving
-    imageStatesRef.current[activeFileIdx] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+    imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
     return saveFn({
       current_row: activeSub?.current_row || 0,
       ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
@@ -1180,7 +1181,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   useEffect(() => {
     const flush = () => {
       if (document.visibilityState === 'hidden') {
-        imageStatesRef.current[activeFileIdxRef.current] = JSON.parse(JSON.stringify(perImageStateLatest.current));
+        imageStatesRef.current[activeFileIdxRef.current] = structuredClone(perImageStateLatest.current);
         saveAll().catch(() => {});
       }
     };

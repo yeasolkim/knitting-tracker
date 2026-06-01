@@ -1,21 +1,22 @@
-import { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { createClient } from './lib/supabase/client';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import AuthCallback from './pages/AuthCallback';
-import Dashboard from './pages/Dashboard';
-import PatternNew from './pages/PatternNew';
-import PatternEdit from './pages/PatternEdit';
-import PatternView from './pages/PatternView';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+
+const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PatternNew = lazy(() => import('./pages/PatternNew'));
+const PatternEdit = lazy(() => import('./pages/PatternEdit'));
+const PatternView = lazy(() => import('./pages/PatternView'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 // Handles OAuth callback for HashRouter:
 // - PKCE flow: detectSessionInUrl:true 가 자동으로 code 교환 → SIGNED_IN 이벤트 수신
@@ -135,6 +136,7 @@ function AppRoutes() {
     <ErrorBoundary resetKey={location.pathname}>
       <OAuthHandler />
       <OfflineManager />
+      <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -150,6 +152,7 @@ function AppRoutes() {
         {/* 미매칭 경로(광고 등으로 hash 변조 시) → 세션 있으면 dashboard, 없으면 login */}
         <Route path="*" element={<FallbackRedirect />} />
       </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }
