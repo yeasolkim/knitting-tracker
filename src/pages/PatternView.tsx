@@ -232,14 +232,20 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Ruler stored in CONTENT coordinates (% of pattern, not screen)
   const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
+  // true = skip screen-relative init (pattern has a saved value or is crochet-line)
+  const rulerHeightInitializedRef = useRef((() => {
+    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
+    if (saved != null && saved > 0) return true;
+    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
+    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
+  })());
   const [rulerHeight, setRulerHeight] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
     if (saved != null && saved > 0) return Math.min(LOG_RULER_MAX, saved);
     const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
     const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
     if (isCrochetLine) return 10;
-    const rows = pattern.total_rows;
-    return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
+    return 5; // placeholder — corrected to containerH/20 by useEffect after layout
   });
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
@@ -486,6 +492,18 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     },
     []
   );
+
+  // One-shot: set initial ruler height to 1/20 of screen height for patterns without a saved value.
+  // Fires after layout when image dimensions are known; skipped if a saved ruler_height exists.
+  useEffect(() => {
+    if (rulerHeightInitializedRef.current) return;
+    if (imgH <= 0 || containerH <= 0 || containerW <= 0 || imgW <= 0) return;
+    const fitScale = Math.min(10, Math.max(0.5, containerW / imgW));
+    const newH = Math.min(LOG_RULER_MAX, (containerH / 20) / (imgH * fitScale) * 100);
+    setRulerHeight(newH);
+    setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, newH * 4)));
+    rulerHeightInitializedRef.current = true;
+  }, [imgH, imgW, containerH, containerW]);
 
   // Undo/Redo history
   const undoStackRef = useRef<Snapshot[]>([]);
@@ -865,10 +883,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [sliderViewMin, setSliderViewMin] = useState(0);
   const [sliderViewMax, setSliderViewMax] = useState(() => {
     const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    const rh = (saved != null && saved > 0) ? Math.min(LOG_RULER_MAX, saved) : (() => {
-      const rows = pattern.total_rows;
-      return rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
-    })();
+    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
+    const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
+    const rh = (saved != null && saved > 0) ? Math.min(LOG_RULER_MAX, saved) : (isCrochetLine ? 10 : 5);
     return Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, rh * 4));
   });
 
@@ -958,14 +975,25 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
     setRulerY(next?.ruler_position_y ?? 10);
     const nextCrochetShape = ((next?.crochet_ruler_data?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
-    const rows = pattern.total_rows;
-    const defaultRulerH = isCrochet && nextCrochetShape === 'line' ? 10
-      : rows > 0 ? Math.min(15, Math.max(5, Math.round(100 / rows))) : 5;
     const savedRh = next?.ruler_height;
-    const restoredRh = (savedRh != null && savedRh > 0) ? Math.min(LOG_RULER_MAX, savedRh) : defaultRulerH;
-    setRulerHeight(restoredRh);
-    setSliderViewMin(0);
-    setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
+    if (savedRh != null && savedRh > 0) {
+      const restoredRh = Math.min(LOG_RULER_MAX, savedRh);
+      setRulerHeight(restoredRh);
+      setSliderViewMin(0);
+      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
+      rulerHeightInitializedRef.current = true;
+    } else if (isCrochet && nextCrochetShape === 'line') {
+      setRulerHeight(10);
+      setSliderViewMin(0);
+      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 10 * 4)));
+      rulerHeightInitializedRef.current = true;
+    } else {
+      // No saved value: use placeholder and let the useEffect compute screen-relative height after new image loads
+      setRulerHeight(5);
+      setSliderViewMin(0);
+      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 5 * 4)));
+      rulerHeightInitializedRef.current = false;
+    }
     setRulerX(next?.ruler_position_x ?? 50);
     setRulerDirection(next?.ruler_direction ?? 'up');
     setRulerOrientation(next?.ruler_orientation ?? 'vertical');
