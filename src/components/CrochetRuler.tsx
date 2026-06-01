@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { memo, useRef, useState, type ReactNode } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompletedRingData {
@@ -68,7 +68,7 @@ const SHAPE_ICON: Record<string, ReactNode> = {
   ),
 };
 
-export default function CrochetRuler({
+const CrochetRuler = memo(function CrochetRuler({
   cx = 50, cy = 50, r = 10, ry,
   rowHeight,
   shape = 'circle',
@@ -81,6 +81,7 @@ export default function CrochetRuler({
   onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
+
   const { t } = useLanguage();
 
   const isRect = shape === 'rect';
@@ -760,4 +761,6 @@ export default function CrochetRuler({
       )}
     </>
   );
-}
+});
+
+export default CrochetRuler;

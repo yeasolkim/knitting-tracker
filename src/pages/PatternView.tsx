@@ -165,6 +165,41 @@ const MAX_HISTORY = 20;
 const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
 const MIN_VIEW_RANGE = 1e-6; // effectively no lower limit on slider view window
 
+const DRAW_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
+const DRAW_TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
+  { id: 'select', label: '선택', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+    </svg>
+  )},
+  { id: 'pen', label: '펜', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
+    </svg>
+  )},
+  { id: 'line', label: '선', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <line x1="5" y1="19" x2="19" y2="5" strokeLinecap="round" />
+    </svg>
+  )},
+  { id: 'rect', label: '사각형', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <rect x="4" y="4" width="16" height="16" rx="1.5" />
+    </svg>
+  )},
+  { id: 'circle', label: '원', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="8" />
+    </svg>
+  )},
+  { id: 'eraser', label: '지우개', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 20H7L3 16l10-10 7 7-3.5 3.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 17.5l3-3" />
+    </svg>
+  )},
+];
+
 const SHAPE_ICON: Record<string, ReactNode> = {
   line: (
     <svg className="w-6 h-4" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeLinecap="round">
@@ -345,6 +380,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   });
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
+  const handleToggleRulerSettings = useCallback(() => setShowRulerSettings(v => !v), []);
+  const handleToggleCrochetSettings = useCallback(() => setShowCrochetSettings(v => !v), []);
   const [showOverlays, setShowOverlays] = useState(true);
 const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
@@ -1739,7 +1776,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               onChangePosition={handleRulerPositionChange}
               onChangePositionX={handleRulerPositionXChange}
               onChangeHeight={handleRulerHeightChange}
-              onToggleSettings={() => setShowRulerSettings((v) => !v)}
+              onToggleSettings={handleToggleRulerSettings}
               onDragStart={captureHistory}
             />
           )}
@@ -1768,7 +1805,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               rowHeight={crochetRowHeight != null ? contentToScreenRy(crochetRowHeight) : undefined}
               onRowHeightChange={handleCrochetRowHeightChange}
 
-              onToggleSettings={() => setShowCrochetSettings(v => !v)}
+              onToggleSettings={handleToggleCrochetSettings}
               rotation={crochetRotation}
               onRotationChange={(deg) => { captureHistory(); setCrochetRotation(deg); }}
               onShapeChange={handleCrochetShapeChange}
@@ -1841,42 +1878,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           />
 
           {/* Drawing toolbar — shown when drawing mode is active */}
-          {isDrawingMode && (() => {
-            const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
-            const TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
-              { id: 'select', label: '선택', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
-                </svg>
-              )},
-              { id: 'pen', label: '펜', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
-                </svg>
-              )},
-              { id: 'line', label: '선', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <line x1="5" y1="19" x2="19" y2="5" strokeLinecap="round" />
-                </svg>
-              )},
-              { id: 'rect', label: '사각형', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <rect x="4" y="4" width="16" height="16" rx="1.5" />
-                </svg>
-              )},
-              { id: 'circle', label: '원', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <circle cx="12" cy="12" r="8" />
-                </svg>
-              )},
-              { id: 'eraser', label: '지우개', icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 20H7L3 16l10-10 7 7-3.5 3.5" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 17.5l3-3" />
-                </svg>
-              )},
-            ];
-            return (
+          {isDrawingMode && (
               <div
                 ref={toolbarRef}
                 className={`z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max ${toolbarPos ? 'absolute' : 'absolute top-2 sm:top-3 left-1/2 -translate-x-1/2'}`}
@@ -1912,7 +1914,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 </div>
                 {/* Colors */}
                 <div className="flex items-center gap-1.5 justify-center">
-                  {COLORS.map(c => (
+                  {DRAW_COLORS.map(c => (
                     <button
                       key={c}
                       onClick={() => setDrawingColor(c)}
@@ -1930,7 +1932,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 </div>
                 {/* Tools + reset */}
                 <div className="flex items-center gap-1 justify-center">
-                  {TOOLS.map(({ id, label, icon }) => (
+                  {DRAW_TOOLS.map(({ id, label, icon }) => (
                     <button
                       key={id}
                       onClick={() => setDrawingTool(id)}
@@ -2005,8 +2007,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   <span className="text-[11px] font-mono text-[#7a5c46] w-8 text-right shrink-0">{drawingOpacity}%</span>
                 </div>
               </div>
-            );
-          })()}
+          )}
 
           {/* Overlay visibility toggle + Drawing mode toggle */}
           <div className={`absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none ${showRulerSettings ? 'hidden' : ''}`}>
