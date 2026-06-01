@@ -112,7 +112,7 @@ export default function CrochetRuler({
   const maskIdRef = useRef(`cr-mask-${Math.random().toString(36).slice(2, 8)}`);
 
   // Action bar state — tap ring body to toggle
-  const [showActionBar, setShowActionBar] = useState(false);
+  const [showActionBar, setShowActionBar] = useState(true);
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
   const [isDraggingBody, setIsDraggingBody] = useState(false);
