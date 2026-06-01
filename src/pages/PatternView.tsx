@@ -49,7 +49,7 @@ export default function PatternView() {
       supabase.auth.getSession(),
       supabase
         .from('patterns')
-        .select(`*, progress:pattern_progress(*)`)
+        .select(`id,title,type,file_url,file_type,thumbnail_url,extra_image_urls,image_names,total_rows,yarn,needle,progress:pattern_progress(sub_patterns,current_row,image_states,crochet_ruler_data,ruler_position_y,ruler_height,ruler_direction,ruler_orientation,ruler_position_x,ruler_rotation,completed_marks,crochet_marks,knitting_marks,notes,note_positions,active_sub_pattern_id)`)
         .eq('id', id!)
         .single(),
     ]).then(([authResult, queryResult]) => {

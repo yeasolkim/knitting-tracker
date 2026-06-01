@@ -13,6 +13,13 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 type TypeFilter = 'all' | 'knitting' | 'crochet';
 type SortKey = 'updated' | 'created' | 'title' | 'progress';
 
+const chipClass = (active: boolean) =>
+  `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[44px] ${
+    active
+      ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
+      : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
+  }`;
+
 function getProgress(pattern: PatternWithProgress): number {
   const subs = (pattern.progress?.sub_patterns as SubPattern[]) || [];
   const total = subs.length > 0
@@ -63,7 +70,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
   const fetchPatterns = useCallback(async () => {
     const { data, error } = await supabase
       .from('patterns')
-      .select('*, progress:pattern_progress(*)')
+      .select('id,title,type,file_url,thumbnail_url,extra_image_urls,total_rows,yarn,needle,created_at,updated_at,progress:pattern_progress(sub_patterns,current_row)')
       .order('updated_at', { ascending: false });
 
     if (!error && data) {
@@ -173,7 +180,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
       yarn: pattern.yarn,
       needle: pattern.needle,
       file_size: pattern.file_size,
-    }).select().single();
+    }).select('id').single();
 
     if (error || !data) {
       showToast(t('dashboard.duplicateError'));
@@ -201,12 +208,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     });
   };
 
-  const chipClass = (active: boolean) =>
-    `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[44px] ${
-      active
-        ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
-        : 'bg-[#fdf6e8] text-[#7a5c46] border-[#b07840] hover:border-[#b5541e] hover:text-[#b5541e]'
-    }`;
 
   if (loading || authLoading) {
     return (

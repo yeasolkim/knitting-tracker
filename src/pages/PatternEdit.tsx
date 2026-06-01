@@ -122,7 +122,7 @@ function EditForm() {
   useEffect(() => {
     supabase
       .from('patterns')
-      .select('*')
+      .select('id,title,type,yarn,needle,file_url,thumbnail_url,file_type,image_names,extra_image_urls,total_rows')
       .eq('id', id!)
       .single()
       .then(({ data, error }) => {
