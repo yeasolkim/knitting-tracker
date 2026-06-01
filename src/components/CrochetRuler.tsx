@@ -22,6 +22,7 @@ interface Props {
   containerW: number;
   containerH: number;
   showSettings?: boolean;
+  initialShowActionBar?: boolean;
   isAdjusting?: boolean;
   ringsOnly?: boolean;
   onCenterChange?: (cx: number, cy: number) => void;
@@ -74,6 +75,7 @@ export default function CrochetRuler({
   completedRings,
   containerW, containerH,
   showSettings = false,
+  initialShowActionBar = false,
   isAdjusting = false,
   ringsOnly = false,
   onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
@@ -112,7 +114,7 @@ export default function CrochetRuler({
   const maskIdRef = useRef(`cr-mask-${Math.random().toString(36).slice(2, 8)}`);
 
   // Action bar state — tap ring body to toggle
-  const [showActionBar, setShowActionBar] = useState(true);
+  const [showActionBar, setShowActionBar] = useState(initialShowActionBar);
 
   const centerDragRef = useRef<{ sx: number; sy: number; cx: number; cy: number } | null>(null);
   const [isDraggingBody, setIsDraggingBody] = useState(false);

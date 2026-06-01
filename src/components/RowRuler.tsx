@@ -12,6 +12,7 @@ interface RowRulerProps {
   isAdjusting?: boolean;
   isPlacingMarker?: boolean;
   showSettings?: boolean;
+  initialShowActionBar?: boolean;
   onChangePosition: (y: number) => void;
   onChangePositionX?: (x: number) => void;
   onChangeHeight: (h: number) => void;
@@ -29,6 +30,7 @@ const RowRuler = memo(function RowRuler({
   isAdjusting = false,
   isPlacingMarker = false,
   showSettings = false,
+  initialShowActionBar = false,
   onChangePosition,
   onChangePositionX,
   onChangeHeight,
@@ -37,7 +39,7 @@ const RowRuler = memo(function RowRuler({
 }: RowRulerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [showActionBar, setShowActionBar] = useState(true);
+  const [showActionBar, setShowActionBar] = useState(initialShowActionBar);
   const [showPreview, setShowPreview] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
