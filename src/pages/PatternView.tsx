@@ -898,10 +898,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   const [placingNoteKey, setPlacingNoteKey] = useState<string | null>(null);
 
-  // Keep undoStateRef in sync with all undoable state
-  useEffect(() => {
-    undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
-  }, [subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths]);
+  // Keep undoStateRef in sync — direct assignment avoids scheduling an effect on every drag frame
+  undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -1481,26 +1479,32 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   }, []);
 
   // All overlay components are outside the CSS transform — convert content % → screen %
-  // Use contentToScreenX/Y which correctly accounts for letterbox offset (imgLeft/imgTop).
-  const screenKnittingMarks: KnittingMark[] = knittingMarks.map((m) => ({
+  // deps cover all values contentToScreen* functions read from closure
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const screenKnittingMarks = useMemo<KnittingMark[]>(() => knittingMarks.map((m) => ({
     ...m,
     x: contentToScreenX(m.x),
     y: contentToScreenY(m.y),
-  }));
+  })), [knittingMarks, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const screenCrochetMarks: CrochetMark[] = crochetMarks.map((m) => ({
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const screenCrochetMarks = useMemo<CrochetMark[]>(() => crochetMarks.map((m) => ({
     ...m,
     x: contentToScreenX(m.x),
     y: contentToScreenY(m.y),
-  }));
+  })), [crochetMarks, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Note positions stored as content-space % — convert to screen % for rendering outside CSS transform.
-  const screenNotePositions: Record<string, NotePosition> = {};
-  for (const [key, pos] of Object.entries(notePositions)) {
-    screenNotePositions[key] = { x: contentToScreenX(pos.x), y: contentToScreenY(pos.y) };
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const screenNotePositions = useMemo<Record<string, NotePosition>>(() => {
+    const result: Record<string, NotePosition> = {};
+    for (const [key, pos] of Object.entries(notePositions)) {
+      result[key] = { x: contentToScreenX(pos.x), y: contentToScreenY(pos.y) };
+    }
+    return result;
+  }, [notePositions, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const screenCompletedMarks: CompletedMark[] = completedMarks.map((m) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const screenCompletedMarks = useMemo<CompletedMark[]>(() => completedMarks.map((m) => {
     if (m.orientation === 'horizontal') {
       const x = contentToScreenX(m.y);
       const right = contentToScreenX(m.y + m.height);
@@ -1509,7 +1513,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const y = contentToScreenY(m.y);
     const bottom = contentToScreenY(m.y + m.height);
     return { y, height: bottom - y };
-  });
+  }), [completedMarks, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const screenCompletedRings = useMemo(() => completedCrochetRings.map(ring => ({
+    cx: contentToScreenX(ring.cx),
+    cy: contentToScreenY(ring.cy),
+    r: contentToScreenR(ring.r),
+    rInner: ring.rInner != null ? contentToScreenR(ring.rInner) : undefined,
+    ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
+    ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
+    shape: ring.shape,
+  })), [completedCrochetRings, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[#f5edd6]">
@@ -1788,15 +1802,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               r={contentToScreenR(crochetR)}
               ry={(crochetShape === 'ellipse' || crochetShape === 'rect') ? contentToScreenRy(crochetRy) : undefined}
               shape={crochetShape === 'ellipse' ? 'ellipse' : crochetShape === 'rect' ? 'rect' : 'circle'}
-              completedRings={completedCrochetRings.map(ring => ({
-                cx: contentToScreenX(ring.cx),
-                cy: contentToScreenY(ring.cy),
-                r: contentToScreenR(ring.r),
-                rInner: ring.rInner != null ? contentToScreenR(ring.rInner) : undefined,
-                ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
-                ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
-                shape: ring.shape,
-              }))}
+              completedRings={screenCompletedRings}
               containerW={containerW}
               containerH={containerH}
               onCenterChange={handleCrochetCenterChange}
@@ -1837,15 +1843,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           {isCrochet && crochetShape === 'line' && completedCrochetRings.length > 0 && imgH > 0 && showOverlays && (
             <CrochetRuler
               ringsOnly
-              completedRings={completedCrochetRings.map(ring => ({
-                cx: contentToScreenX(ring.cx),
-                cy: contentToScreenY(ring.cy),
-                r: contentToScreenR(ring.r),
-                rInner: ring.rInner != null ? contentToScreenR(ring.rInner) : undefined,
-                ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
-                ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
-                shape: ring.shape,
-              }))}
+              completedRings={screenCompletedRings}
               containerW={containerW}
               containerH={containerH}
               rotation={crochetRotation}

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { translations, LANGUAGES, type Lang, type TranslationKey } from '@/lib/i18n';
+import { loadLang, translationCache, LANGUAGES, type Lang, type TranslationKey } from '@/lib/i18n';
 
 interface LanguageContextValue {
   lang: Lang;
@@ -35,21 +35,25 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     const stored = localStorage.getItem('knitting_in_the_sauna_lang') as Lang | null;
     if (isValidLang(stored)) return stored;
-    // No stored preference → detect from browser/OS language settings
     return detectBrowserLang();
   });
+
+  // currentDict: starts as ko (always bundled), replaced once the target language loads
+  const [currentDict, setCurrentDict] = useState<Record<string, string>>(
+    () => translationCache[lang] ?? translationCache['ko']
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    loadLang(lang).then((dict) => {
+      if (!cancelled) setCurrentDict(dict);
+    });
+    return () => { cancelled = true; };
+  }, [lang]);
 
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const metaLang = session?.user?.user_metadata?.language;
-      if (isValidLang(metaLang)) {
-        setLangState(metaLang);
-        localStorage.setItem('knitting_in_the_sauna_lang', metaLang);
-      }
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const metaLang = session?.user?.user_metadata?.language;
       if (isValidLang(metaLang)) {
@@ -57,7 +61,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('knitting_in_the_sauna_lang', metaLang);
       }
     });
-
     return () => subscription.unsubscribe();
   }, [supabase]);
 
@@ -72,14 +75,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>): string => {
-    let str = translations[lang][key] ?? translations['ko'][key] ?? key;
+    let str = currentDict[key] ?? translationCache['ko'][key] ?? key;
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
         str = str.replace(`{${k}}`, String(v));
       }
     }
     return str;
-  }, [lang]);
+  }, [currentDict]);
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
   return (

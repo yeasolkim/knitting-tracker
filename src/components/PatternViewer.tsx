@@ -48,6 +48,9 @@ interface PatternViewerProps {
  *  Reference: 8px at pw=691 (= 768px container × 90%) */
 const getPdfGap = (currentPw: number) => Math.max(1, Math.round(8 * currentPw / 691));
 
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
   function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
@@ -96,8 +99,6 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const basePdfDpr = containerWidth > 0 ? Math.max(baseDpr, Math.ceil(2000 / pw)) : baseDpr;
     // true for iOS Safari (iPhone / iPad); Android/desktop are unconstrained.
     // iPadOS 13+ spoofs desktop Safari UA — detect via touch support as well.
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     // PDF page dimensions — declared here so DPR effect can reference pdfPageAspectRatio.
     // pdfPageAspectRatio: page-0 h/w ratio (for iOS canvas area cap and memory budget calc)
@@ -120,7 +121,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       // far too aggressively on Android (272MB/page at 3× zoom), so we keep baseDpr.
       // iOS: area cap keeps canvas under ~16MP so Safari won't downsample it.
       // Desktop/Android: use generous 8000px width cap (memory ~ 200MB/page).
-      const maxDpr = isIOS
+      const maxDpr = IS_IOS
         ? Math.max(1, Math.floor(Math.sqrt(16 * 1024 * 1024 / Math.max(pdfPageAspectRatio, 0.1)) / pw))
         : Math.max(1, Math.floor(8000 / pw));
       // At scale ≥ 5 (500%), snap to maxDpr for maximum quality (super-sampling beyond pixel-perfect).
@@ -137,7 +138,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
       renderTimerRef.current = setTimeout(() => setPdfRenderDpr(targetDpr), 500);
       return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
-    }, [transform.scale, pw, baseDpr, basePdfDpr, pdfPageAspectRatio, isIOS, fileType]);
+    }, [transform.scale, pw, baseDpr, basePdfDpr, pdfPageAspectRatio, IS_IOS, fileType]);
     const effectivePdfDpr = pdfRenderDpr || basePdfDpr;
 
     // PDF page dimensions (pdfPageAspectRatio declared above near DPR code)
@@ -808,6 +809,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
                 alt="패턴"
                 className="max-w-full max-h-full object-contain select-none pointer-events-none"
                 draggable={false}
+                decoding="async"
+                fetchPriority="high"
                 onLoad={reportImageSize}
               />
             ) : (

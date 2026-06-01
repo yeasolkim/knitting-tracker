@@ -68,6 +68,22 @@ const SHAPE_ICON: Record<string, ReactNode> = {
   ),
 };
 
+const WidthIcon = () => (
+  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="1" y1="6" x2="11" y2="6" />
+    <polyline points="3,4 1,6 3,8" />
+    <polyline points="9,4 11,6 9,8" />
+  </svg>
+);
+
+const HeightIcon = () => (
+  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="6" y1="1" x2="6" y2="11" />
+    <polyline points="4,3 6,1 8,3" />
+    <polyline points="4,9 6,11 8,9" />
+  </svg>
+);
+
 const CrochetRuler = memo(function CrochetRuler({
   cx = 50, cy = 50, r = 10, ry,
   rowHeight,
@@ -269,24 +285,6 @@ const CrochetRuler = memo(function CrochetRuler({
 
   // Action bar position — above ring top edge
   const ringTopPct = cy - (is2D ? ryActual : rHPct);
-
-  // Width icon SVG (↔)
-  const WidthIcon = () => (
-    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <line x1="1" y1="6" x2="11" y2="6" />
-      <polyline points="3,4 1,6 3,8" />
-      <polyline points="9,4 11,6 9,8" />
-    </svg>
-  );
-
-  // Height icon SVG (↕)
-  const HeightIcon = () => (
-    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <line x1="6" y1="1" x2="6" y2="11" />
-      <polyline points="4,3 6,1 8,3" />
-      <polyline points="4,9 6,11 8,9" />
-    </svg>
-  );
 
   const showOverlay = (showActionBar || showSettings) && !isDraggingBody;
 

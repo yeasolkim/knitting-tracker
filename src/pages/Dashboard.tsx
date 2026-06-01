@@ -189,7 +189,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     }
 
     try {
-      await fetchPatterns();
       navigate(`/patterns/${data.id}/edit`);
     } finally {
       setDuplicatingId(null);
