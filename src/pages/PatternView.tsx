@@ -2256,16 +2256,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
                   <button
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, Math.round((r - 1/9) * 1000) / 1000)); }}
+                    onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, Math.round((r - 0.1) * 10) / 10)); }}
                     className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
                   >−</button>
-                  <input type="range" min={-45} max={45} step={1/9} value={rulerRotation}
+                  <input type="range" min={-45} max={45} step={0.1} value={rulerRotation}
                     onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                    onChange={(e) => setRulerRotation(Math.round(Number(e.target.value) * 1000) / 1000)}
+                    onChange={(e) => setRulerRotation(Math.round(Number(e.target.value) * 10) / 10)}
                     className="accent-[#b5541e] cursor-pointer flex-shrink-0" style={{ width: '64px', height: '20px' }} />
                   <button
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, Math.round((r + 1/9) * 1000) / 1000)); }}
+                    onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, Math.round((r + 0.1) * 10) / 10)); }}
                     className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
                   >+</button>
                   <span className="text-[10px] text-[#b5541e] font-mono w-10 text-center flex-shrink-0">{Number(rulerRotation.toFixed(2))}°</span>
