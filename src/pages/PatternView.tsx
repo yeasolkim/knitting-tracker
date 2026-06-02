@@ -344,9 +344,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [drawingPaths, setDrawingPaths] = useState<DrawPath[]>(
     img0?.drawing_paths ?? []
   );
-  const [toolbarPos, setToolbarPos] = useState<{ x: number; y: number } | null>(null);
-  const toolbarDragRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Multiple images: primary + extra
   const allFiles = useMemo(() => {
@@ -655,45 +652,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   }, [selectedPathId, isDrawingMode, drawingTool, captureHistory]);
 
   useEffect(() => {
-    if (!isDrawingMode) {
-      setSelectedPathId(null);
-      setToolbarPos(null);
-    }
+    if (!isDrawingMode) setSelectedPathId(null);
   }, [isDrawingMode]);
 
-  const handleToolbarDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const toolbar = toolbarRef.current;
-    if (!toolbar) return;
-    const rect = toolbar.getBoundingClientRect();
-    const container = toolbar.offsetParent as HTMLElement;
-    const containerRect = container?.getBoundingClientRect();
-    if (!containerRect) return;
-    toolbarDragRef.current = {
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, []);
-
-  const handleToolbarDragMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!toolbarDragRef.current) return;
-    e.stopPropagation();
-    const toolbar = toolbarRef.current;
-    if (!toolbar) return;
-    const container = toolbar.offsetParent as HTMLElement;
-    const containerRect = container?.getBoundingClientRect();
-    if (!containerRect) return;
-    setToolbarPos({
-      x: e.clientX - containerRect.left - toolbarDragRef.current.offsetX,
-      y: e.clientY - containerRect.top - toolbarDragRef.current.offsetY,
-    });
-  }, []);
-
-  const handleToolbarDragEnd = useCallback(() => {
-    toolbarDragRef.current = null;
-  }, []);
 
   // Convert image-relative % → screen % using current transform.
   // rulerY/rulerHeight are stored as % of the rendered IMAGE height,
@@ -1889,65 +1850,57 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
           {/* Drawing toolbar — shown when drawing mode is active */}
           {isDrawingMode && (
-              <div
-                ref={toolbarRef}
-                className={`z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg p-2 flex flex-col gap-2 min-w-max ${toolbarPos ? 'absolute' : 'absolute top-2 sm:top-3 left-1/2 -translate-x-1/2'}`}
-                style={toolbarPos ? { left: toolbarPos.x, top: toolbarPos.y } : undefined}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                {/* Drag handle header + X close */}
-                <div
-                  className="flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing select-none"
-                  onPointerDown={handleToolbarDragStart}
-                  onPointerMove={handleToolbarDragMove}
-                  onPointerUp={handleToolbarDragEnd}
-                  onPointerCancel={handleToolbarDragEnd}
+            <div
+              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col gap-1.5"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {/* Row 1: Close + Colors + RESET */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setIsDrawingMode(false)}
+                  title="그림판 닫기"
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-[#7a5c46] hover:bg-[#ede5cc] transition-colors flex-shrink-0"
                 >
-                  <div className="flex items-center gap-0.5 px-1 text-[#b07840]">
-                    {[0,1,2].map(i => (
-                      <svg key={i} className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
-                        <circle cx="3" cy="4" r="1.2" /><circle cx="9" cy="4" r="1.2" />
-                        <circle cx="3" cy="8" r="1.2" /><circle cx="9" cy="8" r="1.2" />
-                      </svg>
-                    ))}
-                  </div>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setIsDrawingMode(false)}
-                    title="그림판 닫기"
-                    className="w-6 h-6 flex items-center justify-center rounded-md text-[#7a5c46] hover:bg-[#ede5cc] transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                {/* Colors */}
-                <div className="flex items-center gap-1.5 justify-center">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
+                <div className="flex items-center gap-1 flex-1 justify-center">
                   {DRAW_COLORS.map(c => (
                     <button
                       key={c}
                       onClick={() => setDrawingColor(c)}
-                      className="rounded-full border-2 transition-transform"
+                      className="rounded-full border-2 transition-transform flex-shrink-0"
                       style={{
-                        width: 22, height: 22,
+                        width: 20, height: 20,
                         background: c,
                         borderColor: drawingColor === c ? '#3d2b1f' : 'transparent',
-                        transform: drawingColor === c ? 'scale(1.2)' : 'scale(1)',
+                        transform: drawingColor === c ? 'scale(1.25)' : 'scale(1)',
                         boxShadow: c === '#ffffff' ? 'inset 0 0 0 1px #ccc' : undefined,
                       }}
                       title={c}
                     />
                   ))}
                 </div>
-                {/* Tools + reset */}
-                <div className="flex items-center gap-1 justify-center">
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
+                <button
+                  onClick={() => { captureHistory(); setDrawingPaths([]); setSelectedPathId(null); }}
+                  title="모두 지우기"
+                  className="h-6 px-2 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] hover:text-[#b5541e] transition-colors text-[10px] font-bold tracking-wide flex-shrink-0"
+                >
+                  RESET
+                </button>
+              </div>
+              {/* Row 2: Tools + Stroke slider + Opacity slider */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-0.5 flex-shrink-0">
                   {DRAW_TOOLS.map(({ id, label, icon }) => (
                     <button
                       key={id}
                       onClick={() => setDrawingTool(id)}
                       title={label}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg border transition-colors ${
                         drawingTool === id
                           ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
                           : 'text-[#7a5c46] border-transparent hover:bg-[#ede5cc]'
@@ -1956,71 +1909,43 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       {icon}
                     </button>
                   ))}
-                  <div className="w-px h-5 bg-[#b07840] mx-0.5" />
-                  <button
-                    onClick={() => { captureHistory(); setDrawingPaths([]); setSelectedPathId(null); }}
-                    title="모두 지우기"
-                    className="h-8 px-2 flex items-center justify-center rounded-lg border border-transparent text-[#7a5c46] hover:bg-[#ede5cc] hover:text-[#b5541e] transition-colors text-[11px] font-bold tracking-wide"
-                  >
-                    RESET
-                  </button>
                 </div>
-                {/* Stroke width slider */}
-                <div className="flex items-center gap-2 px-1">
-                  {/* Preview dot: shows color + opacity */}
-                  <div className="relative rounded-full shrink-0 overflow-hidden"
-                    style={{
-                      width: Math.min(drawingStrokeWidth, 18),
-                      height: Math.min(drawingStrokeWidth, 18),
-                      backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
-                      backgroundSize: '6px 6px',
-                      backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
-                    }}
-                  >
-                    <div className="absolute inset-0 rounded-full" style={{ background: drawingColor, opacity: drawingOpacity / 100 }} />
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={30}
-                    step={1}
-                    value={drawingStrokeWidth}
-                    onChange={e => setDrawingStrokeWidth(Number(e.target.value))}
-                    className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer"
-                    style={{ minWidth: 100 }}
-                  />
-                  <span className="text-[11px] font-mono text-[#7a5c46] w-6 text-right shrink-0">{drawingStrokeWidth}</span>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
+                <div className="relative rounded-full flex-shrink-0 overflow-hidden"
+                  style={{
+                    width: Math.min(drawingStrokeWidth, 16), height: Math.min(drawingStrokeWidth, 16),
+                    backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
+                    backgroundSize: '6px 6px', backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
+                  }}
+                >
+                  <div className="absolute inset-0 rounded-full" style={{ background: drawingColor, opacity: drawingOpacity / 100 }} />
                 </div>
-                {/* Opacity slider */}
-                <div className="flex items-center gap-2 px-1">
-                  {/* Checkerboard icon indicating transparency */}
-                  <div className="relative rounded-sm shrink-0 overflow-hidden border border-[#b07840]/40"
-                    style={{
-                      width: 14, height: 14,
-                      backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
-                      backgroundSize: '6px 6px',
-                      backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
-                    }}
-                  >
-                    <div className="absolute inset-0" style={{ background: `linear-gradient(to right, transparent, ${drawingColor})` }} />
-                  </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={100}
-                    step={5}
-                    value={drawingOpacity}
-                    onChange={e => setDrawingOpacity(Number(e.target.value))}
-                    className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer"
-                    style={{ minWidth: 100 }}
-                  />
-                  <span className="text-[11px] font-mono text-[#7a5c46] w-8 text-right shrink-0">{drawingOpacity}%</span>
+                <input type="range" min={1} max={30} step={1} value={drawingStrokeWidth}
+                  onChange={e => setDrawingStrokeWidth(Number(e.target.value))}
+                  className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer min-w-0"
+                />
+                <span className="text-[10px] font-mono text-[#7a5c46] w-5 text-right flex-shrink-0">{drawingStrokeWidth}</span>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
+                <div className="relative rounded-sm flex-shrink-0 overflow-hidden border border-[#b07840]/40"
+                  style={{
+                    width: 12, height: 12,
+                    backgroundImage: 'linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)',
+                    backgroundSize: '6px 6px', backgroundPosition: '0 0,0 3px,3px -3px,-3px 0px',
+                  }}
+                >
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(to right, transparent, ${drawingColor})` }} />
                 </div>
+                <input type="range" min={5} max={100} step={5} value={drawingOpacity}
+                  onChange={e => setDrawingOpacity(Number(e.target.value))}
+                  className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer min-w-0"
+                />
+                <span className="text-[10px] font-mono text-[#7a5c46] w-8 text-right flex-shrink-0">{drawingOpacity}%</span>
               </div>
+            </div>
           )}
 
           {/* Overlay visibility toggle + Drawing mode toggle */}
-          <div className={`absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none ${showRulerSettings ? 'hidden' : ''}`}>
+          <div className={`absolute top-3 right-3 z-40 flex flex-col gap-2 pointer-events-none ${(showRulerSettings || isDrawingMode) ? 'hidden' : ''}`}>
             <button
               className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
                 showOverlays
