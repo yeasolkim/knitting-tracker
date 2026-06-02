@@ -8,9 +8,10 @@ import {
 
 type SyncStatus = 'idle' | 'syncing' | 'done' | 'error';
 
-export function useOfflineSync(): { status: SyncStatus; retry: () => void } {
+export function useOfflineSync(): { status: SyncStatus; retry: () => void; conflictCount: number; clearConflict: () => void } {
   const supabase = useMemo(() => createClient(), []);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [conflictCount, setConflictCount] = useState(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const processQueue = useCallback(async () => {
@@ -44,6 +45,7 @@ export function useOfflineSync(): { status: SyncStatus; retry: () => void } {
         if (serverTime > item.queuedAt) {
           // Server is newer (edited on another device) — discard local change
           removeFromOfflineQueue(item.patternId);
+          setConflictCount(prev => prev + 1);
           continue;
         }
 
@@ -84,5 +86,7 @@ export function useOfflineSync(): { status: SyncStatus; retry: () => void } {
     };
   }, [processQueue]);
 
-  return { status: syncStatus, retry: processQueue };
+  const clearConflict = useCallback(() => setConflictCount(0), []);
+
+  return { status: syncStatus, retry: processQueue, conflictCount, clearConflict };
 }

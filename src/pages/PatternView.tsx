@@ -336,6 +336,7 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   // Drawing mode state
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [showSaveErrorPopup, setShowSaveErrorPopup] = useState(false);
   const [drawingTool, setDrawingTool] = useState<DrawTool>('pen');
   const [drawingColor, setDrawingColor] = useState('#ef4444');
   const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(4);
@@ -1135,6 +1136,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const { save, status } = useAutoSave(saveFn);
 
   useEffect(() => {
+    if (status === 'error') setShowSaveErrorPopup(true);
+  }, [status]);
+
+  useEffect(() => {
     // Keep imageStatesRef in sync with current image state before saving
     imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
     save({
@@ -1500,6 +1505,27 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[#f5edd6]">
+      {/* Save error popup */}
+      {showSaveErrorPopup && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-2xl shadow-xl max-w-sm w-full p-5 flex flex-col gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="text-xl shrink-0">⚠️</span>
+              <div>
+                <p className="font-bold text-sm text-[#3d2b1f] leading-snug">{t('view.saveErrorPopup.title')}</p>
+                <p className="text-xs text-[#7a5c46] mt-1.5 leading-relaxed">{t('view.saveErrorPopup.desc')}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSaveErrorPopup(false)}
+              className="self-end text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-4 py-2 hover:bg-[#9a4318] transition-colors"
+            >
+              {t('view.saveErrorPopup.close')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="bg-[#f5edd6] border-b-2 border-[#b07840] px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 safe-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -1854,8 +1880,21 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col gap-1.5"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Row 1: Colors + RESET + [X close mobile] */}
+              {/* Row 1: [Undo Redo] | Colors | RESET | [X close mobile] */}
               <div className="flex items-center gap-1.5">
+                <button onClick={handleUndo} disabled={!canUndo} title={t('view.undo')}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent transition-colors disabled:opacity-30 text-[#7a5c46] hover:bg-[#ede5cc] disabled:hover:bg-transparent flex-shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+                  </svg>
+                </button>
+                <button onClick={handleRedo} disabled={!canRedo} title={t('view.redo')}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent transition-colors disabled:opacity-30 text-[#7a5c46] hover:bg-[#ede5cc] disabled:hover:bg-transparent flex-shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/>
+                  </svg>
+                </button>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
                 <div className="flex items-center gap-1 flex-1 justify-center">
                   {DRAW_COLORS.map(c => (
                     <button

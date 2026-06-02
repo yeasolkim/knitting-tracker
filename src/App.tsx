@@ -77,41 +77,65 @@ function OAuthHandler() {
 // Global offline banner + sync manager — renders nothing visible when online
 function OfflineManager() {
   const isOnline = useOnlineStatus();
-  const { status: syncStatus, retry: retrySync } = useOfflineSync();
+  const { status: syncStatus, retry: retrySync, conflictCount, clearConflict } = useOfflineSync();
   const { t } = useLanguage();
 
-  if (isOnline && syncStatus === 'idle') return null;
-
   return (
-    <div className="fixed top-0 inset-x-0 z-[100] pointer-events-none">
-      {!isOnline && (
-        <div className="bg-[#3d2b1f] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
-          {t('offline.banner')}
+    <>
+      {/* Top banner */}
+      {(!isOnline || (isOnline && syncStatus !== 'idle')) && (
+        <div className="fixed top-0 inset-x-0 z-[100] pointer-events-none">
+          {!isOnline && (
+            <div className="bg-[#3d2b1f] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
+              {t('offline.banner')}
+            </div>
+          )}
+          {isOnline && syncStatus === 'syncing' && (
+            <div className="bg-[#b07840] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#fdf6e8] animate-pulse" />
+              {t('offline.syncing')}
+            </div>
+          )}
+          {isOnline && syncStatus === 'done' && (
+            <div className="bg-[#5a8a5a] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
+              {t('offline.syncDone')}
+            </div>
+          )}
+          {isOnline && syncStatus === 'error' && (
+            <div className="bg-[#b5541e] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-2 pointer-events-auto">
+              {t('offline.syncError')}
+              <button
+                onClick={retrySync}
+                className="underline underline-offset-2 hover:opacity-80 active:opacity-60 transition-opacity"
+              >
+                {t('offline.syncErrorRetry')}
+              </button>
+            </div>
+          )}
         </div>
       )}
-      {isOnline && syncStatus === 'syncing' && (
-        <div className="bg-[#b07840] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#fdf6e8] animate-pulse" />
-          {t('offline.syncing')}
+
+      {/* Conflict popup */}
+      {conflictCount > 0 && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-[#fdf6e8] border-2 border-[#b07840] rounded-2xl shadow-xl max-w-sm w-full p-5 flex flex-col gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="text-xl shrink-0">⚠️</span>
+              <div>
+                <p className="font-bold text-sm text-[#3d2b1f] leading-snug">{t('offline.conflictPopup.title')}</p>
+                <p className="text-xs text-[#7a5c46] mt-1.5 leading-relaxed">{t('offline.conflictPopup.desc')}</p>
+              </div>
+            </div>
+            <button
+              onClick={clearConflict}
+              className="self-end text-xs font-bold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] rounded-lg px-4 py-2 hover:bg-[#9a4318] transition-colors"
+            >
+              {t('offline.conflictPopup.close')}
+            </button>
+          </div>
         </div>
       )}
-      {isOnline && syncStatus === 'done' && (
-        <div className="bg-[#5a8a5a] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide">
-          {t('offline.syncDone')}
-        </div>
-      )}
-      {isOnline && syncStatus === 'error' && (
-        <div className="bg-[#b5541e] text-[#fdf6e8] text-[11px] font-medium text-center py-1.5 tracking-wide flex items-center justify-center gap-2 pointer-events-auto">
-          {t('offline.syncError')}
-          <button
-            onClick={retrySync}
-            className="underline underline-offset-2 hover:opacity-80 active:opacity-60 transition-opacity"
-          >
-            {t('offline.syncErrorRetry')}
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
