@@ -43,58 +43,52 @@ export default function PatternView() {
   const [isFromCache, setIsFromCache] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createClient();
 
-    Promise.all([
-      supabase.auth.getSession(),
-      supabase
-        .from('patterns')
-        .select(`*, progress:pattern_progress(*)`)
-        .eq('id', id!)
-        .single(),
-    ]).then(([authResult, queryResult]) => {
-      if (!authResult.data.session?.user) {
-        navigate('/login');
-        return;
-      }
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (!session?.user) { navigate('/login'); return; }
 
-      if (queryResult.error || !queryResult.data) {
-        // Offline fallback: try localStorage cache
+        const queryResult = await supabase
+          .from('patterns')
+          .select(`*, progress:pattern_progress(*)`)
+          .eq('id', id!)
+          .single();
+
+        if (cancelled) return;
+
+        if (queryResult.error || !queryResult.data) {
+          if (!navigator.onLine && id) {
+            const cached = getCachedPattern(id);
+            if (cached) { setPattern(cached); setIsFromCache(true); setLoading(false); return; }
+          }
+          setLoading(false);
+          setLoadError(true);
+          return;
+        }
+
+        const loaded: PatternWithProgress = {
+          ...queryResult.data,
+          progress: queryResult.data.progress?.[0] || null,
+        } as PatternWithProgress;
+        cachePattern(loaded);
+        setPattern(loaded);
+        setLoading(false);
+      } catch {
+        if (cancelled) return;
         if (!navigator.onLine && id) {
           const cached = getCachedPattern(id);
-          if (cached) {
-            setPattern(cached);
-            setIsFromCache(true);
-            setLoading(false);
-            return;
-          }
+          if (cached) { setPattern(cached); setIsFromCache(true); setLoading(false); return; }
         }
         setLoading(false);
         setLoadError(true);
-        return;
       }
+    })();
 
-      const loaded: PatternWithProgress = {
-        ...queryResult.data,
-        progress: queryResult.data.progress?.[0] || null,
-      } as PatternWithProgress;
-      cachePattern(loaded); // persist for offline use
-      setPattern(loaded);
-      setLoading(false);
-    }).catch(() => {
-      // Network error: try cache before giving up
-      if (!navigator.onLine && id) {
-        const cached = getCachedPattern(id);
-        if (cached) {
-          setPattern(cached);
-          setIsFromCache(true);
-          setLoading(false);
-          return;
-        }
-      }
-      setLoading(false);
-      setLoadError(true);
-    });
+    return () => { cancelled = true; };
   }, [id, navigate]);
 
   if (loadError) {
@@ -1108,11 +1102,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   }, [captureHistory, updateActiveSub]);
 
   const userIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) userIdRef.current = session.user.id;
-    });
-  }, [supabase]);
 
   const isOnline = useOnlineStatus();
   // Keep a ref so saveFn (useCallback) can read the latest value without stale closure

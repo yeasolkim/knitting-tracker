@@ -69,7 +69,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('knitting_in_the_sauna_lang', newLang);
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        supabase.auth.updateUser({ data: { language: newLang } });
+        supabase.auth.updateUser({ data: { language: newLang } }).catch(() => {});
       }
     });
   }, [supabase]);

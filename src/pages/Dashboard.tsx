@@ -67,27 +67,32 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     setTimeout(() => setToast(null), ms);
   }, []);
 
-  const fetchPatterns = useCallback(async () => {
+  const fetchPatterns = useCallback(async (signal?: AbortSignal) => {
     const { data, error } = await supabase
       .from('patterns')
       .select('id,title,type,file_url,thumbnail_url,extra_image_urls,total_rows,yarn,needle,created_at,updated_at,progress:pattern_progress(sub_patterns,current_row)')
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .abortSignal(signal ?? new AbortController().signal);
 
+    if (signal?.aborted) return;
     if (!error && data) {
       const mapped = data.map((p: Record<string, unknown>) => ({
         ...p,
         progress: (p.progress as unknown[])?.[0] || null,
       })) as PatternWithProgress[];
       setPatterns(mapped);
-      cachePatterns(mapped); // Save to localStorage for offline use
+      cachePatterns(mapped);
       setIsFromCache(false);
+    } else if (error) {
+      const cached = getCachedPatterns();
+      if (cached && patterns.length === 0) setPatterns(cached);
+      showToast(t('load.error.title'));
     }
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, showToast, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!navigator.onLine) {
-      // Offline: load from localStorage cache
       const cached = getCachedPatterns();
       if (cached) {
         setPatterns(cached);
@@ -96,14 +101,17 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
         return;
       }
     }
-    fetchPatterns();
+    const controller = new AbortController();
+    fetchPatterns(controller.signal);
+    return () => controller.abort();
   }, [fetchPatterns]);
 
-  // When back online, refresh from server
   useEffect(() => {
     if (isOnline && isFromCache) {
       setIsFromCache(false);
-      fetchPatterns();
+      const controller = new AbortController();
+      fetchPatterns(controller.signal);
+      return () => controller.abort();
     }
   }, [isOnline, isFromCache, fetchPatterns]);
 

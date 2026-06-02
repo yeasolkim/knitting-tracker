@@ -327,7 +327,7 @@ const thumbPromise = isPdf
     } catch (err) {
       if (createdPatternId) {
         const pid = createdPatternId;
-        Promise.all([
+        await Promise.all([
           supabase.from('pattern_progress').delete().eq('pattern_id', pid),
           supabase.from('patterns').delete().eq('id', pid),
         ]).catch(() => {});

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
@@ -83,7 +83,7 @@ export default function PatternEdit() {
 function EditForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
@@ -120,12 +120,14 @@ function EditForm() {
   }, [isDirty]);
 
   useEffect(() => {
+    let cancelled = false;
     supabase
       .from('patterns')
       .select('id,title,type,yarn,needle,file_url,thumbnail_url,file_type,image_names,extra_image_urls,total_rows')
       .eq('id', id!)
       .single()
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (error || !data) { navigate('/dashboard'); return; }
         setTitle(data.title);
         setType(data.type as PatternType);
@@ -150,6 +152,7 @@ function EditForm() {
         setOrderedImages(imgs);
         setLoading(false);
       });
+    return () => { cancelled = true; };
   }, [id, navigate, supabase]);
 
   const handleFileSelect = (selectedFile: File) => {
@@ -332,7 +335,8 @@ function EditForm() {
           image_names: finalImageNames,
           ...(newFile ? { file_size: newFile.size } : {}),
         })
-        .eq('id', id!);
+        .eq('id', id!)
+        .eq('user_id', session.user.id);
 
       if (updateError) throw updateError;
 
