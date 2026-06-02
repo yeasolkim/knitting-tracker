@@ -104,7 +104,7 @@ function PatternRowActions({ pattern, extraCount, onDelete }: { pattern: Pattern
   const [deleting, setDeleting] = useState(false);
   return (
     <div className="flex items-center gap-2 shrink-0">
-      {extraCount > 0 && pattern.file_url && (
+      {pattern.file_url && (pattern.extra_image_urls ?? []).length > 0 && (
         <DownloadAllButton
           urls={[pattern.file_url, ...(pattern.extra_image_urls ?? []).map(e => e.url)]}
           title={pattern.title || '도안'}
@@ -125,7 +125,7 @@ function PatternRowActions({ pattern, extraCount, onDelete }: { pattern: Pattern
         <>
           <button
             disabled={deleting}
-            onClick={async () => { setDeleting(true); await onDelete(pattern); }}
+            onClick={async () => { setDeleting(true); try { await onDelete(pattern); } finally { setDeleting(false); } }}
             className="text-xs font-bold text-white bg-red-500 border-2 border-red-600 rounded-lg px-3 py-1.5 hover:bg-red-600 transition-all disabled:opacity-50"
           >
             {deleting ? '…' : '확인'}
@@ -168,8 +168,7 @@ function PatternCard({
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setDeleting(true);
-    await onDelete(pattern);
-    setDeleting(false);
+    try { await onDelete(pattern); } finally { setDeleting(false); }
   };
 
   return (
@@ -211,7 +210,7 @@ function PatternCard({
 
         {/* Action buttons */}
         <div className="flex gap-1 mt-auto pt-1">
-          {allFileUrls.length > 1 && (
+          {pattern.file_url && extraCount > 0 && (
             <DownloadAllButton urls={allFileUrls} title={pattern.title || '도안'} className="flex-1 text-[10px] py-1 text-center" />
           )}
           {pattern.file_url && !confirmDelete && (
@@ -306,21 +305,25 @@ export default function AdminDashboard() {
       return allUsers;
     };
 
+    let cancelled = false;
+
     Promise.all([
       fetchAllUsers(),
       client.from('patterns').select('*').order('created_at', { ascending: false }),
     ]).then(([allUsers, patternsRes]) => {
+      if (cancelled) return;
+      if (patternsRes.error) throw new Error(`patterns: ${patternsRes.error.message}`);
       setUsers(allUsers);
-      const ps = (patternsRes.data ?? []) as Pattern[];
-      if (patternsRes.data) setPatterns(ps);
+      setPatterns((patternsRes.data ?? []) as Pattern[]);
+      setThumbnailTotalBytes(0); // Use stored file_size only — HEAD requests to R2 fail due to CORS
       setLoading(false);
-
-      // Use stored file_size only — HEAD requests to R2 fail due to CORS
-      setThumbnailTotalBytes(0);
     }).catch((err) => {
+      if (cancelled) return;
       setFetchError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     });
+
+    return () => { cancelled = true; };
   }, [navigate]);
 
   const handleLogout = () => {
@@ -351,11 +354,12 @@ export default function AdminDashboard() {
     const urls = [...new Set([pattern.file_url, pattern.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
     await deleteR2Files(urls);
 
-    await Promise.all([
+    const [, { error }] = await Promise.all([
       client.from('pattern_progress').delete().eq('pattern_id', pattern.id),
       client.from('patterns').delete().eq('id', pattern.id),
     ]);
 
+    if (error) throw new Error(error.message);
     setPatterns(prev => prev.filter(p => p.id !== pattern.id));
   };
 
