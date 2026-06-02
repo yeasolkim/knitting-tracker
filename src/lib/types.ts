@@ -72,7 +72,8 @@ export interface DrawPath {
   id: string;
   points: DrawPoint[];
   color: string;
-  width: number; // logical px at scale=1
+  width: number; // logical px at scale=1 (legacy)
+  widthPct?: number; // image-relative % — device-independent, takes priority over width
   opacity: number; // 0-100, default 100
   tool: DrawTool;
 }

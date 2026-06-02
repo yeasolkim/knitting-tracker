@@ -289,7 +289,8 @@ export default function DrawingCanvas({
         let foundPath: DrawPath | null = null;
         for (let i = paths.length - 1; i >= 0; i--) {
           const path = paths[i];
-          const hitPx = Math.max(10, path.width * viewTransform.scale / 2 + 6);
+          const renderedW = path.widthPct != null ? (path.widthPct / 100) * iW2 * viewTransform.scale : path.width * viewTransform.scale;
+          const hitPx = Math.max(10, renderedW / 2 + 6);
           const hitThresh = (hitPx / (viewTransform.scale * iW2)) * 100;
           if (isPathHit(imgPt, path, hitThresh * hitThresh, scaleY)) { foundPath = path; break; }
         }
@@ -441,7 +442,7 @@ export default function DrawingCanvas({
 
       if (p.tool === 'pen') {
         const pts = currentImagePtsRef.current;
-        if (pts.length > 0) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, opacity: p.opacity, tool: 'pen' });
+        if (pts.length > 0) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, widthPct: p.imgW > 0 ? p.strokeWidth / p.imgW * 100 : undefined, opacity: p.opacity, tool: 'pen' });
         currentImagePtsRef.current = [];
         currentScreenDRef.current = '';
       } else if (shapeStartRef.current) {
@@ -451,7 +452,7 @@ export default function DrawingCanvas({
         if (p.tool === 'line') pts = [start, end];
         else if (p.tool === 'rect') pts = rectPoints(start.x, start.y, end.x, end.y);
         else if (p.tool === 'circle') { const rx = Math.abs(end.x - start.x) / 2, ry = Math.abs(end.y - start.y) / 2; pts = circlePoints((start.x + end.x) / 2, (start.y + end.y) / 2, rx, ry); }
-        if (pts.length >= 2) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, opacity: p.opacity, tool: p.tool });
+        if (pts.length >= 2) p.onPathAdd({ id: generateId(), points: pts, color: p.color, width: p.strokeWidth, widthPct: p.imgW > 0 ? p.strokeWidth / p.imgW * 100 : undefined, opacity: p.opacity, tool: p.tool });
         shapeStartRef.current = null;
       }
     };
@@ -537,7 +538,7 @@ export default function DrawingCanvas({
             d={ptsToSvgD(path.points)}
             fill="none"
             stroke={path.color}
-            strokeWidth={path.width * viewTransform.scale}
+            strokeWidth={path.widthPct != null ? (path.widthPct / 100) * refW * s : path.width * s}
             strokeOpacity={(path.opacity ?? 100) / 100}
             strokeLinecap="round"
             strokeLinejoin="round"
