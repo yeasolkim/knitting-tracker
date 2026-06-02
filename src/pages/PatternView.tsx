@@ -522,6 +522,20 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     []
   );
 
+  // One-shot per image: migrate legacy drawing paths (no widthPct) to image-relative % width.
+  // widthPct makes stroke width device-independent. Fires when imgW is first known per image.
+  const pathMigrationDoneRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (imgW <= 0) return;
+    const idx = activeFileIdxRef.current;
+    if (pathMigrationDoneRef.current.has(idx)) return;
+    pathMigrationDoneRef.current.add(idx);
+    setDrawingPaths(prev => {
+      if (prev.every(p => p.widthPct != null)) return prev;
+      return prev.map(p => p.widthPct != null ? p : { ...p, widthPct: p.width / imgW * 100 });
+    });
+  }, [imgW]);
+
   // One-shot per image: set ruler height to 1/20 of screen when there is no saved value.
   // Skipped if a saved ruler_height exists (rulerHeightInitializedRef starts true in that case).
   useEffect(() => {
