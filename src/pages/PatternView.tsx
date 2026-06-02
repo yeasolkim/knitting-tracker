@@ -972,6 +972,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     lastReportedImgH.current = 0;
     lastReportedImgW.current = 0;
     isFirstOpenRef.current = !imageStatesRef.current[activeFileIdx];
+    if (goToRulerCorrectionTimerRef.current) {
+      clearTimeout(goToRulerCorrectionTimerRef.current);
+      goToRulerCorrectionTimerRef.current = null;
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFileIdx]);
 
@@ -982,6 +986,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (prevFileIdxRef.current === activeFileIdx) return;
     const prevIdx = prevFileIdxRef.current;
     prevFileIdxRef.current = activeFileIdx;
+
+    // Reset image dimensions so perImageStateLatest doesn't capture stale values
+    // from the previous image before the new one reports its size
+    setImgW(0);
+    setImgH(0);
 
     // Show loading overlay while new image loads
     setIsImageLoading(true);
