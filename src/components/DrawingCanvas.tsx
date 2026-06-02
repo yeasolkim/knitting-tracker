@@ -41,6 +41,22 @@ function ptsToSvgD(pts: DrawPoint[]): string {
   return d;
 }
 
+// Converts image-% path points directly to screen-px SVG d string.
+// Avoids non-uniform group transform so stroke-linecap="round" caps stay circular.
+function ptsToSvgScreenD(
+  pts: DrawPoint[],
+  vt: ViewTransform,
+  cW: number, cH: number,
+  iW: number, iH: number,
+): string {
+  if (pts.length === 0) return '';
+  const s = pts.map(p => imagePctToScreenPx(p.x, p.y, vt, cW, cH, iW, iH));
+  if (s.length === 1) return `M ${s[0].x} ${s[0].y} L ${s[0].x} ${s[0].y}`;
+  let d = `M ${s[0].x} ${s[0].y}`;
+  for (let i = 1; i < s.length; i++) d += ` L ${s[i].x} ${s[i].y}`;
+  return d;
+}
+
 function circlePoints(cx: number, cy: number, rx: number, ry: number): DrawPoint[] {
   const n = 64;
   return Array.from({ length: n + 1 }, (_, i) => {
@@ -501,16 +517,8 @@ export default function DrawingCanvas({
     }
   }, [viewTransform.scale, strokeWidth]);
 
-  // Compute SVG group transform (image-% → screen px)
   const s = viewTransform.scale;
   const refW = imgW > 0 ? imgW : containerW;
-  const refH = imgH > 0 ? imgH : containerH;
-  const imgLeft = imgW > 0 ? (containerW - imgW) / 2 : 0;
-  const imgTop  = imgH > 0 ? (containerH - imgH) / 2 : 0;
-  const groupOx = (imgLeft - containerW / 2) * s + containerW / 2 + viewTransform.x;
-  const groupOy = (imgTop  - containerH / 2) * s + containerH / 2 + viewTransform.y;
-  const groupSx = s * refW / 100;
-  const groupSy = s * refH / 100;
 
   // Cursor size
   const cursorR  = Math.max(4, strokeWidth * viewTransform.scale / 2);
@@ -530,22 +538,19 @@ export default function DrawingCanvas({
         touchAction: 'none',
       }}
     >
-      {/* Committed paths */}
-      <g transform={`translate(${groupOx},${groupOy}) scale(${groupSx},${groupSy})`}>
-        {imgW > 0 && imgH > 0 && paths.map(path => (
-          <path
-            key={path.id}
-            d={ptsToSvgD(path.points)}
-            fill="none"
-            stroke={path.color}
-            strokeWidth={path.widthPct != null ? (path.widthPct / 100) * refW * s : path.width * s}
-            strokeOpacity={(path.opacity ?? 100) / 100}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-      </g>
+      {/* Committed paths — rendered in screen px to avoid non-uniform scale distorting linecaps */}
+      {imgW > 0 && imgH > 0 && paths.map(path => (
+        <path
+          key={path.id}
+          d={ptsToSvgScreenD(path.points, viewTransform, containerW, containerH, imgW, imgH)}
+          fill="none"
+          stroke={path.color}
+          strokeWidth={path.widthPct != null ? (path.widthPct / 100) * refW * s : path.width * s}
+          strokeOpacity={(path.opacity ?? 100) / 100}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
 
       {/* Selection overlay */}
       {imgW > 0 && imgH > 0 && selLayout && (

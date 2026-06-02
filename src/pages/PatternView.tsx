@@ -1854,18 +1854,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col gap-1.5"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Row 1: Close + Colors + RESET */}
+              {/* Row 1: Colors + RESET + [X close mobile] */}
               <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setIsDrawingMode(false)}
-                  title="그림판 닫기"
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-[#7a5c46] hover:bg-[#ede5cc] transition-colors flex-shrink-0"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
                 <div className="flex items-center gap-1 flex-1 justify-center">
                   {DRAW_COLORS.map(c => (
                     <button
@@ -1891,6 +1881,12 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 >
                   RESET
                 </button>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0 sm:hidden" />
+                <button
+                  onClick={() => setIsDrawingMode(false)}
+                  title="그림판 닫기"
+                  className="sm:hidden flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
+                >×</button>
               </div>
               {/* Row 2: Tools + Stroke slider + Opacity slider */}
               <div className="flex items-center gap-1.5">
@@ -1940,6 +1936,12 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   className="flex-1 h-1.5 accent-[#b5541e] cursor-pointer min-w-0"
                 />
                 <span className="text-[10px] font-mono text-[#7a5c46] w-8 text-right flex-shrink-0">{drawingOpacity}%</span>
+                <div className="w-px h-4 bg-[#d4b896] flex-shrink-0 hidden sm:block" />
+                <button
+                  onClick={() => setIsDrawingMode(false)}
+                  title="그림판 닫기"
+                  className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
+                >×</button>
               </div>
             </div>
           )}
