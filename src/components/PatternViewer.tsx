@@ -791,7 +791,11 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div
           ref={containerRef}
           className={`w-full h-full touch-none ${isDrawingMode ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
-          {...(isDrawingMode ? {} : handlers)}
+          {...(isDrawingMode ? {
+            onTouchStart: (e: React.TouchEvent) => { if (e.touches.length >= 2) handlers.onTouchStart(e); },
+            onTouchMove:  (e: React.TouchEvent) => { if (e.touches.length >= 2) handlers.onTouchMove(e); },
+            onTouchEnd:   handlers.onTouchEnd,
+          } : handlers)}
         >
           <div
             style={{

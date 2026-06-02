@@ -154,6 +154,7 @@ export default function DrawingCanvas({
   const livePathRef = useRef<SVGPathElement | null>(null);
   const cursorGroupRef = useRef<SVGGElement>(null);
   const isActiveRef = useRef(false);
+  const primaryPointerIdRef = useRef<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const currentImagePtsRef = useRef<DrawPoint[]>([]);
   const currentScreenDRef = useRef('');
@@ -255,8 +256,26 @@ export default function DrawingCanvas({
     const svg = svgRef.current;
     if (!svg) return;
 
+    const cancelDraw = () => {
+      if (!isActiveRef.current) return;
+      isActiveRef.current = false;
+      if (primaryPointerIdRef.current !== null) {
+        try { svg.releasePointerCapture(primaryPointerIdRef.current); } catch (_) {}
+        primaryPointerIdRef.current = null;
+      }
+      removeLivePath();
+      currentImagePtsRef.current = [];
+      currentScreenDRef.current = '';
+      shapeStartRef.current = null;
+      eraserHistoryDoneRef.current = false;
+    };
+
     const onPointerDown = (e: PointerEvent) => {
-      if (!e.isPrimary) return;
+      if (!e.isPrimary) {
+        // Second finger arrived: cancel in-progress drawing so pinch gesture isn't polluted
+        cancelDraw();
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       const p = propsRef.current;
@@ -318,6 +337,7 @@ export default function DrawingCanvas({
       if (p.imgW === 0 || p.imgH === 0) return;
       isActiveRef.current = true;
       svg.setPointerCapture(e.pointerId);
+      primaryPointerIdRef.current = e.pointerId;
       moveCursor(pos.x, pos.y);
 
       if (tool === 'eraser') { eraserHistoryDoneRef.current = false; eraseNearby(pos.x, pos.y); return; }
@@ -451,6 +471,7 @@ export default function DrawingCanvas({
       if (!isActiveRef.current) return;
       isActiveRef.current = false;
       svg.releasePointerCapture(e.pointerId);
+      primaryPointerIdRef.current = null;
       removeLivePath();
       const pos = getPointerPos(e);
 
@@ -476,6 +497,7 @@ export default function DrawingCanvas({
     const onPointerCancel = () => {
       if (!isActiveRef.current) return;
       isActiveRef.current = false;
+      primaryPointerIdRef.current = null;
       const drag = dragRef.current;
       dragRef.current = null;
       if (drag) {
