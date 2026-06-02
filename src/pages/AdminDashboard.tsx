@@ -433,9 +433,17 @@ export default function AdminDashboard() {
           <span className="font-bold text-[#3d2b1f] tracking-tight">어드민</span>
           <span className="text-xs text-[#a08060] ml-2">니팅인더사우나</span>
         </div>
-        <button onClick={handleLogout} className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors">
-          로그아웃
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/login')}
+            className="text-xs font-bold text-[#b5541e] border-2 border-[#b5541e] rounded-lg px-3 py-1.5 hover:bg-[#b5541e] hover:text-[#fdf6e8] transition-all"
+          >
+            회원 로그인
+          </button>
+          <button onClick={handleLogout} className="text-xs text-[#7a5c46] hover:text-[#3d2b1f] transition-colors">
+            로그아웃
+          </button>
+        </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
