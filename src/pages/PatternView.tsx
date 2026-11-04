@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, PatternProgress, PatternType, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool, Ruler } from '@/lib/types';
 import type { SetStateAction } from 'react';
 import InactiveRulerBand from '@/components/InactiveRulerBand';
+import { repeatInfoForRow } from '@/lib/repeat';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
@@ -157,7 +158,8 @@ type Snapshot = {
 const MAX_HISTORY = 20;
 const MAX_RULERS = 4;
 // Band colors per ruler slot. Ruler 1 keeps the app accent; its completed marks keep the default green.
-const RULER_COLORS = ['#b5541e', '#2563eb', '#9333ea', '#db2777'];
+const RULER_COLORS = ['#b5541e', '#2563eb', '#9333ea', '#db2777', '#059669', '#d97706', '#0891b2', '#4b5563'];
+const DEFAULT_RULER_COLOR = RULER_COLORS[0];
 
 /**
  * Build the ruler list for an image. New-format `rulers` wins; otherwise one ruler is
@@ -1352,18 +1354,33 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const ruler = rs.find((r) => r.id === rulerId);
     // Advance the sub-pattern linked to this ruler; unlinked rulers advance the active one.
     const targetSubId = ruler?.sub_id && subs.some((s) => s.id === ruler.sub_id) ? ruler.sub_id : asid;
+    const targetSub = subs.find((s) => s.id === targetSubId);
     setSubPatterns((prev) => prev.map((s) => (s.id === targetSubId ? { ...s, current_row: s.current_row + 1 } : s)));
 
-    if (orientation === 'horizontal') {
-      const newMark: CompletedMark = { y: rx, height: rh, orientation: 'horizontal', ruler_id: rulerId };
-      setCompletedMarks((prev) => [...prev, newMark]);
-      setRulerX(direction === 'up' ? rx - rh : rx + rh);
-    } else {
-      const newMark: CompletedMark = { y: ry, height: rh, ruler_id: rulerId };
-      setCompletedMarks((prev) => [...prev, newMark]);
-      setRulerY(direction === 'up' ? ry - rh : ry + rh);
-    }
-  }, [captureHistory, setRulerX, setRulerY]);
+    // Repeat section: finishing the last row of a pass (but not the final pass) sends the
+    // ruler back to the first row of the section instead of one row forward.
+    const completedRow = (targetSub?.current_row ?? 0) + 1;
+    const info = targetSub ? repeatInfoForRow(targetSub, completedRow) : null;
+    const wraps = !!info && info.phase === 'in' && info.rowInPass === info.rows && info.pass < info.count;
+    const stepsForward = wraps ? -(info!.rows - 1) : 1;
+    const travel = (direction === 'up' ? -1 : 1) * rh * stepsForward;
+    // Passes 2+ re-knit rows that are already marked; don't stack a duplicate mark there.
+    const isRepeatPass = !!info && info.phase === 'in' && info.pass > 1;
+    const isHoriz = orientation === 'horizontal';
+    const newMark: CompletedMark = isHoriz
+      ? { y: rx, height: rh, orientation: 'horizontal', ruler_id: rulerId }
+      : { y: ry, height: rh, ruler_id: rulerId };
+    setCompletedMarks((prev) => {
+      if (isRepeatPass && prev.some((m) =>
+        (m.orientation === 'horizontal') === isHoriz &&
+        (m.ruler_id ?? rulerId) === rulerId &&
+        Math.abs(m.y - newMark.y) < rh * 0.5 && Math.abs(m.height - rh) < rh * 0.5
+      )) return prev;
+      return [...prev, newMark];
+    });
+    if (isHoriz) setRulerX(rx + travel); else setRulerY(ry + travel);
+    if (wraps) setRepeatToast(t('repeat.nextPass', { pass: info!.pass + 1, count: info!.count }));
+  }, [captureHistory, setRulerX, setRulerY, t]);
 
   // ---- Multi-ruler management ----
   // Activating a ruler also activates its linked sub-pattern, so the row counter follows.
@@ -1435,6 +1452,34 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (freeSub) setActiveSubId(freeSub.id);
   }, [captureHistory, rulerNameFor]);
 
+  const [editingRulerId, setEditingRulerId] = useState<string | null>(null);
+  const handleRenameRuler = useCallback((id: string, name: string) => {
+    const n = name.trim().slice(0, 24);
+    if (!n) return;
+    if (latestRef.current.rulers.find((r) => r.id === id)?.name === n) return;
+    captureHistory();
+    setRulers((prev) => prev.map((r) => (r.id === id ? { ...r, name: n } : r)));
+  }, [captureHistory]);
+  const handleRecolorRuler = useCallback((id: string, color: string) => {
+    captureHistory();
+    setRulers((prev) => prev.map((r) => (r.id === id ? { ...r, color } : r)));
+  }, [captureHistory]);
+  // Long-press on a floating ruler chip opens the editor for that ruler
+  const chipPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chipLongPressedRef = useRef(false);
+  const cancelChipPress = useCallback(() => {
+    if (chipPressTimerRef.current) { clearTimeout(chipPressTimerRef.current); chipPressTimerRef.current = null; }
+  }, []);
+  useEffect(() => cancelChipPress, [cancelChipPress]);
+
+  // Short notice when the ruler jumps back for the next repeat pass
+  const [repeatToast, setRepeatToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!repeatToast) return;
+    const id = setTimeout(() => setRepeatToast(null), 2800);
+    return () => clearTimeout(id);
+  }, [repeatToast]);
+
   // Deleting a ruler keeps the completed marks it produced (they are history).
   const handleDeleteRuler = useCallback((id: string) => {
     const { rulers: rs } = latestRef.current;
@@ -1500,11 +1545,20 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     return () => cancelAnimationFrame(raf);
   }, [activeRulerId]);
 
-  // Completed marks of rulers 2+ are tinted with their ruler color (ruler 1 keeps green).
+  // Completed marks are tinted with their ruler's color; the default accent keeps the classic green.
   const markColors = useMemo(
-    () => Object.fromEntries(rulers.slice(1).map((r) => [r.id, r.color])) as Record<string, string>,
+    () => Object.fromEntries(rulers.filter((r) => r.color !== DEFAULT_RULER_COLOR).map((r) => [r.id, r.color])) as Record<string, string>,
     [rulers]
   );
+  // Repeat status of the active sub-pattern for the row counter ("Repeat 2/6 · R3/8")
+  const repeatLabel = useMemo(() => {
+    if (!activeSub) return undefined;
+    const info = repeatInfoForRow(activeSub, (activeSub.current_row || 0) + 1);
+    if (!info) return undefined;
+    if (info.phase === 'before') return t('repeat.before');
+    if (info.phase === 'after') return t('repeat.done');
+    return t('repeat.status', { pass: info.pass, count: info.count, row: info.rowInPass, rows: info.rows });
+  }, [activeSub, t]);
 
   // Convert screen % → image-space % for marker placement (markers now outside CSS transform)
   // Accounts for letterbox offset so positions are device-independent.
@@ -2498,6 +2552,21 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     {subPatterns.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </label>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setEditingRulerId((v) => (v === activeRuler.id ? null : activeRuler.id))}
+                  title={t('ruler.rename')}
+                  aria-label={t('ruler.rename')}
+                  aria-pressed={editingRulerId === activeRuler.id}
+                  className={`flex items-center justify-center w-6 h-6 rounded border border-[#b07840] active:scale-95 select-none ${
+                    editingRulerId === activeRuler.id ? 'bg-[#b5541e] text-[#fdf6e8]' : 'bg-[#fdf6e8] text-[#7a5c46] hover:bg-[#ede5cc]'
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
                 {rulers.length > 1 && (
                   <button
                     type="button"
@@ -2513,6 +2582,45 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   </button>
                 )}
               </div>
+              {/* Ruler editor: name + color (opened with the pencil button or a long-press on a floating chip) */}
+              {editingRulerId === activeRuler.id && (
+                <div className="w-full flex items-center gap-2 flex-wrap border-b border-[#d4b896] pb-1.5">
+                  <input
+                    key={activeRuler.id}
+                    type="text"
+                    defaultValue={activeRuler.name}
+                    maxLength={24}
+                    placeholder={t('ruler.namePlaceholder')}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onBlur={(e) => handleRenameRuler(activeRuler.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setEditingRulerId(null);
+                    }}
+                    className="h-7 w-32 text-base sm:text-xs border border-[#b07840] rounded px-2 bg-white text-[#3d2b1f] focus:outline-none focus:border-[#b5541e]"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {RULER_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => handleRecolorRuler(activeRuler.id, c)}
+                        aria-label={c}
+                        aria-pressed={activeRuler.color === c}
+                        className="w-6 h-6 rounded-full border-2 active:scale-90 transition-transform"
+                        style={{ background: c, borderColor: activeRuler.color === c ? '#3d2b1f' : '#fdf6e8', boxShadow: '0 0 0 1px #b07840' }}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setEditingRulerId(null)}
+                    className="ml-auto h-7 px-2.5 rounded border border-[#b07840] bg-[#fdf6e8] text-[10px] font-bold text-[#7a5c46] hover:bg-[#ede5cc]"
+                  >{t('ruler.editDone')}</button>
+                </div>
+              )}
               {/* Row 1 on mobile: Direction + Slant + (mobile close) */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Direction indicator + Rotate button */}
@@ -2708,7 +2816,21 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <button
                   key={r.id}
                   type="button"
-                  onClick={() => jumpToRuler(r.id)}
+                  onPointerDown={() => {
+                    chipLongPressedRef.current = false;
+                    cancelChipPress();
+                    chipPressTimerRef.current = setTimeout(() => {
+                      chipLongPressedRef.current = true;
+                      activateRuler(r.id);
+                      setEditingRulerId(r.id);
+                      setShowRulerSettings(true);
+                    }, 500);
+                  }}
+                  onPointerUp={cancelChipPress}
+                  onPointerLeave={cancelChipPress}
+                  onPointerCancel={cancelChipPress}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onClick={() => { if (chipLongPressedRef.current) { chipLongPressedRef.current = false; return; } jumpToRuler(r.id); }}
                   title={isAct ? t('viewer.goToRuler').replace('\n', ' ') : t('ruler.tapToActivate')}
                   aria-pressed={isAct}
                   className={`flex items-center gap-1.5 h-8 sm:h-9 pl-1.5 pr-2.5 rounded-full border-2 backdrop-blur-sm shadow-sm text-[10px] sm:text-[11px] font-bold select-none transition-all active:scale-95 ${
@@ -2735,6 +2857,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-dashed border-[#b07840]/70 bg-[#fdf6e8]/70 backdrop-blur-sm text-[#b5541e] text-base font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
               >+</button>
             )}
+          </div>
+        )}
+
+        {repeatToast && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 max-w-[90%] pointer-events-none">
+            <div className="flex items-center gap-2 bg-[#3d2b1f]/90 text-[#fdf6e8] text-xs font-bold px-3.5 py-2 rounded-full shadow-lg backdrop-blur-sm">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 9A8 8 0 0119 7.3M18.4 15A8 8 0 015 16.7" />
+              </svg>
+              <span className="truncate">{repeatToast}</span>
+            </div>
           </div>
         )}
 
@@ -2789,6 +2922,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             current={activeSub?.current_row || 0}
             total={activeSub?.total_rows || 1}
             onChange={handleRowChange}
+            repeatLabel={repeatLabel}
           />
 
           {/* Marker button(s) */}

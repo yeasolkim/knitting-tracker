@@ -5,9 +5,11 @@ interface RowCounterProps {
   current: number;
   total: number;
   onChange: (row: number) => void;
+  /** e.g. "Repeat 2/6 · R3/8" — shown under the total */
+  repeatLabel?: string;
 }
 
-export default function RowCounter({ current, total, onChange }: RowCounterProps) {
+export default function RowCounter({ current, total, onChange, repeatLabel }: RowCounterProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [shake, setShake] = useState(false);
@@ -103,6 +105,9 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
           </div>
         )}
         <div className="text-[9px] text-[#a08060] tracking-wide leading-tight">{t('counter.rowOf', { total })}</div>
+        {repeatLabel && (
+          <div className="text-[9px] text-[#b5541e] font-bold tracking-wide leading-tight whitespace-nowrap">{repeatLabel}</div>
+        )}
       </div>
       <button
         onClick={() => { if (!longPressFiredRef.current) onChange(current + 1); }}

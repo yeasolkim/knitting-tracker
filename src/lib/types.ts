@@ -75,6 +75,10 @@ export interface SubPattern {
   name: string;
   total_rows: number;
   current_row: number;
+  /** Repeat section: rows [repeat_start, repeat_start + repeat_rows*repeat_count). Off when rows/count are 0 or absent. */
+  repeat_start?: number;
+  repeat_rows?: number;
+  repeat_count?: number;
 }
 
 export interface DrawPoint {

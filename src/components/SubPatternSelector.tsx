@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { hasRepeat, repeatInfoForRow } from '@/lib/repeat';
 
 interface SubPatternSelectorProps {
   subPatterns: SubPattern[];
@@ -13,7 +14,7 @@ interface SubPatternSelectorProps {
   onDelete: (id: string) => void;
 }
 
-function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function TotalRowsInput({ value, onChange, min = 1, narrow = false }: { value: number; onChange: (v: number) => void; min?: number; narrow?: boolean }) {
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const display = draft !== null ? draft : String(value);
@@ -22,20 +23,20 @@ function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: numb
     <input
       ref={inputRef}
       type="number"
-      min={1}
+      min={min}
       max={99999}
       value={display}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
         if (draft === null) return; // nothing typed — keep current value
         const parsed = parseInt(draft);
-        onChange(isNaN(parsed) || parsed < 1 ? 1 : Math.min(99999, parsed));
+        onChange(isNaN(parsed) || parsed < min ? min : Math.min(99999, parsed));
         setDraft(null);
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') inputRef.current?.blur();
       }}
-      className="w-16 text-base sm:text-xs border-2 border-[#b07840] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center"
+      className={`${narrow ? 'w-12' : 'w-16'} text-base sm:text-xs border-2 border-[#b07840] rounded-lg px-1.5 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] text-center`}
       onClick={(e) => e.stopPropagation()}
     />
   );
@@ -142,6 +143,12 @@ export default function SubPatternSelector({
                     <span className="text-[#a08060] ml-1.5 text-xs">
                       {t('sub.rowDisplay', { current: sub.current_row, total: sub.total_rows })}
                     </span>
+                    {(() => {
+                      const info = repeatInfoForRow(sub, sub.current_row + 1);
+                      return info && info.phase === 'in'
+                        ? <span className="text-[#b5541e] ml-1.5 text-[10px] font-bold">{t('repeat.short', { pass: info.pass, count: info.count })}</span>
+                        : null;
+                    })()}
                   </button>
 
                   <div className="flex gap-0.5 shrink-0">
@@ -202,6 +209,41 @@ export default function SubPatternSelector({
                     value={sub.total_rows}
                     onChange={(val) => onUpdate(sub.id, { total_rows: val })}
                   />
+                </div>
+              )}
+
+              {/* Repeat section: rows [start, start + rows*count) */}
+              {sub.id === activeId && editingId !== sub.id && (
+                <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                  <label className="flex items-center gap-1.5 text-[10px] text-[#a08060] tracking-wide cursor-pointer select-none min-h-[28px]">
+                    <input
+                      type="checkbox"
+                      className="accent-[#b5541e] w-3.5 h-3.5"
+                      checked={hasRepeat(sub)}
+                      onChange={(e) => onUpdate(sub.id, e.target.checked
+                        ? { repeat_start: sub.repeat_start ?? 1, repeat_rows: sub.repeat_rows || 2, repeat_count: sub.repeat_count || 2 }
+                        : { repeat_rows: 0, repeat_count: 0 })}
+                    />
+                    {t('repeat.use')}
+                  </label>
+                  {hasRepeat(sub) && (
+                    <>
+                      <div className="flex items-center gap-x-2 gap-y-1 mt-0.5 flex-wrap text-[10px] text-[#a08060]">
+                        <span className="flex items-center gap-1">{t('repeat.start')}
+                          <TotalRowsInput narrow value={sub.repeat_start ?? 1} onChange={(v) => onUpdate(sub.id, { repeat_start: v })} />
+                        </span>
+                        <span className="flex items-center gap-1">{t('repeat.rows')}
+                          <TotalRowsInput narrow value={sub.repeat_rows!} onChange={(v) => onUpdate(sub.id, { repeat_rows: v })} />
+                        </span>
+                        <span className="flex items-center gap-1">{t('repeat.count')}
+                          <TotalRowsInput narrow value={sub.repeat_count!} onChange={(v) => onUpdate(sub.id, { repeat_count: v })} />
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#7a5c46] mt-1">
+                        {t('repeat.summary', { start: sub.repeat_start ?? 1, rows: sub.repeat_rows!, count: sub.repeat_count! })}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
