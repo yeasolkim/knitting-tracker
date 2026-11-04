@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Le modifiche fatte offline su questo dispositivo sono in conflitto con modifiche più recenti salvate da un altro dispositivo. È stata mantenuta la versione dell’altro dispositivo e quelle di questo non sono state applicate.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Ordine e nomi',
+  'ruler.defaultName': 'Righello {n}',
+  'ruler.add': 'Aggiungi righello',
+  'ruler.deleteRuler': 'Elimina questo righello',
+  'ruler.deleteConfirm': 'Eliminare "{name}"? I segni completati con esso resteranno.',
+  'ruler.linkedPart': 'Parte collegata',
+  'ruler.noLink': 'Non collegato',
+  'ruler.tapToActivate': 'Tocca per usare questo righello',
 };

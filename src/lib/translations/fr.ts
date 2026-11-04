@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Les modifications faites hors ligne sur cet appareil sont en conflit avec des modifications plus récentes enregistrées depuis un autre appareil. La version de l’autre appareil a été conservée et celles de cet appareil n’ont pas été appliquées.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Ordre et noms',
+  'ruler.defaultName': 'Règle {n}',
+  'ruler.add': 'Ajouter une règle',
+  'ruler.deleteRuler': 'Supprimer cette règle',
+  'ruler.deleteConfirm': 'Supprimer « {name} » ? Les marques terminées avec elle seront conservées.',
+  'ruler.linkedPart': 'Partie liée',
+  'ruler.noLink': 'Non liée',
+  'ruler.tapToActivate': 'Touchez pour utiliser cette règle',
 };

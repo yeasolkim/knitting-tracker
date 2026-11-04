@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Endringer gjort frakoblet på denne enheten var i konflikt med nyere endringer lagret fra en annen enhet. Versjonen fra den andre enheten ble beholdt, og endringene på denne enheten ble ikke brukt.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Rekkefølge og navn',
+  'ruler.defaultName': 'Linjal {n}',
+  'ruler.add': 'Legg til linjal',
+  'ruler.deleteRuler': 'Slett denne linjalen',
+  'ruler.deleteConfirm': 'Slette «{name}»? Fullførte merker laget med den beholdes.',
+  'ruler.linkedPart': 'Koblet del',
+  'ruler.noLink': 'Ikke koblet',
+  'ruler.tapToActivate': 'Trykk for å bruke denne linjalen',
 };

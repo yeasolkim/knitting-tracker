@@ -18,6 +18,17 @@ interface RowRulerProps {
   onChangeHeight: (h: number) => void;
   onToggleSettings: () => void;
   onDragStart?: () => void;
+  /** Band/ghost-line color (hex). Defaults to the app accent. */
+  accentColor?: string;
+  /** Optional name tag drawn on the band (shown when several rulers exist). */
+  label?: string;
+}
+
+function hexToRgbTriple(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return '181,84,30';
+  const n = parseInt(m[1], 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
 const RowRuler = memo(function RowRuler({
@@ -36,7 +47,10 @@ const RowRuler = memo(function RowRuler({
   onChangeHeight,
   onToggleSettings,
   onDragStart,
+  accentColor = '#b5541e',
+  label,
 }: RowRulerProps) {
+  const accent = hexToRgbTriple(accentColor);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showActionBar, setShowActionBar] = useState(initialShowActionBar);
@@ -227,12 +241,12 @@ const RowRuler = memo(function RowRuler({
               className="absolute top-0 bottom-0 pointer-events-none"
               style={{ left: `${x}%`, width: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
             >
-              <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
-              <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: 'rgba(181,84,30,0.55)' }} />
-              <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: 'rgba(181,84,30,0.55)' }} />
+              <div className="absolute inset-0" style={{ background: `rgba(${accent},0.12)` }} />
+              <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: `rgba(${accent},0.55)` }} />
+              <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: `rgba(${accent},0.55)` }} />
               <div
                 className="absolute left-1/2 -translate-x-1/2 text-[10px] font-semibold select-none"
-                style={{ top: '40%', color: 'rgba(181,84,30,0.75)', writingMode: 'vertical-lr' }}
+                style={{ top: '40%', color: `rgba(${accent},0.75)`, writingMode: 'vertical-lr' }}
               >
                 +{i + 1}
               </div>
@@ -249,8 +263,11 @@ const RowRuler = memo(function RowRuler({
             className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
             onPointerDown={handleBodyPointerDown}
           >
-            <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-            <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+            <div className="absolute left-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? `rgba(${accent},0.8)` : `rgba(${accent},0.6)` }} />
+            <div className="absolute right-0 w-px" style={{ top: '-200%', bottom: '-200%', background: isDragging ? `rgba(${accent},0.8)` : `rgba(${accent},0.6)` }} />
+            {label && (
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap pointer-events-none" style={{ background: `rgba(${accent},0.9)`, color: '#fdf6e8' }}>{label}</div>
+            )}
             </div>
         </div>
 
@@ -352,10 +369,10 @@ const RowRuler = memo(function RowRuler({
             className="absolute left-0 right-0 pointer-events-none"
             style={{ top: `${y}%`, height: `${height}%`, opacity, transition: 'none', transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
           >
-            <div className="absolute inset-0" style={{ background: 'rgba(181,84,30,0.12)' }} />
-            <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: 'rgba(181,84,30,0.55)' }} />
-            <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: 'rgba(181,84,30,0.55)' }} />
-            <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold select-none" style={{ color: 'rgba(181,84,30,0.75)' }}>
+            <div className="absolute inset-0" style={{ background: `rgba(${accent},0.12)` }} />
+            <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: `rgba(${accent},0.55)` }} />
+            <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: `rgba(${accent},0.55)` }} />
+            <div className="absolute right-16 top-1/2 -translate-y-1/2 text-[10px] font-semibold select-none" style={{ color: `rgba(${accent},0.75)` }}>
               +{i + 1}
             </div>
           </div>
@@ -371,8 +388,11 @@ const RowRuler = memo(function RowRuler({
           className="w-full h-full cursor-grab active:cursor-grabbing select-none relative"
           onPointerDown={handleBodyPointerDown}
         >
-          <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
-          <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? 'rgba(181,84,30,0.8)' : 'rgba(181,84,30,0.6)' }} />
+          <div className="absolute top-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? `rgba(${accent},0.8)` : `rgba(${accent},0.6)` }} />
+          <div className="absolute bottom-0 h-px" style={{ left: '-200%', right: '-200%', background: isDragging ? `rgba(${accent},0.8)` : `rgba(${accent},0.6)` }} />
+          {label && (
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap pointer-events-none" style={{ background: `rgba(${accent},0.9)`, color: '#fdf6e8' }}>{label}</div>
+          )}
         </div>
       </div>
 

@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Offline gemaakte wijzigingen op dit apparaat botsten met recentere wijzigingen die vanaf een ander apparaat zijn opgeslagen. De versie van het andere apparaat is behouden; de wijzigingen van dit apparaat zijn niet toegepast.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Volgorde & namen',
+  'ruler.defaultName': 'Liniaal {n}',
+  'ruler.add': 'Liniaal toevoegen',
+  'ruler.deleteRuler': 'Deze liniaal verwijderen',
+  'ruler.deleteConfirm': '"{name}" verwijderen? Voltooide markeringen die ermee zijn gemaakt blijven staan.',
+  'ruler.linkedPart': 'Gekoppeld deel',
+  'ruler.noLink': 'Niet gekoppeld',
+  'ruler.tapToActivate': 'Tik om deze liniaal te gebruiken',
 };

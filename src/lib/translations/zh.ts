@@ -245,4 +245,11 @@ export default {
   'offline.conflictPopup.desc': '此设备离线时的更改与其他设备更近期保存的内容发生冲突。已保留其他设备的内容，此设备的更改未被应用。',
   'offline.conflictPopup.close': '确定',
   'form.imageOrderAndName': '顺序与名称',
+  'ruler.defaultName': '进度线 {n}',
+  'ruler.add': '添加进度线',
+  'ruler.deleteRuler': '删除此进度线',
+  'ruler.deleteConfirm': '删除“{name}”？用它标记的完成记录会保留。',
+  'ruler.linkedPart': '关联部件',
+  'ruler.noLink': '不关联',
+  'ruler.tapToActivate': '点击使用此进度线',
 };

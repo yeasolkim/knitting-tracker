@@ -245,4 +245,11 @@ export default {
   'offline.conflictPopup.title': 'Newer changes from another device',
   'offline.conflictPopup.desc': 'Changes made offline on this device conflicted with more recent changes saved from another device. The other device’s version was kept and this device’s changes were not applied.',
   'offline.conflictPopup.close': 'OK',
+  'ruler.defaultName': 'Ruler {n}',
+  'ruler.add': 'Add ruler',
+  'ruler.deleteRuler': 'Delete this ruler',
+  'ruler.deleteConfirm': 'Delete "{name}"? Completed marks made with it will stay.',
+  'ruler.linkedPart': 'Linked part',
+  'ruler.noLink': 'Not linked',
+  'ruler.tapToActivate': 'Tap to use this ruler',
 };

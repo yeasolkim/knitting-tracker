@@ -3,7 +3,9 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool } from '@/lib/types';
+import type { PatternWithProgress, PatternProgress, PatternType, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool, Ruler } from '@/lib/types';
+import type { SetStateAction } from 'react';
+import InactiveRulerBand from '@/components/InactiveRulerBand';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
@@ -137,12 +139,8 @@ type CrochetRing = { cx: number; cy: number; r: number; rInner?: number; ry?: nu
 type Snapshot = {
   subPatterns: SubPattern[];
   activeSubId: string;
-  rulerY: number;
-  rulerHeight: number;
-  rulerDirection: RulerDirection;
-  rulerOrientation: RulerOrientation;
-  rulerX: number;
-  rulerRotation: number;
+  rulers: Ruler[];
+  activeRulerId: string;
   completedMarks: CompletedMark[];
   crochetMarks: CrochetMark[];
   knittingMarks: KnittingMark[];
@@ -157,6 +155,56 @@ type Snapshot = {
 };
 
 const MAX_HISTORY = 20;
+const MAX_RULERS = 4;
+// Band colors per ruler slot. Ruler 1 keeps the app accent; its completed marks keep the default green.
+const RULER_COLORS = ['#b5541e', '#2563eb', '#9333ea', '#db2777'];
+
+/**
+ * Build the ruler list for an image. New-format `rulers` wins; otherwise one ruler is
+ * synthesized from the legacy ruler_* fields (falling back to top-level progress columns).
+ * `hasSavedHeight` tells the caller whether the 1/20-screen height init should be skipped.
+ */
+function buildRulers(
+  state: ImagePerState | undefined,
+  progress: PatternProgress | null | undefined,
+  patternType: PatternType,
+  nameFor: (n: number) => string,
+): { rulers: Ruler[]; activeId: string; hasSavedHeight: boolean } {
+  const saved = state?.rulers;
+  if (saved && saved.length > 0) {
+    const rulers: Ruler[] = saved.map((r, i) => ({
+      ...r,
+      id: r.id || generateId(),
+      name: r.name || nameFor(i + 1),
+      color: r.color || RULER_COLORS[i % RULER_COLORS.length],
+      rotation: r.rotation ?? 0,
+      position_x: r.position_x ?? 50,
+      position_y: r.position_y ?? 10,
+      direction: r.direction ?? 'up',
+      orientation: r.orientation ?? 'vertical',
+      height: Math.min(LOG_RULER_MAX, r.height ?? 5),
+    }));
+    const activeId = rulers.some((r) => r.id === state?.active_ruler_id) ? state!.active_ruler_id! : rulers[0].id;
+    return { rulers, activeId, hasSavedHeight: rulers[0].height > 0 };
+  }
+  const savedRh = state?.ruler_height ?? progress?.ruler_height ?? undefined;
+  const crd = (state?.crochet_ruler_data ?? progress?.crochet_ruler_data) as { shape?: string } | undefined;
+  const isCrochetLine = patternType === 'crochet' && (crd?.shape ?? 'circle') === 'line';
+  const hasSavedHeight = savedRh != null && savedRh > 0;
+  const height = hasSavedHeight ? Math.min(LOG_RULER_MAX, savedRh!) : isCrochetLine ? 10 : 5; // 5 = placeholder, corrected to containerH/20 after layout
+  const ruler: Ruler = {
+    id: generateId(),
+    name: nameFor(1),
+    position_y: state?.ruler_position_y ?? progress?.ruler_position_y ?? 10,
+    position_x: state?.ruler_position_x ?? (progress?.ruler_position_x as number | null | undefined) ?? 50,
+    height,
+    direction: state?.ruler_direction ?? (progress?.ruler_direction as RulerDirection | undefined) ?? 'up',
+    orientation: state?.ruler_orientation ?? (progress?.ruler_orientation as RulerOrientation | undefined) ?? 'vertical',
+    rotation: state?.ruler_rotation ?? (progress?.ruler_rotation as number | null | undefined) ?? 0,
+    color: RULER_COLORS[0],
+  };
+  return { rulers: [ruler], activeId: ruler.id, hasSavedHeight: hasSavedHeight || isCrochetLine };
+}
 const isTextInputTarget = (target: EventTarget | null) =>
   !!(target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
 const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
@@ -264,23 +312,41 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
 
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
-  // Ruler stored in CONTENT coordinates (% of pattern, not screen)
-  const [rulerY, setRulerY] = useState(img0?.ruler_position_y ?? pattern.progress?.ruler_position_y ?? 10);
+  // Rulers are stored in CONTENT coordinates (% of pattern, not screen).
+  // Several rulers may exist per image; every ruler action targets the ACTIVE one.
+  const rulerNameFor = useCallback((n: number) => t('ruler.defaultName').replace('{n}', String(n)), [t]);
+  const initialRulersRef = useRef(buildRulers(img0, pattern.progress, pattern.type, rulerNameFor));
+  const [rulers, setRulers] = useState<Ruler[]>(() => initialRulersRef.current.rulers);
+  const [activeRulerId, setActiveRulerId] = useState<string>(() => initialRulersRef.current.activeId);
+  // Mutable mirror so stable setters/callbacks always hit the current active ruler
+  const activeRulerIdRef = useRef(activeRulerId);
+  activeRulerIdRef.current = activeRulerId;
+  const activeRuler: Ruler = rulers.find((r) => r.id === activeRulerId) ?? rulers[0];
+  // Derived views of the active ruler — the rest of this component reads these names.
+  const rulerY = activeRuler.position_y;
+  const rulerHeight = activeRuler.height;
+  const rulerX = activeRuler.position_x;
+  const rulerDirection = activeRuler.direction;
+  const rulerOrientation = activeRuler.orientation;
+  const rulerRotation = activeRuler.rotation;
+  // Field setters with the same signature as useState setters, scoped to the active ruler.
+  const rulerSetters = useMemo(() => {
+    const mk = <K extends keyof Ruler>(key: K) => (v: SetStateAction<Ruler[K]>) =>
+      setRulers((prev) => prev.map((r) => r.id === activeRulerIdRef.current
+        ? { ...r, [key]: typeof v === 'function' ? (v as (p: Ruler[K]) => Ruler[K])(r[key]) : v }
+        : r));
+    return {
+      setRulerY: mk('position_y'),
+      setRulerHeight: mk('height'),
+      setRulerX: mk('position_x'),
+      setRulerDirection: mk('direction'),
+      setRulerOrientation: mk('orientation'),
+      setRulerRotation: mk('rotation'),
+    };
+  }, []);
+  const { setRulerY, setRulerHeight, setRulerX, setRulerDirection, setRulerOrientation, setRulerRotation } = rulerSetters;
   // true = skip screen-relative init (pattern has a saved value or is crochet-line type)
-  const rulerHeightInitializedRef = useRef((() => {
-    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null && saved > 0) return true;
-    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    return pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
-  })());
-  const [rulerHeight, setRulerHeight] = useState(() => {
-    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    if (saved != null && saved > 0) return Math.min(LOG_RULER_MAX, saved);
-    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
-    if (isCrochetLine) return 10;
-    return 5; // placeholder — corrected to containerH/20 by useEffect after layout
-  });
+  const rulerHeightInitializedRef = useRef(initialRulersRef.current.hasSavedHeight);
   const [showSubPatternGuide, setShowSubPatternGuide] = useState(false);
   const [showCrochetShapeGuide, setShowCrochetShapeGuide] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -321,18 +387,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const savedCy = saved?.cy ?? 50;
     return (saved?.completedRings ?? []).map(r => typeof r === 'number' ? { cx: savedCx, cy: savedCy, r } : r);
   });
-  const [rulerDirection, setRulerDirection] = useState<RulerDirection>(
-    img0?.ruler_direction ?? (pattern.progress?.ruler_direction as RulerDirection) ?? 'up'
-  );
-  const [rulerOrientation, setRulerOrientation] = useState<RulerOrientation>(
-    img0?.ruler_orientation ?? (pattern.progress?.ruler_orientation as RulerOrientation) ?? 'vertical'
-  );
-  const [rulerX, setRulerX] = useState<number>(
-    img0?.ruler_position_x ?? (pattern.progress?.ruler_position_x as number) ?? 50
-  );
-  const [rulerRotation, setRulerRotation] = useState<number>(
-    img0?.ruler_rotation ?? (pattern.progress?.ruler_rotation as number) ?? 0
-  );
   const [completedMarks, setCompletedMarks] = useState<CompletedMark[]>(
     img0?.completed_marks ?? (pattern.progress?.completed_marks as CompletedMark[]) ?? []
   );
@@ -514,8 +568,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Ref for stable callbacks that need latest transform/ruler values.
   // Updated directly in render (not via useEffect) so it is always current
   // before any pointer event fires — even in the same frame as a state change.
-  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
-  latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
+  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
+  latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
 
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
@@ -566,12 +620,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const undoStateRef = useRef<Snapshot>({
     subPatterns,
     activeSubId,
-    rulerY,
-    rulerHeight,
-    rulerDirection,
-    rulerOrientation,
-    rulerX,
-    rulerRotation,
+    rulers,
+    activeRulerId,
     completedMarks,
     crochetMarks: [],
     knittingMarks: [],
@@ -596,12 +646,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const applySnapshot = useCallback((snap: Snapshot) => {
     setSubPatterns(snap.subPatterns);
     setActiveSubId(snap.activeSubId);
-    setRulerY(snap.rulerY);
-    setRulerHeight(snap.rulerHeight);
-    setRulerDirection(snap.rulerDirection);
-    setRulerOrientation(snap.rulerOrientation);
-    setRulerX(snap.rulerX);
-    setRulerRotation(snap.rulerRotation);
+    setRulers(snap.rulers);
+    setActiveRulerId(snap.activeRulerId);
+    activeRulerIdRef.current = snap.activeRulerId;
     setCompletedMarks(snap.completedMarks);
     setCrochetMarks(snap.crochetMarks);
     setKnittingMarks(snap.knittingMarks);
@@ -882,7 +929,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [placingNoteKey, setPlacingNoteKey] = useState<string | null>(null);
 
   // Keep undoStateRef in sync — direct assignment avoids scheduling an effect on every drag frame
-  undoStateRef.current = { subPatterns, activeSubId, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
+  undoStateRef.current = { subPatterns, activeSubId, rulers, activeRulerId, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -905,10 +952,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Slider view window — defines the linear range the slider covers.
   const [sliderViewMin, setSliderViewMin] = useState(0);
   const [sliderViewMax, setSliderViewMax] = useState(() => {
-    const saved = img0?.ruler_height ?? pattern.progress?.ruler_height;
-    const savedData = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { shape?: string } | undefined;
-    const isCrochetLine = pattern.type === 'crochet' && (savedData?.shape ?? 'circle') === 'line';
-    const rh = (saved != null && saved > 0) ? Math.min(LOG_RULER_MAX, saved) : (isCrochetLine ? 10 : 5);
+    const init = initialRulersRef.current;
+    const rh = init.rulers.find((r) => r.id === init.activeId)?.height ?? 5;
     return Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, rh * 4));
   });
 
@@ -919,13 +964,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
   const perImageStateLatest = useRef<ImagePerState>({});
+  const ruler0 = rulers[0];
   perImageStateLatest.current = {
-    ruler_position_y: rulerY,
-    ruler_height: rulerHeight,
-    ruler_position_x: rulerX,
-    ruler_direction: rulerDirection,
-    ruler_orientation: rulerOrientation,
-    ruler_rotation: rulerRotation || undefined,
+    rulers,
+    active_ruler_id: activeRulerId,
+    // Legacy mirror of ruler 1 for older clients
+    ruler_position_y: ruler0.position_y,
+    ruler_height: ruler0.height,
+    ruler_position_x: ruler0.position_x,
+    ruler_direction: ruler0.direction,
+    ruler_orientation: ruler0.orientation,
+    ruler_rotation: ruler0.rotation || undefined,
     active_sub_id: activeSubId,
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
@@ -1010,30 +1059,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     // Load state for the image we're switching to
     const next = imageStatesRef.current[activeFileIdx];
 
-    setRulerY(next?.ruler_position_y ?? 10);
     const nextCrochetShape = ((next?.crochet_ruler_data?.shape ?? 'circle') as 'line' | 'circle' | 'ellipse' | 'rect');
-    const savedRh = next?.ruler_height;
-    if (savedRh != null && savedRh > 0) {
-      const restoredRh = Math.min(LOG_RULER_MAX, savedRh);
-      setRulerHeight(restoredRh);
-      setSliderViewMin(0);
-      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
-      rulerHeightInitializedRef.current = true;
-    } else if (isCrochet && nextCrochetShape === 'line') {
-      setRulerHeight(10);
-      setSliderViewMin(0);
-      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 10 * 4)));
-      rulerHeightInitializedRef.current = true;
-    } else {
-      setRulerHeight(5);
-      setSliderViewMin(0);
-      setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, 5 * 4)));
-      rulerHeightInitializedRef.current = false; // no saved value → useEffect applies 1/20 after new image loads
-    }
-    setRulerX(next?.ruler_position_x ?? 50);
-    setRulerDirection(next?.ruler_direction ?? 'up');
-    setRulerOrientation(next?.ruler_orientation ?? 'vertical');
-    setRulerRotation(next?.ruler_rotation ?? 0);
+    const built = buildRulers(next, undefined, pattern.type, rulerNameFor);
+    setRulers(built.rulers);
+    setActiveRulerId(built.activeId);
+    activeRulerIdRef.current = built.activeId;
+    const restoredRh = built.rulers.find((r) => r.id === built.activeId)?.height ?? 5;
+    setSliderViewMin(0);
+    setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
+    // no saved value → useEffect applies 1/20-of-screen height after the new image loads
+    rulerHeightInitializedRef.current = built.hasSavedHeight;
     setCompletedMarks(next?.completed_marks ?? []);
     setKnittingMarks(next?.knitting_marks ?? []);
     setCrochetMarks(next?.crochet_marks ?? []);
@@ -1179,11 +1214,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     save({
       current_row: activeSub?.current_row || 0,
       // Keep top-level columns for backward compat (image 0 values)
-      ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
-      ruler_height: activeFileIdx === 0 ? rulerHeight : (imageStatesRef.current[0]?.ruler_height ?? rulerHeight),
-      ruler_direction: activeFileIdx === 0 ? rulerDirection : (imageStatesRef.current[0]?.ruler_direction ?? rulerDirection),
-      ruler_orientation: activeFileIdx === 0 ? rulerOrientation : (imageStatesRef.current[0]?.ruler_orientation ?? rulerOrientation),
-      ruler_position_x: activeFileIdx === 0 ? rulerX : (imageStatesRef.current[0]?.ruler_position_x ?? rulerX),
+      ruler_position_y: activeFileIdx === 0 ? ruler0.position_y : (imageStatesRef.current[0]?.ruler_position_y ?? ruler0.position_y),
+      ruler_height: activeFileIdx === 0 ? ruler0.height : (imageStatesRef.current[0]?.ruler_height ?? ruler0.height),
+      ruler_direction: activeFileIdx === 0 ? ruler0.direction : (imageStatesRef.current[0]?.ruler_direction ?? ruler0.direction),
+      ruler_orientation: activeFileIdx === 0 ? ruler0.orientation : (imageStatesRef.current[0]?.ruler_orientation ?? ruler0.orientation),
+      ruler_position_x: activeFileIdx === 0 ? ruler0.position_x : (imageStatesRef.current[0]?.ruler_position_x ?? ruler0.position_x),
       completed_marks: activeFileIdx === 0 ? completedMarks : (imageStatesRef.current[0]?.completed_marks ?? completedMarks),
       crochet_marks: activeFileIdx === 0 ? crochetMarks : (imageStatesRef.current[0]?.crochet_marks ?? crochetMarks),
       knitting_marks: activeFileIdx === 0 ? knittingMarks : (imageStatesRef.current[0]?.knitting_marks ?? knittingMarks),
@@ -1196,7 +1231,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [activeSub, activeFileIdx, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths, save]);
+  }, [activeSub, activeFileIdx, rulers, activeRulerId, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths, save]);
 
   // Save all state immediately (used by save view button and back button)
   const saveAll = useCallback(() => {
@@ -1204,11 +1239,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
     return saveFn({
       current_row: activeSub?.current_row || 0,
-      ruler_position_y: activeFileIdx === 0 ? rulerY : (imageStatesRef.current[0]?.ruler_position_y ?? rulerY),
-      ruler_height: activeFileIdx === 0 ? rulerHeight : (imageStatesRef.current[0]?.ruler_height ?? rulerHeight),
-      ruler_direction: activeFileIdx === 0 ? rulerDirection : (imageStatesRef.current[0]?.ruler_direction ?? rulerDirection),
-      ruler_orientation: activeFileIdx === 0 ? rulerOrientation : (imageStatesRef.current[0]?.ruler_orientation ?? rulerOrientation),
-      ruler_position_x: activeFileIdx === 0 ? rulerX : (imageStatesRef.current[0]?.ruler_position_x ?? rulerX),
+      ruler_position_y: activeFileIdx === 0 ? ruler0.position_y : (imageStatesRef.current[0]?.ruler_position_y ?? ruler0.position_y),
+      ruler_height: activeFileIdx === 0 ? ruler0.height : (imageStatesRef.current[0]?.ruler_height ?? ruler0.height),
+      ruler_direction: activeFileIdx === 0 ? ruler0.direction : (imageStatesRef.current[0]?.ruler_direction ?? ruler0.direction),
+      ruler_orientation: activeFileIdx === 0 ? ruler0.orientation : (imageStatesRef.current[0]?.ruler_orientation ?? ruler0.orientation),
+      ruler_position_x: activeFileIdx === 0 ? ruler0.position_x : (imageStatesRef.current[0]?.ruler_position_x ?? ruler0.position_x),
       completed_marks: activeFileIdx === 0 ? completedMarks : (imageStatesRef.current[0]?.completed_marks ?? completedMarks),
       crochet_marks: activeFileIdx === 0 ? crochetMarks : (imageStatesRef.current[0]?.crochet_marks ?? crochetMarks),
       knitting_marks: activeFileIdx === 0 ? knittingMarks : (imageStatesRef.current[0]?.knitting_marks ?? knittingMarks),
@@ -1221,7 +1256,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       active_sub_pattern_id: activeSubId,
       image_states: imageStatesRef.current,
     });
-  }, [saveFn, activeFileIdx, activeSub, rulerY, rulerHeight, rulerDirection, rulerOrientation, rulerX, rulerRotation, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
+  }, [saveFn, activeFileIdx, activeSub, rulers, activeRulerId, completedMarks, crochetMarks, knittingMarks, notes, notePositions, subPatterns, activeSubId, crochetShape, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings]);
 
   // Flush save when page is hidden (tab switch, home button, device lock, iOS swipe).
   // This is a second line of defence alongside the unmount flush in useAutoSave.
@@ -1312,28 +1347,139 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   const handleComplete = useCallback(() => {
     captureHistory();
-    const { rulerY: ry, rulerHeight: rh, rulerX: rx, rulerOrientation: orientation } = latestRef.current;
+    const { rulerY: ry, rulerHeight: rh, rulerX: rx, rulerOrientation: orientation, rulerDirection: direction, rulers: rs, subPatterns: subs, activeSubId: asid } = latestRef.current;
+    const rulerId = activeRulerIdRef.current;
+    const ruler = rs.find((r) => r.id === rulerId);
+    // Advance the sub-pattern linked to this ruler; unlinked rulers advance the active one.
+    const targetSubId = ruler?.sub_id && subs.some((s) => s.id === ruler.sub_id) ? ruler.sub_id : asid;
+    setSubPatterns((prev) => prev.map((s) => (s.id === targetSubId ? { ...s, current_row: s.current_row + 1 } : s)));
 
     if (orientation === 'horizontal') {
-      const newMark: CompletedMark = { y: rx, height: rh, orientation: 'horizontal' };
+      const newMark: CompletedMark = { y: rx, height: rh, orientation: 'horizontal', ruler_id: rulerId };
       setCompletedMarks((prev) => [...prev, newMark]);
-      updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
-      if (rulerDirection === 'up') {
-        setRulerX(rx - rh);
-      } else {
-        setRulerX(rx + rh);
-      }
+      setRulerX(direction === 'up' ? rx - rh : rx + rh);
     } else {
-      const newMark: CompletedMark = { y: ry, height: rh };
+      const newMark: CompletedMark = { y: ry, height: rh, ruler_id: rulerId };
       setCompletedMarks((prev) => [...prev, newMark]);
-      updateActiveSub((s) => ({ ...s, current_row: s.current_row + 1 }));
-      if (rulerDirection === 'up') {
-        setRulerY(ry - rh);
-      } else {
-        setRulerY(ry + rh);
-      }
+      setRulerY(direction === 'up' ? ry - rh : ry + rh);
     }
-  }, [captureHistory, rulerDirection, updateActiveSub]);
+  }, [captureHistory, setRulerX, setRulerY]);
+
+  // ---- Multi-ruler management ----
+  // Activating a ruler also activates its linked sub-pattern, so the row counter follows.
+  const activateRuler = useCallback((id: string) => {
+    const { rulers: rs, subPatterns: subs } = latestRef.current;
+    const r = rs.find((x) => x.id === id);
+    if (!r) return;
+    setActiveRulerId(id);
+    activeRulerIdRef.current = id;
+    if (r.sub_id && subs.some((s) => s.id === r.sub_id)) setActiveSubId(r.sub_id);
+  }, []);
+
+  // Selecting a sub-pattern activates the ruler linked to it (if any).
+  const handleSelectSub = useCallback((subId: string) => {
+    setActiveSubId(subId);
+    const linked = latestRef.current.rulers.find((r) => r.sub_id === subId);
+    if (linked && linked.id !== activeRulerIdRef.current) {
+      setActiveRulerId(linked.id);
+      activeRulerIdRef.current = linked.id;
+    }
+  }, []);
+
+  const handleLinkRulerToSub = useCallback((rulerId: string, subId: string | undefined) => {
+    captureHistory();
+    // A sub-pattern is linked to at most one ruler
+    setRulers((prev) => prev.map((r) =>
+      r.id === rulerId ? { ...r, sub_id: subId } : (subId && r.sub_id === subId ? { ...r, sub_id: undefined } : r)
+    ));
+    if (subId && rulerId === activeRulerIdRef.current) setActiveSubId(subId);
+  }, [captureHistory]);
+
+  // New ruler: copies the active ruler's size/direction, lands at the screen center,
+  // and is linked to the first sub-pattern that has no ruler yet.
+  const handleAddRuler = useCallback(() => {
+    const { rulers: rs, viewTransform: tr, containerW: W, containerH: H, imgW: iW, imgH: iH, subPatterns: subs, activeSubId: asid } = latestRef.current;
+    if (rs.length >= MAX_RULERS) return;
+    captureHistory();
+    const base = rs.find((r) => r.id === activeRulerIdRef.current) ?? rs[0];
+    const contentX = W / 2 - tr.x / tr.scale;
+    const contentY = H / 2 - tr.y / tr.scale;
+    const cx = iW > 0 ? ((contentX - (W - iW) / 2) / iW) * 100 : (contentX / W) * 100;
+    const cy = iH > 0 ? ((contentY - (H - iH) / 2) / iH) * 100 : (contentY / H) * 100;
+    const used = new Set(rs.map((r) => r.color));
+    const color = RULER_COLORS.find((c) => !used.has(c)) ?? RULER_COLORS[rs.length % RULER_COLORS.length];
+    const nums = rs.map((r) => Number((/(\d+)\s*$/.exec(r.name) ?? [])[1])).filter((n) => !isNaN(n));
+    const name = rulerNameFor((nums.length ? Math.max(...nums) : rs.length) + 1);
+    // If the base ruler was implicitly following the active sub-pattern, make that explicit first
+    const baseSubId = base.sub_id ?? (subs.some((s) => s.id === asid) ? asid : undefined);
+    const linkedSubs = new Set(rs.map((r) => r.id === base.id ? baseSubId : r.sub_id).filter(Boolean));
+    const freeSub = subs.find((s) => !linkedSubs.has(s.id));
+    const newRuler: Ruler = {
+      id: generateId(),
+      name,
+      sub_id: freeSub?.id,
+      position_y: base.orientation === 'vertical' ? cy - base.height / 2 : base.position_y,
+      position_x: base.orientation === 'horizontal' ? cx - base.height / 2 : base.position_x,
+      height: base.height,
+      direction: base.direction,
+      orientation: base.orientation,
+      rotation: base.rotation,
+      color,
+    };
+    setRulers((prev) => [
+      ...prev.map((r) => (r.id === base.id && !r.sub_id && baseSubId ? { ...r, sub_id: baseSubId } : r)),
+      newRuler,
+    ]);
+    setActiveRulerId(newRuler.id);
+    activeRulerIdRef.current = newRuler.id;
+    if (freeSub) setActiveSubId(freeSub.id);
+  }, [captureHistory, rulerNameFor]);
+
+  // Deleting a ruler keeps the completed marks it produced (they are history).
+  const handleDeleteRuler = useCallback((id: string) => {
+    const { rulers: rs } = latestRef.current;
+    if (rs.length <= 1) return;
+    const target = rs.find((r) => r.id === id);
+    if (!target) return;
+    if (!confirm(t('ruler.deleteConfirm').replace('{name}', target.name))) return;
+    captureHistory();
+    const remaining = rs.filter((r) => r.id !== id);
+    setRulers(remaining);
+    if (activeRulerIdRef.current === id) activateRuler(remaining[0].id);
+  }, [captureHistory, activateRuler, t]);
+
+  // "Go to ruler": first press jumps to the active ruler; pressing again shortly after
+  // cycles to the next ruler (and activates it) when there are several.
+  const lastGoToRef = useRef<{ at: number; rulerId: string }>({ at: 0, rulerId: '' });
+  const pendingGoToRulerIdRef = useRef<string | null>(null);
+  const handleGoToRuler = useCallback(() => {
+    const { rulers: rs } = latestRef.current;
+    const aid = activeRulerIdRef.current;
+    const now = Date.now();
+    const last = lastGoToRef.current;
+    if (rs.length > 1 && last.rulerId === aid && now - last.at < 3000) {
+      const idx = rs.findIndex((r) => r.id === aid);
+      const next = rs[(idx + 1) % rs.length];
+      pendingGoToRulerIdRef.current = next.id; // jump after the viewer receives the new ruler position
+      lastGoToRef.current = { at: now, rulerId: next.id };
+      activateRuler(next.id);
+      return;
+    }
+    lastGoToRef.current = { at: now, rulerId: aid };
+    viewerRef.current?.goToRuler();
+  }, [activateRuler]);
+  useEffect(() => {
+    if (pendingGoToRulerIdRef.current !== activeRulerId) return;
+    pendingGoToRulerIdRef.current = null;
+    const raf = requestAnimationFrame(() => viewerRef.current?.goToRuler());
+    return () => cancelAnimationFrame(raf);
+  }, [activeRulerId]);
+
+  // Completed marks of rulers 2+ are tinted with their ruler color (ruler 1 keeps green).
+  const markColors = useMemo(
+    () => Object.fromEntries(rulers.slice(1).map((r) => [r.id, r.color])) as Record<string, string>,
+    [rulers]
+  );
 
   // Convert screen % → image-space % for marker placement (markers now outside CSS transform)
   // Accounts for letterbox offset so positions are device-independent.
@@ -1477,6 +1623,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   const handleDeleteSubPattern = (id: string) => {
     captureHistory();
+    setRulers((prev) => prev.some((r) => r.sub_id === id) ? prev.map((r) => (r.sub_id === id ? { ...r, sub_id: undefined } : r)) : prev);
     setSubPatterns((prev) => {
       const next = prev.filter((s) => s.id !== id);
       if (activeSubId === id && next.length > 0) {
@@ -1732,6 +1879,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : rulerOrientation === 'horizontal' ? rulerX + rulerHeight / 2 : undefined}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
+          onGoToRuler={(!isCrochet || crochetShape === 'line') ? handleGoToRuler : undefined}
           highlightBringRuler={showGuide}
           isDrawingMode={isDrawingMode}
           onResetRuler={isCrochet && crochetShape !== 'line' ? () => {
@@ -1814,9 +1962,34 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             onDeleteAll={handleCompletedMarkDeleteAll}
             onSelectionChange={setHasMarkSelection}
             onDragStart={captureHistory}
+            markColors={markColors}
           />}
+          {/* Waiting rulers — dashed, tap to activate */}
+          {(!isCrochet || crochetShape === 'line') && !showGuide && imgH > 0 && showOverlays && rulers.length > 1 && rulers.map((r) => {
+            if (r.id === activeRulerId) return null;
+            const isH = r.orientation === 'horizontal';
+            const position = isH ? contentToScreenX(r.position_x) : contentToScreenY(r.position_y);
+            const size = isH
+              ? (imgW > 0 ? (r.height / 100) * imgW * viewTransform.scale / containerW * 100 : r.height * viewTransform.scale)
+              : (imgH > 0 ? (r.height / 100) * imgH * viewTransform.scale / containerH * 100 : r.height * viewTransform.scale);
+            return (
+              <InactiveRulerBand
+                key={r.id}
+                position={position}
+                size={size}
+                orientation={r.orientation}
+                rotation={r.rotation}
+                color={r.color}
+                name={r.name}
+                hint={t('ruler.tapToActivate')}
+                onActivate={() => activateRuler(r.id)}
+              />
+            );
+          })}
           {(!isCrochet || crochetShape === 'line') && !showGuide && imgH > 0 && showOverlays && (
             <RowRuler
+              accentColor={activeRuler.color}
+              label={rulers.length > 1 ? activeRuler.name : undefined}
               positionY={screenRulerY}
               height={rulerOrientation === 'horizontal' ? screenRulerWidth : screenRulerHeight}
               direction={rulerDirection}
@@ -2256,9 +2429,65 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             rulerOrientation === 'vertical' && rulerDirection === 'down' ? 180 : 270;
           return (
             <div
-              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2"
+              className="absolute top-2 left-2 right-2 z-30 bg-[#fdf6e8]/97 backdrop-blur-sm rounded-2xl border-2 border-[#b07840] shadow-lg px-3 py-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1.5 sm:gap-2"
               onPointerDown={(e) => e.stopPropagation()}
             >
+              {/* Ruler row: switch / add / link to part / delete — all other controls target the active ruler */}
+              <div className="w-full flex items-center gap-1.5 flex-wrap border-b border-[#d4b896] pb-1.5">
+                {rulers.map((r) => {
+                  const isAct = r.id === activeRulerId;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() => activateRuler(r.id)}
+                      className={`flex items-center gap-1 px-2 h-6 rounded-full border text-[10px] font-bold select-none transition-colors ${
+                        isAct ? 'border-[#9a4318] bg-[#b5541e] text-[#fdf6e8]' : 'border-[#b07840] bg-white text-[#7a5c46] hover:bg-[#fdf6e8]'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color, boxShadow: '0 0 0 1px #fdf6e8' }} />
+                      {r.name}
+                    </button>
+                  );
+                })}
+                {rulers.length < MAX_RULERS && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={handleAddRuler}
+                    title={t('ruler.add')}
+                    aria-label={t('ruler.add')}
+                    className="flex items-center justify-center w-6 h-6 rounded-full border border-dashed border-[#b07840] text-[#b5541e] text-sm font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                  >+</button>
+                )}
+                <label className="ml-auto flex items-center gap-1 text-[9px] text-[#7a5c46] font-bold whitespace-nowrap">
+                  {t('ruler.linkedPart')}
+                  <select
+                    value={activeRuler.sub_id && subPatterns.some((s) => s.id === activeRuler.sub_id) ? activeRuler.sub_id : ''}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onChange={(e) => handleLinkRulerToSub(activeRuler.id, e.target.value || undefined)}
+                    className="h-6 max-w-[120px] text-[10px] border border-[#b07840] rounded bg-white text-[#3d2b1f] px-1"
+                  >
+                    <option value="">{t('ruler.noLink')}</option>
+                    {subPatterns.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </label>
+                {rulers.length > 1 && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => handleDeleteRuler(activeRuler.id)}
+                    title={t('ruler.deleteRuler')}
+                    aria-label={t('ruler.deleteRuler')}
+                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#9a4318] hover:bg-[#ede5cc] active:scale-95 select-none"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
               {/* Row 1 on mobile: Direction + Slant + (mobile close) */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Direction indicator + Rotate button */}
@@ -2469,7 +2698,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             activeId={activeSubId}
             isCrochet={isCrochet}
             initialExpanded={showSubPatternGuide}
-            onSelect={setActiveSubId}
+            onSelect={handleSelectSub}
             onAdd={handleAddSubPattern}
             onUpdate={handleUpdateSubPattern}
             onDelete={handleDeleteSubPattern}

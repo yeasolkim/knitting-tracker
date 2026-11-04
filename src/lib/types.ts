@@ -30,10 +30,26 @@ export interface CompletedMark {
   y: number;      // position % along the primary axis (top for vertical, left for horizontal)
   height: number; // size % along the primary axis
   orientation?: 'horizontal'; // omitted = vertical (default)
+  ruler_id?: string; // which ruler produced this mark (omitted = legacy / ruler 1)
 }
 
 export type RulerDirection = 'up' | 'down';
 export type RulerOrientation = 'vertical' | 'horizontal';
+
+/** One progress ruler (a pattern image can have several; exactly one is active). */
+export interface Ruler {
+  id: string;
+  name: string;
+  /** Sub-pattern whose row counter this ruler advances. Omitted = the active sub-pattern. */
+  sub_id?: string;
+  position_y: number;  // image % (vertical rulers)
+  position_x: number;  // image % (horizontal rulers)
+  height: number;      // image % of imgH (vertical) or imgW (horizontal)
+  direction: RulerDirection;
+  orientation: RulerOrientation;
+  rotation: number;    // degrees, -45..45
+  color: string;       // hex
+}
 
 export interface NotePosition {
   x: number;  // content % (0-100)
@@ -79,6 +95,10 @@ export interface DrawPath {
 }
 
 export interface ImagePerState {
+  // Multi-ruler state. When present it is authoritative; the ruler_* fields below
+  // mirror rulers[0] for older clients.
+  rulers?: Ruler[];
+  active_ruler_id?: string;
   ruler_position_y?: number;
   ruler_height?: number;
   max_ruler_height?: number;

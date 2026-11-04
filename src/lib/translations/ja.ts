@@ -245,4 +245,11 @@ export default {
   'offline.conflictPopup.desc': 'オフライン中に行った変更が、他の端末でより新しく保存された内容と競合しました。他の端末の内容が保持され、この端末の変更は適用されませんでした。',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': '順序と名前',
+  'ruler.defaultName': '進行線 {n}',
+  'ruler.add': '進行線を追加',
+  'ruler.deleteRuler': 'この進行線を削除',
+  'ruler.deleteConfirm': '「{name}」を削除しますか？この進行線で付けた完了マークは残ります。',
+  'ruler.linkedPart': '連携パート',
+  'ruler.noLink': '連携なし',
+  'ruler.tapToActivate': 'タップしてこの進行線を使う',
 };

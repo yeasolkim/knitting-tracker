@@ -166,6 +166,13 @@ const ko = {
   'ruler.heightSettings': '진행선 설정',
   'ruler.height': '높이',
   'ruler.rotate': '90° 회전',
+  'ruler.defaultName': '진행선 {n}',
+  'ruler.add': '진행선 추가',
+  'ruler.deleteRuler': '이 진행선 삭제',
+  'ruler.deleteConfirm': '"{name}"을(를) 삭제하시겠습니까? 이 진행선이 만든 완료 표시는 남습니다.',
+  'ruler.linkedPart': '연결 파트',
+  'ruler.noLink': '연결 안 함',
+  'ruler.tapToActivate': '탭하여 이 진행선 사용',
   // sub-pattern selector
   'sub.defaultPrefix': '파트',
   'sub.rename': '이름 변경',

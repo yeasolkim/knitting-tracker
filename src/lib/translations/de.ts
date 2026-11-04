@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Offline auf diesem Gerät gemachte Änderungen stehen im Konflikt mit neueren Änderungen von einem anderen Gerät. Die Version des anderen Geräts wurde behalten; die Änderungen dieses Geräts wurden nicht übernommen.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Reihenfolge & Namen',
+  'ruler.defaultName': 'Lineal {n}',
+  'ruler.add': 'Lineal hinzufügen',
+  'ruler.deleteRuler': 'Dieses Lineal löschen',
+  'ruler.deleteConfirm': '„{name}“ löschen? Damit gesetzte Fertig-Markierungen bleiben erhalten.',
+  'ruler.linkedPart': 'Verknüpfter Teil',
+  'ruler.noLink': 'Nicht verknüpft',
+  'ruler.tapToActivate': 'Tippen, um dieses Lineal zu verwenden',
 };

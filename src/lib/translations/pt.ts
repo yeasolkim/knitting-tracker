@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'As alterações feitas offline neste dispositivo entraram em conflito com alterações mais recentes salvas em outro dispositivo. A versão do outro dispositivo foi mantida e as alterações deste não foram aplicadas.',
   'offline.conflictPopup.close': 'OK',
   'form.imageOrderAndName': 'Ordem e nomes',
+  'ruler.defaultName': 'Régua {n}',
+  'ruler.add': 'Adicionar régua',
+  'ruler.deleteRuler': 'Excluir esta régua',
+  'ruler.deleteConfirm': 'Excluir "{name}"? As marcas concluídas com ela serão mantidas.',
+  'ruler.linkedPart': 'Parte vinculada',
+  'ruler.noLink': 'Sem vínculo',
+  'ruler.tapToActivate': 'Toque para usar esta régua',
 };

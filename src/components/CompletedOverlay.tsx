@@ -10,11 +10,20 @@ interface CompletedOverlayProps {
   onDeleteAll: () => void;
   onSelectionChange?: (hasSelection: boolean) => void;
   onDragStart?: () => void;
+  /** ruler id → hex color. Marks whose ruler is listed are tinted; others keep the default green. */
+  markColors?: Record<string, string>;
+}
+
+function tint(hex: string, alpha: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
 
 type DragMode = 'move' | 'resize-top' | 'resize-bottom' | null;
 
-const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart }: CompletedOverlayProps) {
+const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, onUpdate, onDelete, onDeleteAll, onSelectionChange, onDragStart, markColors }: CompletedOverlayProps) {
   const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
@@ -127,6 +136,10 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
       {marks.map((mark, i) => {
         const isSelected = selectedIndex === i;
         const isHorizontal = mark.orientation === 'horizontal';
+        const customColor = mark.ruler_id ? markColors?.[mark.ruler_id] : undefined;
+        const bodyStyle: React.CSSProperties | undefined = customColor
+          ? { background: tint(customColor, isSelected ? 0.3 : 0.15), borderColor: tint(customColor, isSelected ? 0.7 : 0.4) }
+          : undefined;
 
         if (isHorizontal) {
           return (
@@ -148,9 +161,9 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
                     : 'bg-emerald-400/15 border-x border-emerald-500/40'
                 }`}
                 onPointerDown={isSelected ? handlePointerDown(i, 'move') : undefined}
-                style={{ cursor: isSelected ? 'grab' : 'pointer' }}
+                style={{ cursor: isSelected ? 'grab' : 'pointer', ...bodyStyle }}
               >
-                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-emerald-600/60 text-[10px] font-medium">
+                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-emerald-600/60 text-[10px] font-medium" style={customColor ? { color: tint(customColor, 0.8) } : undefined}>
                   ✓
                 </div>
               </div>
@@ -215,9 +228,9 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
                   : 'bg-emerald-400/15 border-y border-emerald-500/40'
               }`}
               onPointerDown={isSelected ? handlePointerDown(i, 'move') : undefined}
-              style={{ cursor: isSelected ? 'grab' : 'pointer' }}
+              style={{ cursor: isSelected ? 'grab' : 'pointer', ...bodyStyle }}
             >
-              <div className="absolute right-1 top-1/2 -translate-y-1/2 text-emerald-600/60 text-[10px] font-medium">
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 text-emerald-600/60 text-[10px] font-medium" style={customColor ? { color: tint(customColor, 0.8) } : undefined}>
                 ✓
               </div>
             </div>

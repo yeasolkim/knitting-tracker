@@ -229,4 +229,11 @@ export default {
   'offline.conflictPopup.desc': 'Los cambios hechos sin conexión en este dispositivo entraron en conflicto con cambios más recientes guardados desde otro dispositivo. Se conservó la versión del otro dispositivo y los cambios de este no se aplicaron.',
   'offline.conflictPopup.close': 'Aceptar',
   'form.imageOrderAndName': 'Orden y nombres',
+  'ruler.defaultName': 'Regla {n}',
+  'ruler.add': 'Añadir regla',
+  'ruler.deleteRuler': 'Eliminar esta regla',
+  'ruler.deleteConfirm': '¿Eliminar "{name}"? Las marcas completadas con ella se conservarán.',
+  'ruler.linkedPart': 'Parte vinculada',
+  'ruler.noLink': 'Sin vincular',
+  'ruler.tapToActivate': 'Toca para usar esta regla',
 };
