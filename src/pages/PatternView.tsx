@@ -5,6 +5,7 @@ import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
 import type { PatternWithProgress, PatternProgress, PatternType, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool, Ruler } from '@/lib/types';
 import type { SetStateAction } from 'react';
+import type { TranslationKey } from '@/lib/i18n';
 import InactiveRulerBand from '@/components/InactiveRulerBand';
 import { repeatInfoForRow } from '@/lib/repeat';
 import DrawingCanvas from '@/components/DrawingCanvas';
@@ -242,33 +243,33 @@ const STEP_MULT_MIN = 0.25;  // ÷2 lower bound → 0.5 screen px per press
 const STEP_MULT_MAX = 32;    // ×2 upper bound → 64 screen px per press
 
 const DRAW_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
-const DRAW_TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
-  { id: 'select', label: '선택', icon: (
+const DRAW_TOOLS: { id: DrawTool; label: TranslationKey; icon: React.ReactNode }[] = [
+  { id: 'select', label: 'draw.tool.select', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
     </svg>
   )},
-  { id: 'pen', label: '펜', icon: (
+  { id: 'pen', label: 'draw.tool.pen', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
     </svg>
   )},
-  { id: 'line', label: '선', icon: (
+  { id: 'line', label: 'draw.tool.line', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
       <line x1="5" y1="19" x2="19" y2="5" strokeLinecap="round" />
     </svg>
   )},
-  { id: 'rect', label: '사각형', icon: (
+  { id: 'rect', label: 'draw.tool.rect', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <rect x="4" y="4" width="16" height="16" rx="1.5" />
     </svg>
   )},
-  { id: 'circle', label: '원', icon: (
+  { id: 'circle', label: 'draw.tool.circle', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <circle cx="12" cy="12" r="8" />
     </svg>
   )},
-  { id: 'eraser', label: '지우개', icon: (
+  { id: 'eraser', label: 'draw.tool.eraser', icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M20 20H7L3 16l10-10 7 7-3.5 3.5" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 17.5l3-3" />
@@ -335,9 +336,10 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   };
 
   const [subPatterns, setSubPatterns] = useState<SubPattern[]>(initSubPatterns);
-  const [activeSubId, setActiveSubId] = useState<string>(
-    (pattern.progress?.active_sub_pattern_id as string) || subPatterns[0]?.id || ''
-  );
+  const [activeSubId, setActiveSubId] = useState<string>(() => {
+    const saved = pattern.progress?.active_sub_pattern_id as string | undefined;
+    return saved && subPatterns.some((s) => s.id === saved) ? saved : (subPatterns[0]?.id || '');
+  });
 
   const activeSub = subPatterns.find((s) => s.id === activeSubId) || subPatterns[0];
 
@@ -1140,7 +1142,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       )
     );
 
-    if (next?.active_sub_id) {
+    // A sub-pattern deleted after this slot was saved must not become the active one.
+    if (next?.active_sub_id && latestRef.current.subPatterns.some((s) => s.id === next.active_sub_id)) {
       setActiveSubId(next.active_sub_id);
     }
 
@@ -1328,7 +1331,13 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   const handleSaveView = useCallback(async () => {
     setSaveViewStatus('saving');
-    await saveAll();
+    try {
+      await saveAll();
+    } catch {
+      setSaveViewStatus('idle');
+      setShowSaveErrorPopup(true);
+      return;
+    }
     setSaveViewStatus('done');
     if (saveViewTimerRef.current) clearTimeout(saveViewTimerRef.current);
     saveViewTimerRef.current = setTimeout(() => setSaveViewStatus('idle'), 2000);
@@ -1400,7 +1409,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rulerId = activeRulerIdRef.current;
     const ruler = rs.find((r) => r.id === rulerId);
     // Advance the sub-pattern linked to this ruler; unlinked rulers advance the active one.
-    const targetSubId = ruler?.sub_id && subs.some((s) => s.id === ruler.sub_id) ? ruler.sub_id : asid;
+    const targetSubId = ruler?.sub_id && subs.some((s) => s.id === ruler.sub_id)
+      ? ruler.sub_id
+      : (subs.some((s) => s.id === asid) ? asid : subs[0]?.id);
     const targetSub = subs.find((s) => s.id === targetSubId);
     setSubPatterns((prev) => prev.map((s) => (s.id === targetSubId ? { ...s, current_row: s.current_row + 1 } : s)));
 
@@ -1542,29 +1553,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   // "Go to ruler": first press jumps to the active ruler; pressing again shortly after
   // cycles to the next ruler (and activates it) when there are several.
-  const lastGoToRef = useRef<{ at: number; rulerId: string }>({ at: 0, rulerId: '' });
   const pendingGoToRulerIdRef = useRef<string | null>(null);
+  // "Go to ruler" always centers the ACTIVE ruler. Switching rulers is done with the
+  // floating chips, the dashed bands, or Tab — never by re-pressing this button.
   const handleGoToRuler = useCallback(() => {
-    const { rulers: rs } = latestRef.current;
-    const aid = activeRulerIdRef.current;
-    const now = Date.now();
-    const last = lastGoToRef.current;
-    if (rs.length > 1 && last.rulerId === aid && now - last.at < 3000) {
-      const idx = rs.findIndex((r) => r.id === aid);
-      const next = rs[(idx + 1) % rs.length];
-      pendingGoToRulerIdRef.current = next.id; // jump after the viewer receives the new ruler position
-      lastGoToRef.current = { at: now, rulerId: next.id };
-      activateRuler(next.id);
-      return;
-    }
-    lastGoToRef.current = { at: now, rulerId: aid };
     viewerRef.current?.goToRuler();
-  }, [activateRuler]);
+  }, []);
   // One-tap switch: activate a ruler and scroll the view to it. Tapping the active one just jumps.
   const jumpToRuler = useCallback((id: string) => {
     if (id === activeRulerIdRef.current) { viewerRef.current?.goToRuler(); return; }
     pendingGoToRulerIdRef.current = id;
-    lastGoToRef.current = { at: Date.now(), rulerId: id };
     activateRuler(id);
   }, [activateRuler]);
   const cycleRuler = useCallback((delta: 1 | -1) => {
@@ -1573,11 +1571,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const idx = rs.findIndex((r) => r.id === activeRulerIdRef.current);
     jumpToRuler(rs[(idx + delta + rs.length) % rs.length].id);
   }, [jumpToRuler]);
-  // Keyboard: Tab / Shift+Tab cycles rulers (desktop) when not typing.
+  // Keyboard: Tab / Shift+Tab cycles rulers (desktop) — only while the ruler UI is on screen
+  // and no control has focus, so normal focus navigation keeps working.
+  const rulerUiVisibleRef = useRef(false);
+  rulerUiVisibleRef.current = showOverlays && !isDrawingMode && !showGuide && (!isCrochet || crochetShape === 'line');
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
       if (isTextInputTarget(e.target)) return;
+      if (!rulerUiVisibleRef.current) return;
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && ae.tagName !== 'HTML') return;
       if (latestRef.current.rulers.length < 2) return;
       e.preventDefault();
       cycleRuler(e.shiftKey ? -1 : 1);
@@ -1598,13 +1602,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     [rulers]
   );
   // Repeat status of the active sub-pattern for the row counter ("Repeat 2/6 · R3/8")
-  const repeatLabel = useMemo(() => {
-    if (!activeSub) return undefined;
+  const [repeatLabel, repeatLabelShort] = useMemo((): [string | undefined, string | undefined] => {
+    if (!activeSub) return [undefined, undefined];
     const info = repeatInfoForRow(activeSub, (activeSub.current_row || 0) + 1);
-    if (!info) return undefined;
-    if (info.phase === 'before') return t('repeat.before');
-    if (info.phase === 'after') return t('repeat.done');
-    return t('repeat.status', { pass: info.pass, count: info.count, row: info.rowInPass, rows: info.rows });
+    if (!info) return [undefined, undefined];
+    if (info.phase === 'before') return [t('repeat.before'), t('repeat.before')];
+    if (info.phase === 'after') return [t('repeat.done'), t('repeat.done')];
+    return [
+      t('repeat.status', { pass: info.pass, count: info.count, row: info.rowInPass, rows: info.rows }),
+      t('repeat.short', { pass: info.pass, count: info.count }),
+    ];
   }, [activeSub, t]);
 
   // Convert screen % → image-space % for marker placement (markers now outside CSS transform)
@@ -1665,7 +1672,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       const imageX = toImageXPct(screenMark.y);
       const imageRight = toImageXPct(screenMark.y + screenMark.height);
       setCompletedMarks((prev) => prev.map((m, i) =>
-        i === index ? { y: imageX, height: imageRight - imageX, orientation: 'horizontal' as const } : m
+        i === index ? { ...m, y: imageX, height: imageRight - imageX, orientation: 'horizontal' as const } : m
       ));
     } else {
       const { viewTransform: t, containerH: H, imgH: iH } = latestRef.current;
@@ -1677,7 +1684,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       const imageY = toImagePct(screenMark.y);
       const imageBottom = toImagePct(screenMark.y + screenMark.height);
       setCompletedMarks((prev) => prev.map((m, i) =>
-        i === index ? { y: imageY, height: imageBottom - imageY } : m
+        i === index ? { ...m, y: imageY, height: imageBottom - imageY } : m
       ));
     }
   }, []);
@@ -1750,13 +1757,13 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const handleDeleteSubPattern = (id: string) => {
     captureHistory();
     setRulers((prev) => prev.some((r) => r.sub_id === id) ? prev.map((r) => (r.sub_id === id ? { ...r, sub_id: undefined } : r)) : prev);
-    setSubPatterns((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      if (activeSubId === id && next.length > 0) {
-        setActiveSubId(next[0].id);
-      }
-      return next;
-    });
+    const next = subPatterns.filter((s) => s.id !== id);
+    setSubPatterns(next);
+    if (activeSubId === id && next.length > 0) setActiveSubId(next[0].id);
+    // Other images may have this sub saved as their active one; point them at the first sub.
+    for (const slot of imageStatesRef.current) {
+      if (slot && slot.active_sub_id === id) slot.active_sub_id = next[0]?.id;
+    }
   };
 
 
@@ -1800,11 +1807,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     if (m.orientation === 'horizontal') {
       const x = contentToScreenX(m.y);
       const right = contentToScreenX(m.y + m.height);
-      return { y: x, height: right - x, orientation: 'horizontal' as const };
+      return { ...m, y: x, height: right - x, orientation: 'horizontal' as const };
     }
     const y = contentToScreenY(m.y);
     const bottom = contentToScreenY(m.y + m.height);
-    return { y, height: bottom - y };
+    return { ...m, y, height: bottom - y };
   }), [completedMarks, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const screenCompletedRings = useMemo(() => completedCrochetRings.map(ring => ({
@@ -2260,7 +2267,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <div className="w-px h-4 bg-[#d4b896] flex-shrink-0" />
                 <button
                   onClick={() => { captureHistory(); setDrawingPaths([]); setSelectedPathId(null); }}
-                  title="모두 지우기"
+                  title={t('draw.clearAll')}
                   className="h-6 px-2 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] hover:text-[#b5541e] transition-colors text-[10px] font-bold tracking-wide flex-shrink-0"
                 >
                   RESET
@@ -2268,7 +2275,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <div className="w-px h-4 bg-[#d4b896] flex-shrink-0 sm:hidden" />
                 <button
                   onClick={() => setIsDrawingMode(false)}
-                  title="그림판 닫기"
+                  title={t('draw.close')}
                   className="sm:hidden flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0"
                 >×</button>
               </div>
@@ -2279,7 +2286,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     <button
                       key={id}
                       onClick={() => setDrawingTool(id)}
-                      title={label}
+                      title={t(label)}
                       className={`w-7 h-7 flex items-center justify-center rounded-lg border transition-colors ${
                         drawingTool === id
                           ? 'bg-[#b5541e] text-[#fdf6e8] border-[#9a4318]'
@@ -2323,7 +2330,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <div className="w-px h-4 bg-[#d4b896] flex-shrink-0 hidden sm:block" />
                 <button
                   onClick={() => setIsDrawingMode(false)}
-                  title="그림판 닫기"
+                  title={t('draw.close')}
                   className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
                 >×</button>
               </div>
@@ -2361,7 +2368,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               }`}
               onClick={() => { setIsDrawingMode(v => !v); setSelectedPathId(null); setShowRulerSettings(false); }}
               onPointerDown={(e) => e.stopPropagation()}
-              title="그림 그리기"
+              title={t('draw.open')}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 14H9v-3z" />
@@ -2697,7 +2704,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 </div>
                 {/* Slant (rotation) controls */}
                 <div className="flex items-center gap-1 flex-shrink-0 sm:border-r sm:border-[#d4b896] sm:pr-2">
-                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
+                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">{t('ruler.slant')}</span>
                   <HoldRepeatButton
                     onPressStart={captureHistory}
                     onStep={() => setRulerRotation(r => Math.max(-45, Math.round((r - 0.1) * 10) / 10))}
@@ -2719,7 +2726,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setShowRulerSettings(false)}
                   className="sm:hidden flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
-                  title="닫기"
+                  title={t('common.close')}
                 >×</button>
               </div>
               {/* Row 2 on mobile / continues inline on desktop: Height slider */}
@@ -2737,7 +2744,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   }}
                   disabled={stepMultiplier <= STEP_MULT_MIN}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="조절 단위 절반으로 (세밀 조절)"
+                  title={t('ruler.stepHalf')}
                 >÷2</button>
                 <HoldRepeatButton
                   onPressStart={captureHistory}
@@ -2756,7 +2763,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     }
                   }}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="높이 줄이기 (길게 누르면 연속)"
+                  title={t('ruler.heightDecrease')}
                 >−</HoldRepeatButton>
                 <div className="flex-1 min-w-0 flex flex-col" style={{ gap: '1px' }}>
                   <input
@@ -2825,7 +2832,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     }
                   }}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="높이 늘리기 (길게 누르면 연속)"
+                  title={t('ruler.heightIncrease')}
                 >+</HoldRepeatButton>
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
@@ -2840,14 +2847,14 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   }}
                   disabled={stepMultiplier >= STEP_MULT_MAX}
                   className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="조절 단위 두 배로 (빠른 조절)"
+                  title={t('ruler.stepDouble')}
                 >×2</button>
                 {/* Close button — desktop only */}
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setShowRulerSettings(false)}
                   className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
-                  title="닫기"
+                  title={t('common.close')}
                 >×</button>
               </div>
             </div>
@@ -2928,7 +2935,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             <button
               onClick={() => {
                 if (confirm(t('view.deleteAllMarks'))) {
-                  setCompletedMarks([]);
+                  handleCompletedMarkDeleteAll();
                 }
               }}
               className="px-3 py-1.5 text-xs font-medium bg-[#9a4318]/90 text-[#fdf6e8] rounded-full hover:bg-[#9a4318] transition-colors shadow-md border border-[#7a3310]"
@@ -2960,7 +2967,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           {/* Complete button — prominent, fills the flex-1 space formerly used by the progress bar */}
           <button
             onClick={(!isCrochet || crochetShape === 'line') ? handleComplete : handleCrochetCircleComplete}
-            className="flex-1 min-w-0 flex items-center justify-center gap-2 h-9 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 h-11 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
             title={t('ruler.complete')}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2975,6 +2982,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             total={activeSub?.total_rows || 1}
             onChange={handleRowChange}
             repeatLabel={repeatLabel}
+            repeatLabelShort={repeatLabelShort}
           />
 
           {/* Marker button(s) */}
@@ -2988,7 +2996,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <button
                   onClick={onPlace}
                   disabled={isPlacing}
-                  className="flex items-center gap-1 px-2 py-1.5 h-9 text-[11px] font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] disabled:opacity-50 transition-colors shadow-[3px_3px_0_#9a4318]"
+                  className="flex items-center gap-1 px-2 py-1.5 h-11 text-[11px] font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] disabled:opacity-50 transition-colors shadow-[3px_3px_0_#9a4318]"
                   title={t('marker.place')}
                 >
                   <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

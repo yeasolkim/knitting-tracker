@@ -215,7 +215,7 @@ const RowRuler = memo(function RowRuler({
     return (
       <div
         ref={containerRef}
-        className="absolute inset-0 pointer-events-none z-10"
+        className="absolute inset-0 pointer-events-none z-10 touch-none"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
@@ -300,7 +300,7 @@ const RowRuler = memo(function RowRuler({
                 onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.max(0, positionX - 0.1)); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-                title="진행선 왼쪽으로"
+                title={t('ruler.moveLeft')}
               >
                 <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10 L8 5 L8 15 Z" fill="currentColor" />
@@ -312,7 +312,7 @@ const RowRuler = memo(function RowRuler({
                 onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(Math.max(0, 100 - height), positionX + 0.1)); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-                title="진행선 오른쪽으로"
+                title={t('ruler.moveRight')}
               >
                 <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
                   <line x1="6" y1="3" x2="6" y2="17" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" />
@@ -324,7 +324,7 @@ const RowRuler = memo(function RowRuler({
                 onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-                title="닫기"
+                title={t('common.close')}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -343,7 +343,7 @@ const RowRuler = memo(function RowRuler({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none z-10"
+      className="absolute inset-0 pointer-events-none z-10 touch-none"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
@@ -425,7 +425,7 @@ const RowRuler = memo(function RowRuler({
               onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.max(0, positionY - 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-              title="진행선 위로"
+              title={t('ruler.moveUp')}
             >
               <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 3 L5 8 L15 8 Z" fill="currentColor" />
@@ -437,7 +437,7 @@ const RowRuler = memo(function RowRuler({
               onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(Math.max(0, 100 - height), positionY + 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-              title="진행선 아래로"
+              title={t('ruler.moveDown')}
             >
               <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 20" fill="none">
                 <line x1="3" y1="6" x2="17" y2="6" stroke="#b5541e" strokeWidth="2.5" strokeLinecap="round" />
@@ -449,7 +449,7 @@ const RowRuler = memo(function RowRuler({
               onClick={(e) => { e.stopPropagation(); if (showSettings) onToggleSettings(); setShowActionBar(false); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-2.5 py-2.5 text-[#b07840]/60 hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
-              title="닫기"
+              title={t('common.close')}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

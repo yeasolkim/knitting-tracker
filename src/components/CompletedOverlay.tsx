@@ -126,7 +126,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0"
+      className="absolute inset-0 touch-none"
       style={{ pointerEvents: selectedIndex !== null ? 'auto' : 'none' }}
       onClick={handleBackgroundClick}
       onPointerMove={handlePointerMove}

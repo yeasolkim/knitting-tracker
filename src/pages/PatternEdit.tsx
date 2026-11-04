@@ -9,7 +9,7 @@ import FileDropZone from '@/components/FileDropZone';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { filterUnreferencedUrls } from '@/lib/storageRefs';
-import type { ImagePerState } from '@/lib/types';
+import type { ImagePerState, SubPattern } from '@/lib/types';
 
 interface OrderedImage {
   url: string;
@@ -114,6 +114,8 @@ function EditForm() {
   const [type, setType] = useState<PatternType>('knitting');
   const [yarn, setYarn] = useState('');
   const [needle, setNeedle] = useState('');
+  const [totalRows, setTotalRows] = useState('');
+  const loadedTotalRowsRef = useRef<number>(1);
 
   // All existing images in display order (primary first, then extras)
   const [orderedImages, setOrderedImages] = useState<OrderedImage[]>([]);
@@ -165,6 +167,8 @@ function EditForm() {
         setType(data.type as PatternType);
         setYarn(data.yarn || '');
         setNeedle(data.needle || '');
+        setTotalRows(String(data.total_rows || 1));
+        loadedTotalRowsRef.current = data.total_rows || 1;
 
         const names = (data.image_names as string[] | null) || [];
         const imgs: OrderedImage[] = [
@@ -359,10 +363,12 @@ function EditForm() {
         ...newExtraNames,
       ];
 
+      const newTotalRows = Math.min(99999, Math.max(1, parseInt(totalRows, 10) || 1));
       const { error: updateError } = await supabase
         .from('patterns')
         .update({
           title, type, yarn, needle,
+          total_rows: newTotalRows,
           file_url: fileUrl,
           file_type: fileType,
           thumbnail_url: thumbnailUrl,
@@ -374,6 +380,26 @@ function EditForm() {
         .eq('user_id', session.user.id);
 
       if (updateError) throw updateError;
+
+      // A single-part pattern shows the pattern's total in its row counter; keep it in sync.
+      if (newTotalRows !== loadedTotalRowsRef.current) {
+        try {
+          const { data: prog } = await supabase
+            .from('pattern_progress')
+            .select('sub_patterns')
+            .eq('pattern_id', id!)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          const subs = prog?.sub_patterns as SubPattern[] | null | undefined;
+          if (subs && subs.length === 1) {
+            await supabase
+              .from('pattern_progress')
+              .update({ sub_patterns: [{ ...subs[0], total_rows: newTotalRows }] })
+              .eq('pattern_id', id!)
+              .eq('user_id', session.user.id);
+          }
+        } catch { /* best-effort */ }
+      }
 
       // Per-image progress (image_states) is indexed by file position. If files were
       // reordered or removed, permute the saved states the same way so marks, ruler,
@@ -739,6 +765,24 @@ function EditForm() {
           className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.needlePlaceholder')}
         />
+      </div>
+
+      {/* Total rows (optional) */}
+      <div>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+          {t('form.totalRows')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
+        </label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={99999}
+          value={totalRows}
+          onChange={(e) => { setTotalRows(e.target.value); setIsDirty(true); }}
+          className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-base sm:text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          placeholder={t('form.totalRowsPlaceholder')}
+        />
+        <p className="mt-1 text-[10px] text-[#a08060]">{t('form.totalRowsHint')}</p>
       </div>
 
       {error && <p className="text-sm text-[#b5541e] font-medium">{error}</p>}

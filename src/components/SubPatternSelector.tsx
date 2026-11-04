@@ -57,6 +57,7 @@ export default function SubPatternSelector({
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { t } = useLanguage();
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const active = subPatterns.find((s) => s.id === activeId);
 
@@ -66,8 +67,20 @@ export default function SubPatternSelector({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setIsExpanded(false); setDeleteConfirmId(null); }
     };
+    // Tap/click anywhere outside closes the dropdown (phones have no Escape key)
+    const onPointerDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setIsExpanded(false);
+        setDeleteConfirmId(null);
+        setEditingId(null);
+      }
+    };
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+    };
   }, [isExpanded]);
 
   const startRename = (sub: SubPattern) => {
@@ -85,11 +98,11 @@ export default function SubPatternSelector({
   if (subPatterns.length === 0) return null;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       {/* Active sub-pattern tab */}
       <button
         onClick={() => { setIsExpanded(!isExpanded); if (isExpanded) setDeleteConfirmId(null); }}
-        className="flex items-center gap-1 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#b07840] hover:border-[#b5541e] px-2.5 py-1 min-h-[36px] rounded-lg transition-colors shrink-0"
+        className="flex items-center gap-1 text-xs font-semibold text-[#3d2b1f] tracking-wide bg-[#f5edd6] border-2 border-[#b07840] hover:border-[#b5541e] px-2.5 py-1 min-h-[44px] rounded-lg transition-colors shrink-0"
       >
         <span className="truncate max-w-[80px] sm:max-w-[110px]">{active?.name || `${t('sub.defaultPrefix')} 1`}</span>
         <svg
@@ -102,7 +115,7 @@ export default function SubPatternSelector({
 
       {/* Dropdown */}
       {isExpanded && (
-        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] py-1 min-w-[min(220px,calc(100vw-24px))] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50">
+        <div className="absolute bottom-full left-0 right-0 sm:right-auto mb-1.5 bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] shadow-[3px_3px_0_#b07840] py-1 min-w-[min(220px,calc(100vw-24px))] sm:min-w-[240px] max-w-[calc(100vw-24px)] max-h-[60vh] overflow-y-auto z-50" style={{ touchAction: 'pan-y' }}>
           {subPatterns.map((sub) => (
             <div
               key={sub.id}
@@ -114,11 +127,12 @@ export default function SubPatternSelector({
                     autoFocus
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    onBlur={commitRename}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') commitRename();
                       if (e.key === 'Escape') setEditingId(null);
                     }}
-                    className="flex-1 text-sm border-2 border-[#b07840] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
+                    className="flex-1 text-base sm:text-sm border-2 border-[#b07840] rounded-lg px-2 py-0.5 text-[#3d2b1f] bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e]"
                   />
                   <button
                     onMouseDown={(e) => { e.preventDefault(); commitRename(); }}

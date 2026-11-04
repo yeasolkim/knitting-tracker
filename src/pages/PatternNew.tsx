@@ -108,6 +108,7 @@ function UploadForm() {
   const [type, setType] = useState<PatternType>('knitting');
   const [yarn, setYarn] = useState('');
   const [needle, setNeedle] = useState('');
+  const [totalRows, setTotalRows] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStep, setUploadStep] = useState(0);
   const [uploadTotal, setUploadTotal] = useState(0);
@@ -201,7 +202,7 @@ const thumbPromise = isPdf
           type,
           file_url: '',
           file_type: isPdf ? 'pdf' : 'image',
-          total_rows: 1,
+          total_rows: Math.min(99999, Math.max(1, parseInt(totalRows, 10) || 1)),
           yarn,
           needle,
         })
@@ -641,6 +642,24 @@ const thumbPromise = isPdf
           className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
           placeholder={t('form.needlePlaceholder')}
         />
+      </div>
+
+      {/* Total rows (optional) */}
+      <div>
+        <label className="block text-[11px] font-bold tracking-widest uppercase text-[#7a5c46] mb-2">
+          {t('form.totalRows')} <span className="text-[#c4a882] normal-case tracking-normal font-normal text-[10px]">{t('form.yarnOptional')}</span>
+        </label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={99999}
+          value={totalRows}
+          onChange={(e) => { setTotalRows(e.target.value);  }}
+          className="w-full border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-4 py-2.5 text-base sm:text-sm text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
+          placeholder={t('form.totalRowsPlaceholder')}
+        />
+        <p className="mt-1 text-[10px] text-[#a08060]">{t('form.totalRowsHint')}</p>
       </div>
 
       {error && <p className="text-sm text-[#b5541e] font-medium">{error}</p>}

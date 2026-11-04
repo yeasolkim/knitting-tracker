@@ -821,7 +821,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
               <img
                 ref={(el) => { contentItemRef.current = el; }}
                 src={fileUrl}
-                alt="패턴"
+                alt={t('viewer.patternAlt')}
                 className="max-w-full max-h-full object-contain select-none pointer-events-none"
                 draggable={false}
                 decoding="async"
@@ -972,7 +972,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <button
           onClick={handlePanUp}
           className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 sm:w-16 sm:h-10 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
-          aria-label="위로 이동"
+          aria-label={t('viewer.panUp')}
         >
           <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -982,7 +982,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <button
           onClick={handlePanDown}
           className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-10 h-7 sm:w-16 sm:h-10 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
-          aria-label="아래로 이동"
+          aria-label={t('viewer.panDown')}
         >
           <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -992,7 +992,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <button
           onClick={handlePanLeft}
           className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-7 h-10 sm:w-10 sm:h-16 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
-          aria-label="왼쪽으로 이동"
+          aria-label={t('viewer.panLeft')}
         >
           <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1002,7 +1002,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <button
           onClick={handlePanRight}
           className="absolute right-7 top-1/2 -translate-y-1/2 z-30 w-7 h-10 sm:w-10 sm:h-16 flex items-center justify-center text-[#3d2b1f]/50 sm:text-[#3d2b1f]/60 hover:text-[#3d2b1f]/80 active:text-[#b5541e]/90 transition-colors [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
-          aria-label="오른쪽으로 이동"
+          aria-label={t('viewer.panRight')}
         >
           <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

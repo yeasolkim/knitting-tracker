@@ -7,9 +7,11 @@ interface RowCounterProps {
   onChange: (row: number) => void;
   /** e.g. "Repeat 2/6 · R3/8" — shown under the total */
   repeatLabel?: string;
+  /** Compact variant for narrow screens (e.g. "Rep 2/6") */
+  repeatLabelShort?: string;
 }
 
-export default function RowCounter({ current, total, onChange, repeatLabel }: RowCounterProps) {
+export default function RowCounter({ current, total, onChange, repeatLabel, repeatLabelShort }: RowCounterProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [shake, setShake] = useState(false);
@@ -76,7 +78,7 @@ export default function RowCounter({ current, total, onChange, repeatLabel }: Ro
         onPointerLeave={stopLongPress}
         onPointerCancel={stopLongPress}
         disabled={current <= 0}
-        className="w-9 h-9 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-lg font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-11 h-11 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-lg font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label={t('aria.rowDecrease')}
       >
         −
@@ -106,7 +108,10 @@ export default function RowCounter({ current, total, onChange, repeatLabel }: Ro
         )}
         <div className="text-[9px] text-[#a08060] tracking-wide leading-tight">{t('counter.rowOf', { total })}</div>
         {repeatLabel && (
-          <div className="text-[9px] text-[#b5541e] font-bold tracking-wide leading-tight whitespace-nowrap">{repeatLabel}</div>
+          <>
+            <div className="sm:hidden text-[9px] text-[#b5541e] font-bold tracking-wide leading-tight">{repeatLabelShort ?? repeatLabel}</div>
+            <div className="hidden sm:block text-[9px] text-[#b5541e] font-bold tracking-wide leading-tight whitespace-nowrap">{repeatLabel}</div>
+          </>
         )}
       </div>
       <button
@@ -115,7 +120,7 @@ export default function RowCounter({ current, total, onChange, repeatLabel }: Ro
         onPointerUp={stopLongPress}
         onPointerLeave={stopLongPress}
         onPointerCancel={stopLongPress}
-        className="w-9 h-9 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-lg font-bold flex items-center justify-center hover:bg-[#9a4318] active:bg-[#7a3510] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-[2px_2px_0_#9a4318]"
+        className="w-11 h-11 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-lg font-bold flex items-center justify-center hover:bg-[#9a4318] active:bg-[#7a3510] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-[2px_2px_0_#9a4318]"
         aria-label={t('aria.rowIncrease')}
       >
         +

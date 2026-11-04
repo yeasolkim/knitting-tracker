@@ -1,4 +1,5 @@
 import { memo, useCallback, useRef, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { CrochetMark } from '@/lib/types';
 
 interface CrochetMarkersProps {
@@ -56,6 +57,7 @@ const CrochetMarkers = memo(function CrochetMarkers({
 }: CrochetMarkersProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { t } = useLanguage();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [longPressingId, setLongPressingId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,12 +161,12 @@ const CrochetMarkers = memo(function CrochetMarkers({
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <div className="flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
             <span className="animate-pulse w-2 h-2 bg-white rounded-full" />
-            도안을 탭하여 마커 배치
+            {t('marker.placeHint')}
             <button
               onClick={(e) => { e.stopPropagation(); onCancelPlace(); }}
               className="ml-1 text-white/70 hover:text-white"
             >
-              취소
+              {t('card.cancel')}
             </button>
           </div>
         </div>
@@ -223,14 +225,14 @@ const CrochetMarkers = memo(function CrochetMarkers({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (confirm('모든 마커를 삭제하시겠습니까?')) {
+              if (confirm(t('marker.deleteConfirm'))) {
                 onDeleteAll();
                 setSelectedId(null);
               }
             }}
             className="text-[11px] bg-[#9a4318]/90 text-[#fdf6e8] border border-[#7a3310] px-2.5 py-1 rounded-full hover:bg-[#9a4318] shadow-sm"
           >
-            전체 삭제
+            {t('view.deleteAll')}
           </button>
         </div>
       )}
