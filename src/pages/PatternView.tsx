@@ -1468,6 +1468,31 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     lastGoToRef.current = { at: now, rulerId: aid };
     viewerRef.current?.goToRuler();
   }, [activateRuler]);
+  // One-tap switch: activate a ruler and scroll the view to it. Tapping the active one just jumps.
+  const jumpToRuler = useCallback((id: string) => {
+    if (id === activeRulerIdRef.current) { viewerRef.current?.goToRuler(); return; }
+    pendingGoToRulerIdRef.current = id;
+    lastGoToRef.current = { at: Date.now(), rulerId: id };
+    activateRuler(id);
+  }, [activateRuler]);
+  const cycleRuler = useCallback((delta: 1 | -1) => {
+    const { rulers: rs } = latestRef.current;
+    if (rs.length < 2) return;
+    const idx = rs.findIndex((r) => r.id === activeRulerIdRef.current);
+    jumpToRuler(rs[(idx + delta + rs.length) % rs.length].id);
+  }, [jumpToRuler]);
+  // Keyboard: Tab / Shift+Tab cycles rulers (desktop) when not typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTextInputTarget(e.target)) return;
+      if (latestRef.current.rulers.length < 2) return;
+      e.preventDefault();
+      cycleRuler(e.shiftKey ? -1 : 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cycleRuler]);
   useEffect(() => {
     if (pendingGoToRulerIdRef.current !== activeRulerId) return;
     pendingGoToRulerIdRef.current = null;
@@ -2441,7 +2466,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       key={r.id}
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() => activateRuler(r.id)}
+                      onClick={() => jumpToRuler(r.id)}
                       className={`flex items-center gap-1 px-2 h-6 rounded-full border text-[10px] font-bold select-none transition-colors ${
                         isAct ? 'border-[#9a4318] bg-[#b5541e] text-[#fdf6e8]' : 'border-[#b07840] bg-white text-[#7a5c46] hover:bg-[#fdf6e8]'
                       }`}
@@ -2669,6 +2694,49 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           );
         })()}
 
+
+        {/* Floating ruler switcher — one tap switches AND jumps to that ruler */}
+        {(!isCrochet || crochetShape === 'line') && showOverlays && !showGuide && !showRulerSettings && imgH > 0 && rulers.length > 1 && (
+          <div
+            className="absolute left-2 sm:left-4 bottom-[108px] sm:bottom-[130px] z-20 flex flex-col items-start gap-1"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {rulers.map((r) => {
+              const isAct = r.id === activeRulerId;
+              const linked = r.sub_id ? subPatterns.find((sp) => sp.id === r.sub_id) : undefined;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => jumpToRuler(r.id)}
+                  title={isAct ? t('viewer.goToRuler').replace('\n', ' ') : t('ruler.tapToActivate')}
+                  aria-pressed={isAct}
+                  className={`flex items-center gap-1.5 h-8 sm:h-9 pl-1.5 pr-2.5 rounded-full border-2 backdrop-blur-sm shadow-sm text-[10px] sm:text-[11px] font-bold select-none transition-all active:scale-95 ${
+                    isAct
+                      ? 'bg-[#fdf6e8] text-[#3d2b1f] shadow-md'
+                      : 'bg-[#fdf6e8]/75 border-[#b07840]/60 text-[#7a5c46] hover:bg-[#fdf6e8]'
+                  }`}
+                  style={isAct ? { borderColor: r.color, boxShadow: `0 0 0 2px ${r.color}33, 0 1px 3px rgba(0,0,0,0.2)` } : undefined}
+                >
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0" style={{ background: r.color, boxShadow: '0 0 0 1.5px #fdf6e8' }} />
+                  <span className="flex flex-col items-start leading-none gap-0.5">
+                    <span>{r.name}</span>
+                    {linked && <span className="text-[8px] sm:text-[9px] font-semibold opacity-70 max-w-[72px] truncate">{linked.name} · {linked.current_row}</span>}
+                  </span>
+                </button>
+              );
+            })}
+            {rulers.length < MAX_RULERS && (
+              <button
+                type="button"
+                onClick={handleAddRuler}
+                title={t('ruler.add')}
+                aria-label={t('ruler.add')}
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-dashed border-[#b07840]/70 bg-[#fdf6e8]/70 backdrop-blur-sm text-[#b5541e] text-base font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+              >+</button>
+            )}
+          </div>
+        )}
 
         {hasMarkSelection && showOverlays && completedMarks.length > 1 && !showRulerSettings && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30">
