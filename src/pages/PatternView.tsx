@@ -205,11 +205,38 @@ function buildRulers(
     rotation: state?.ruler_rotation ?? (progress?.ruler_rotation as number | null | undefined) ?? 0,
     color: RULER_COLORS[0],
   };
-  return { rulers: [ruler], activeId: ruler.id, hasSavedHeight: hasSavedHeight || isCrochetLine };
+  return { rulers: [ruler], activeId: ruler.id, hasSavedHeight };
 }
 const isTextInputTarget = (target: EventTarget | null) =>
   !!(target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
 const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
+// Initial ruler thickness on screen: ~1/18 of the viewer, but always finger-sized.
+const INIT_RULER_PX_MIN = 28;
+const INIT_RULER_PX_MAX = 44;
+const INIT_RULER_PX_FLOOR_DENSE = 20; // never thinner than this even on very dense charts
+
+/**
+ * Default ruler height (image %) for a chart that has no saved height yet.
+ * - Target ~1/18 of the viewer height on screen, clamped to [28, 44] px.
+ * - Density cap: when the pattern declares its row count, keep the band at most
+ *   1.5 estimated rows (image height ÷ rows), but never below 20 px.
+ * - `boost` scales the result (used by the onboarding guide to make the band obvious).
+ */
+function defaultRulerHeightPct(args: {
+  containerH: number; imgH: number; imgW: number; scale: number;
+  orientation?: RulerOrientation; totalRows?: number; boost?: number;
+}): number | null {
+  const { containerH, imgH, imgW, scale, orientation = 'vertical', totalRows = 0, boost = 1 } = args;
+  if (containerH <= 0 || imgH <= 0 || imgW <= 0 || scale <= 0) return null;
+  let targetPx = Math.min(INIT_RULER_PX_MAX, Math.max(INIT_RULER_PX_MIN, containerH / 18));
+  if (totalRows > 1) {
+    const rowPx = (imgH * scale) / totalRows;
+    targetPx = Math.min(targetPx, Math.max(INIT_RULER_PX_FLOOR_DENSE, rowPx * 1.5));
+  }
+  targetPx *= boost;
+  const refPx = (orientation === 'horizontal' ? imgW : imgH) * scale;
+  return Math.min(LOG_RULER_MAX, Math.max(0.01, (targetPx / refPx) * 100));
+}
 const MIN_VIEW_RANGE = 1e-6; // effectively no lower limit on slider view window
 const STEP_MULT_MIN = 0.25;  // ÷2 lower bound → 0.5 screen px per press
 const STEP_MULT_MAX = 32;    // ×2 upper bound → 64 screen px per press
@@ -573,6 +600,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
   latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
 
+  // containerH starts as a 600px placeholder; never derive the initial ruler height from it.
+  const containerMeasuredRef = useRef(false);
   const handleTransformChange = useCallback(
     (t: { scale: number; x: number; y: number }, H: number, W: number) => {
       // Immediately mutate latestRef so handleRulerPositionChange reads fresh values
@@ -580,6 +609,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       latestRef.current.viewTransform = t;
       latestRef.current.containerH = H;
       latestRef.current.containerW = W;
+      if (H > 0 && W > 0) containerMeasuredRef.current = true;
       setViewTransform(t);
       setContainerH(H);
       setContainerW(W);
@@ -601,16 +631,32 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     });
   }, [imgW]);
 
-  // One-shot per image: set ruler height to 1/20 of screen when there is no saved value.
+  // Per image: give the ruler a screen-based default height when there is no saved value.
   // Skipped if a saved ruler_height exists (rulerHeightInitializedRef starts true in that case).
+  // PDFs report a growing total height while pages parse, so as long as the user has not
+  // touched the auto value we recompute when the image height changes noticeably.
+  const autoInitRef = useRef<{ imgH: number; height: number } | null>(null);
   useEffect(() => {
-    if (rulerHeightInitializedRef.current) return;
-    if (imgH <= 0 || containerH <= 0 || containerW <= 0 || imgW <= 0) return;
+    if (imgH <= 0 || imgW <= 0 || containerH <= 0 || containerW <= 0) return;
+    if (!containerMeasuredRef.current) return;
+    const auto = autoInitRef.current;
+    if (rulerHeightInitializedRef.current) {
+      const untouched = !!auto && Math.abs(latestRef.current.rulerHeight - auto.height) < 1e-9;
+      const drifted = !!auto && Math.abs(imgH - auto.imgH) / auto.imgH > 0.05;
+      if (!(untouched && drifted)) return;
+    }
+    const { subPatterns: subs, activeSubId: asid, rulerOrientation: orientation } = latestRef.current;
+    const sub = subs.find((s) => s.id === asid);
+    const totalRows = (sub?.total_rows ?? 0) > 1 ? sub!.total_rows : (pattern.total_rows > 1 ? pattern.total_rows : 0);
     const fitScale = Math.min(10, Math.max(0.5, containerW / imgW));
-    const newH = Math.min(LOG_RULER_MAX, (containerH / 20) / (imgH * fitScale) * 100);
+    const newH = defaultRulerHeightPct({ containerH, imgH, imgW, scale: fitScale, orientation, totalRows });
+    if (newH == null) return;
     setRulerHeight(newH);
+    latestRef.current.rulerHeight = newH;
     setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, newH * 4)));
     rulerHeightInitializedRef.current = true;
+    autoInitRef.current = { imgH, height: newH };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgH, imgW, containerH, containerW]);
 
   // Undo/Redo history
@@ -1069,8 +1115,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const restoredRh = built.rulers.find((r) => r.id === built.activeId)?.height ?? 5;
     setSliderViewMin(0);
     setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, restoredRh * 4)));
-    // no saved value → useEffect applies 1/20-of-screen height after the new image loads
+    // no saved value → useEffect applies the screen-based default after the new image loads
     rulerHeightInitializedRef.current = built.hasSavedHeight;
+    autoInitRef.current = null;
     setCompletedMarks(next?.completed_marks ?? []);
     setKnittingMarks(next?.knitting_marks ?? []);
     setCrochetMarks(next?.crochet_marks ?? []);
@@ -1975,14 +2022,19 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             }
           } : () => {
             const { viewTransform: t, containerH: H, containerW: W, imgH: iH, imgW: iW, rulerOrientation: orientation } = latestRef.current;
-            // First placement: set ruler height to ~30% of screen
+            // First placement (onboarding): screen-based default, slightly thicker so it stands out
             let rh = latestRef.current.rulerHeight;
             if (showGuideRef.current) {
-              const initialH = orientation === 'horizontal'
-                ? (iW > 0 && t.scale > 0 ? Math.min(LOG_RULER_MAX, (30 * W) / (iW * t.scale)) : 5)
-                : (iH > 0 && t.scale > 0 ? Math.min(LOG_RULER_MAX, (30 * H) / (iH * t.scale)) : 5);
-              setRulerHeight(initialH);
-              rh = initialH;
+              const { subPatterns: subs, activeSubId: asid } = latestRef.current;
+              const sub = subs.find((s) => s.id === asid);
+              const totalRows = (sub?.total_rows ?? 0) > 1 ? sub!.total_rows : (pattern.total_rows > 1 ? pattern.total_rows : 0);
+              const initialH = defaultRulerHeightPct({ containerH: H, imgH: iH, imgW: iW, scale: t.scale, orientation, totalRows, boost: 1.5 });
+              if (initialH != null) {
+                setRulerHeight(initialH);
+                latestRef.current.rulerHeight = initialH;
+                rh = initialH;
+                setSliderViewMax(Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, initialH * 4)));
+              }
             }
             if (orientation === 'horizontal') {
               const contentX = W / 2 - t.x / t.scale;
