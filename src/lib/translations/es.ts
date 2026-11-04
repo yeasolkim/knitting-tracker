@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'No disponible sin conexión.',
   'offline.syncError': 'Sincronización fallida',
   'offline.syncErrorRetry': 'Reintentar',
+  'view.saveErrorPopup.title': 'Error al guardar',
+  'view.saveErrorPopup.desc': 'Es posible que tus cambios no se hayan guardado porque se perdió la conexión o la sesión caducó. Compruébalo e inténtalo de nuevo.',
+  'view.saveErrorPopup.close': 'Aceptar',
+  'offline.conflictPopup.title': 'Cambios más recientes desde otro dispositivo',
+  'offline.conflictPopup.desc': 'Los cambios hechos sin conexión en este dispositivo entraron en conflicto con cambios más recientes guardados desde otro dispositivo. Se conservó la versión del otro dispositivo y los cambios de este no se aplicaron.',
+  'offline.conflictPopup.close': 'Aceptar',
+  'form.imageOrderAndName': 'Orden y nombres',
 };

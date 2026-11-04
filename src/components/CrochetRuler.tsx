@@ -110,8 +110,11 @@ const CrochetRuler = memo(function CrochetRuler({
   const ryActual = ry ?? r;
   const ryPx = is2D ? Math.max(1, (ryActual / 100) * containerH) : rPx;
 
-  const [maxR, setMaxR] = useState(() => Math.max(49, r));
-  const [maxRy, setMaxRy] = useState(() => Math.max(49, ryActual));
+  const [maxRBase, setMaxR] = useState(() => Math.max(49, r));
+  const [maxRyBase, setMaxRy] = useState(() => Math.max(49, ryActual));
+  // r / ryActual are screen-% values that grow with zoom; never let the slider max fall below them
+  const maxR = Math.max(maxRBase, r);
+  const maxRy = Math.max(maxRyBase, ryActual);
   const rowHeightPx = rowHeight != null ? Math.max(1, (rowHeight / 100) * containerH) : null;
   // effectiveMaxRy: pixel-matched max row height in containerH-% units.
   // For circle (not is2D), ring ry in pixels = rPx = (r/100)*containerW, so max row height in
@@ -172,7 +175,9 @@ const CrochetRuler = memo(function CrochetRuler({
       onRadiusChange?.(Math.max(0.1, cornerDragRef.current.r + dx));
       onRyChange?.(Math.max(0.1, cornerDragRef.current.ry + dy));
     } else {
-      onRadiusChange?.(Math.max(0.1, cornerDragRef.current.r + (dx + dy) / 2));
+      // circle r is in containerW-% — express dy in the same unit before averaging
+      const dyW = (e.clientY - cornerDragRef.current.sy) / containerW * 100;
+      onRadiusChange?.(Math.max(0.1, cornerDragRef.current.r + (dx + dyW) / 2));
     }
   };
   const onCornerUp = () => { setIsDraggingCorner(false); cornerDragRef.current = null; };
@@ -327,7 +332,7 @@ const CrochetRuler = memo(function CrochetRuler({
               : outerPath;
             const isSelected = selectedRingIndex === i;
             return (
-              <g key={i}>
+              <g key={i} transform={rotation ? `rotate(${-rotation} ${cxPx} ${cyPx}) rotate(${rotation} ${ringCxPx} ${ringCyPx})` : undefined}>
                 <path d={rp} fill={isSelected ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.15)"} fillRule="evenodd" />
                 <path d={outerPath} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
                   strokeWidth={isSelected ? 2 : 1.5} strokeDasharray="5 3" />
@@ -404,6 +409,7 @@ const CrochetRuler = memo(function CrochetRuler({
             return (
               <path
                 key={i}
+                transform={rotation ? `rotate(${-rotation} ${cxPx} ${cyPx}) rotate(${rotation} ${ringCxPx} ${ringCyPx})` : undefined}
                 d={rp}
                 fill="rgba(0,0,0,0)"
                 fillRule="evenodd"

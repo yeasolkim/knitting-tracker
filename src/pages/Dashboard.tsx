@@ -8,6 +8,7 @@ import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import { cachePatterns, getCachedPatterns } from '@/lib/offlineQueue';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { filterUnreferencedUrls } from '@/lib/storageRefs';
 
 
 type TypeFilter = 'all' | 'knitting' | 'crochet';
@@ -142,16 +143,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     const backup = patterns.find((p) => p.id === id);
     setPatterns((prev) => prev.filter((p) => p.id !== id));
 
-    if (backup) {
-      const extraUrls = (backup.extra_image_urls ?? []).flatMap((f) =>
-        [f.url, f.thumbnail_url].filter(Boolean)
-      ) as string[];
-      const urls = [...new Set([backup.file_url, backup.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
-      if (urls.length > 0) {
-        supabase.functions.invoke('r2-delete', { body: { urls } }).catch(() => {});
-      }
-    }
-
     const [, deleteResult] = await Promise.all([
       supabase.from('pattern_progress').delete().eq('pattern_id', id),
       supabase.from('patterns').delete().eq('id', id),
@@ -160,6 +151,20 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     if (deleteResult.error) {
       if (backup) setPatterns((prev) => [...prev, backup]);
       showToast(t('dashboard.deleteError'));
+      return;
+    }
+
+    // Only after the DB row is gone: remove storage objects that no other pattern
+    // (e.g. a duplicate made from this one) still references.
+    if (backup) {
+      const extraUrls = (backup.extra_image_urls ?? []).flatMap((f) =>
+        [f.url, f.thumbnail_url].filter(Boolean)
+      ) as string[];
+      const urls = [...new Set([backup.file_url, backup.thumbnail_url, ...extraUrls].filter(Boolean))] as string[];
+      const deletable = await filterUnreferencedUrls(supabase, backup.user_id, urls, id);
+      if (deletable.length > 0) {
+        supabase.functions.invoke('r2-delete', { body: { urls: deletable } }).catch(() => {});
+      }
     }
   }, [supabase, patterns, showToast, t]);
 
@@ -174,7 +179,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     setDuplicatingId(id);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setDuplicatingId(null); return; }
 
     const { data, error } = await supabase.from('patterns').insert({
       user_id: user.id,

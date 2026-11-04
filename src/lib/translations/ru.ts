@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Недоступно в офлайн-режиме.',
   'offline.syncError': 'Ошибка синхронизации',
   'offline.syncErrorRetry': 'Повторить',
+  'view.saveErrorPopup.title': 'Не удалось сохранить',
+  'view.saveErrorPopup.desc': 'Изменения могли не сохраниться из-за обрыва соединения или истечения сессии. Проверьте и попробуйте снова.',
+  'view.saveErrorPopup.close': 'ОК',
+  'offline.conflictPopup.title': 'Есть более новые изменения с другого устройства',
+  'offline.conflictPopup.desc': 'Изменения, сделанные офлайн на этом устройстве, конфликтуют с более новыми изменениями, сохранёнными с другого устройства. Сохранена версия другого устройства; изменения этого устройства не применены.',
+  'offline.conflictPopup.close': 'ОК',
+  'form.imageOrderAndName': 'Порядок и названия',
 };

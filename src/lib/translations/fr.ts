@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Non disponible hors ligne.',
   'offline.syncError': 'Échec de synchronisation',
   'offline.syncErrorRetry': 'Réessayer',
+  'view.saveErrorPopup.title': 'Échec de l’enregistrement',
+  'view.saveErrorPopup.desc': 'Vos modifications n’ont peut-être pas été enregistrées car la connexion a été perdue ou la session a expiré. Vérifiez et réessayez.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Modifications plus récentes depuis un autre appareil',
+  'offline.conflictPopup.desc': 'Les modifications faites hors ligne sur cet appareil sont en conflit avec des modifications plus récentes enregistrées depuis un autre appareil. La version de l’autre appareil a été conservée et celles de cet appareil n’ont pas été appliquées.',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': 'Ordre et noms',
 };

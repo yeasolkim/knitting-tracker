@@ -27,7 +27,8 @@ function TotalRowsInput({ value, onChange }: { value: number; onChange: (v: numb
       value={display}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
-        const parsed = parseInt(draft ?? '');
+        if (draft === null) return; // nothing typed — keep current value
+        const parsed = parseInt(draft);
         onChange(isNaN(parsed) || parsed < 1 ? 1 : Math.min(99999, parsed));
         setDraft(null);
       }}

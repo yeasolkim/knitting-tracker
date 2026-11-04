@@ -117,24 +117,23 @@ function UploadForm() {
   const MAX_FILES = 11; // 1 primary + up to 10 extra
 
   const addFiles = (incoming: File[]) => {
-    setFiles((prev) => {
-      const remaining = Math.max(0, MAX_FILES - prev.length);
-      const toAdd = incoming.slice(0, remaining);
-      if (toAdd.length === 0) return prev;
-      const newPreviews = toAdd.map((f) => {
-        if (!f.type.startsWith('image/')) return '';
-        const url = URL.createObjectURL(f);
-        blobUrlsRef.current.push(url);
-        return url;
-      });
-      const updated = [...prev, ...toAdd];
-      if (prev.length === 0 && !title) {
-        setTitle(toAdd[0].name.replace(/\.[^.]+$/, ''));
-      }
-      setPreviews((p) => [...p, ...newPreviews]);
-      setImageNames((n) => [...n, ...toAdd.map(() => '')]);
-      return updated;
+    // Compute outside the updater: updaters may run twice (StrictMode) and must be pure,
+    // otherwise previews/imageNames get duplicated entries and blob URLs leak.
+    const remaining = Math.max(0, MAX_FILES - files.length);
+    const toAdd = incoming.slice(0, remaining);
+    if (toAdd.length === 0) return;
+    const newPreviews = toAdd.map((f) => {
+      if (!f.type.startsWith('image/')) return '';
+      const url = URL.createObjectURL(f);
+      blobUrlsRef.current.push(url);
+      return url;
     });
+    if (files.length === 0 && !title) {
+      setTitle(toAdd[0].name.replace(/\.[^.]+$/, ''));
+    }
+    setFiles((prev) => [...prev, ...toAdd]);
+    setPreviews((p) => [...p, ...newPreviews]);
+    setImageNames((n) => [...n, ...toAdd.map(() => '')]);
   };
 
   const removeFile = (index: number) => {

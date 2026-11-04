@@ -8,12 +8,35 @@ import AuthGuard from '@/components/AuthGuard';
 import FileDropZone from '@/components/FileDropZone';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { filterUnreferencedUrls } from '@/lib/storageRefs';
+import type { ImagePerState } from '@/lib/types';
 
 interface OrderedImage {
   url: string;
   thumbUrl: string | null;
   fileType: 'image' | 'pdf';
   name: string;
+  /** Index this file had when the pattern was loaded — used to remap per-image progress. */
+  origIndex: number;
+}
+
+// Top-level pattern_progress columns mirror image_states[0] for backward compatibility.
+function compatColumnsFromState(s: ImagePerState | undefined): Record<string, unknown> {
+  if (!s) return {};
+  const out: Record<string, unknown> = {};
+  if (s.ruler_position_y != null) out.ruler_position_y = s.ruler_position_y;
+  if (s.ruler_height != null) out.ruler_height = s.ruler_height;
+  if (s.ruler_direction != null) out.ruler_direction = s.ruler_direction;
+  if (s.ruler_orientation != null) out.ruler_orientation = s.ruler_orientation;
+  if (s.ruler_position_x != null) out.ruler_position_x = s.ruler_position_x;
+  if (s.ruler_rotation != null) out.ruler_rotation = s.ruler_rotation;
+  if (s.completed_marks) out.completed_marks = s.completed_marks;
+  if (s.crochet_marks) out.crochet_marks = s.crochet_marks;
+  if (s.knitting_marks) out.knitting_marks = s.knitting_marks;
+  if (s.notes) out.notes = s.notes;
+  if (s.note_positions) out.note_positions = s.note_positions;
+  if (s.crochet_ruler_data) out.crochet_ruler_data = s.crochet_ruler_data;
+  return out;
 }
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
@@ -106,6 +129,15 @@ function EditForm() {
   const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]);
   const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]);
   const [newExtraNames, setNewExtraNames] = useState<string[]>([]);
+  // Revoke any preview blob URLs still alive when leaving the page
+  const newPreviewRef = useRef<string | null>(null);
+  newPreviewRef.current = newPreview;
+  const newExtraPreviewsRef = useRef<string[]>([]);
+  newExtraPreviewsRef.current = newExtraPreviews;
+  useEffect(() => () => {
+    if (newPreviewRef.current) URL.revokeObjectURL(newPreviewRef.current);
+    newExtraPreviewsRef.current.forEach((u) => { if (u) URL.revokeObjectURL(u); });
+  }, []);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,12 +173,14 @@ function EditForm() {
             thumbUrl: data.thumbnail_url,
             fileType: data.file_type as 'image' | 'pdf',
             name: names[0] || '',
+            origIndex: 0,
           },
           ...((data.extra_image_urls as ExtraPatternFile[]) || []).map((e, i) => ({
             url: e.url,
             thumbUrl: e.thumbnail_url,
             fileType: (e.file_type ?? (e.url.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')) as 'image' | 'pdf',
             name: names[i + 1] || '',
+            origIndex: i + 1,
           })),
         ];
         setOrderedImages(imgs);
@@ -180,7 +214,7 @@ function EditForm() {
   };
 
   const removeOrderedImage = (index: number) => {
-    if (orderedImages.length <= 1 && newExtraFiles.length === 0) return;
+    if (orderedImages.length <= 1) return;
     const img = orderedImages[index];
     const toDelete = [img.url];
     if (img.thumbUrl && img.thumbUrl !== img.url) toDelete.push(img.thumbUrl);
@@ -228,6 +262,7 @@ function EditForm() {
       if (!session?.user) throw new Error(t('form.error.login'));
 
       const primaryImg = orderedImages[0];
+      if (!primaryImg) throw new Error(t('form.error.save'));
       let fileUrl = primaryImg?.url ?? '';
       let fileType = primaryImg?.fileType ?? 'image';
       let thumbnailUrl = primaryImg?.thumbUrl ?? null;
@@ -340,9 +375,41 @@ function EditForm() {
 
       if (updateError) throw updateError;
 
+      // Per-image progress (image_states) is indexed by file position. If files were
+      // reordered or removed, permute the saved states the same way so marks, ruler,
+      // notes and drawings stay with their image. New files get an empty slot.
+      const order = orderedImages.map((img) => img.origIndex);
+      const orderChanged = order.some((orig, i) => orig !== i) || imagesToDelete.length > 0;
+      if (orderChanged) {
+        try {
+          const { data: prog } = await supabase
+            .from('pattern_progress')
+            .select('image_states')
+            .eq('pattern_id', id!)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          const oldStates = (prog?.image_states as (ImagePerState | null)[] | null) ?? [];
+          if (prog && oldStates.length > 0) {
+            const newStates: (ImagePerState | null)[] = order.map((orig) => oldStates[orig] ?? null);
+            while (newStates.length < order.length + newExtraFiles.length) newStates.push(null);
+            await supabase
+              .from('pattern_progress')
+              .update({ image_states: newStates, ...compatColumnsFromState(newStates[0] ?? undefined) })
+              .eq('pattern_id', id!)
+              .eq('user_id', session.user.id);
+          }
+        } catch {
+          // progress remap is best-effort; the pattern itself is already saved
+        }
+      }
+
       const uniqueToDelete = [...new Set(urlsToDelete)].filter(Boolean);
       if (uniqueToDelete.length > 0) {
-        supabase.functions.invoke('r2-delete', { body: { urls: uniqueToDelete } }).catch(() => {});
+        // A duplicate of this pattern may still point at these objects
+        const deletable = await filterUnreferencedUrls(supabase, session.user.id, uniqueToDelete, id!);
+        if (deletable.length > 0) {
+          supabase.functions.invoke('r2-delete', { body: { urls: deletable } }).catch(() => {});
+        }
       }
 
       setIsDirty(false);

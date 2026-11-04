@@ -234,6 +234,15 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       if (w > 0 || h > 0) contentSizeRef.current = { w, h };
       if (onImageSizeRef.current && (w > 0 || h > 0)) onImageSizeRef.current(w, h);
     }, [getStableContentDims]);
+    // The ResizeObserver below is created once; route it through refs so it never
+    // uses a stale closure (e.g. pdfPages === 1 from the first render → multi-page
+    // PDF height collapsing to one page on orientation change).
+    const reportImageSizeRef = useRef(reportImageSize);
+    reportImageSizeRef.current = reportImageSize;
+    const getStableContentDimsRef = useRef(getStableContentDims);
+    getStableContentDimsRef.current = getStableContentDims;
+    const setXYRef = useRef(setXY);
+    setXYRef.current = setXY;
 
     // When pre-parsing finishes, report the image size using the updated pdfPages state.
     // This effect runs AFTER React commits the render with the new pdfPages value,
@@ -346,10 +355,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         onTransformChangeRef.current?.(transformRef.current, height, width);
         // Synchronously update imgH so latestRef.containerH and latestRef.imgH
         // are always consistent — prevents ruler drift if user drags during resize.
-        reportImageSize();
+        reportImageSizeRef.current();
         requestAnimationFrame(() => {
-          reportImageSize();
-          const { w: iW, h: iH } = getStableContentDims();
+          reportImageSizeRef.current();
+          const { w: iW, h: iH } = getStableContentDimsRef.current();
           if (iW === 0 || iH === 0) return;
           const s = transformRef.current.scale;
           const maxTy = Math.max(0, (iH * s - height) / 2);
@@ -357,7 +366,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           const cx = Math.max(-maxTx, Math.min(maxTx, transformRef.current.x));
           const cy = Math.max(-maxTy, Math.min(maxTy, transformRef.current.y));
           if (cx !== transformRef.current.x || cy !== transformRef.current.y) {
-            setXY(cx, cy);
+            setXYRef.current(cx, cy);
           }
         });
       });

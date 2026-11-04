@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Offline nicht verfügbar.',
   'offline.syncError': 'Synchronisierung fehlgeschlagen',
   'offline.syncErrorRetry': 'Wiederholen',
+  'view.saveErrorPopup.title': 'Speichern fehlgeschlagen',
+  'view.saveErrorPopup.desc': 'Deine Änderungen wurden möglicherweise nicht gespeichert, weil die Verbindung abgebrochen ist oder die Sitzung abgelaufen ist. Bitte prüfen und erneut versuchen.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Neuere Änderungen von einem anderen Gerät',
+  'offline.conflictPopup.desc': 'Offline auf diesem Gerät gemachte Änderungen stehen im Konflikt mit neueren Änderungen von einem anderen Gerät. Die Version des anderen Geräts wurde behalten; die Änderungen dieses Geräts wurden nicht übernommen.',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': 'Reihenfolge & Namen',
 };

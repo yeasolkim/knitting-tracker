@@ -238,4 +238,11 @@ export default {
   'offline.actionBlocked': '离线状态下无法使用。',
   'offline.syncError': '同步失败',
   'offline.syncErrorRetry': '重试',
+  'view.saveErrorPopup.title': '保存失败',
+  'view.saveErrorPopup.desc': '由于网络断开或会话已过期，您的更改可能未被保存。请检查后重试。',
+  'view.saveErrorPopup.close': '确定',
+  'offline.conflictPopup.title': '其他设备有更新的保存内容',
+  'offline.conflictPopup.desc': '此设备离线时的更改与其他设备更近期保存的内容发生冲突。已保留其他设备的内容，此设备的更改未被应用。',
+  'offline.conflictPopup.close': '确定',
+  'form.imageOrderAndName': '顺序与名称',
 };

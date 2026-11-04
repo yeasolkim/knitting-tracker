@@ -7,6 +7,7 @@ import type { PatternWithProgress, CompletedMark, RulerDirection, RulerOrientati
 import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
 import RowRuler from '@/components/RowRuler';
+import HoldRepeatButton from '../components/HoldRepeatButton';
 import CrochetRuler from '@/components/CrochetRuler';
 import CompletedOverlay from '@/components/CompletedOverlay';
 import CrochetMarkers from '@/components/CrochetMarkers';
@@ -18,7 +19,7 @@ import PatternNotes from '@/components/PatternNotes';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { enqueueOfflineUpdate, cachePattern, getCachedPattern } from '@/lib/offlineQueue';
+import { enqueueOfflineUpdate, cachePattern, getCachedPattern, hasOfflineQueue } from '@/lib/offlineQueue';
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
@@ -156,8 +157,12 @@ type Snapshot = {
 };
 
 const MAX_HISTORY = 20;
+const isTextInputTarget = (target: EventTarget | null) =>
+  !!(target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
 const LOG_RULER_MAX = 50;    // % of image dimension — max ruler height
 const MIN_VIEW_RANGE = 1e-6; // effectively no lower limit on slider view window
+const STEP_MULT_MIN = 0.25;  // ÷2 lower bound → 0.5 screen px per press
+const STEP_MULT_MAX = 32;    // ×2 upper bound → 64 screen px per press
 
 const DRAW_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#1e1e1e','#ffffff'];
 const DRAW_TOOLS: { id: DrawTool; label: string; icon: React.ReactNode }[] = [
@@ -362,6 +367,12 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [imageLoadError, setImageLoadError] = useState(false);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
+  // Set by the image-switch effect; the auto-save effect (same commit) skips writing
+  // imageStatesRef[newIdx] once, because perImageStateLatest still holds the OLD image.
+  const skipSlotWriteRef = useRef(false);
+  // Skip the very first auto-save on mount: the data was just loaded, so writing it
+  // back only bumps updated_at (which can make another device discard its offline edits).
+  const isFirstSaveRef = useRef(true);
   // Separate ref for useLayoutEffect (runs before useEffect and before onLoad)
   const prevFileIdxLayoutRef = useRef(0);
   // Set of image indices that have been visited (and thus have saved per-image state)
@@ -627,6 +638,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (isTextInputTarget(e.target)) return; // let the field handle its own undo/redo
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
@@ -641,6 +653,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (isTextInputTarget(e.target)) return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPathId && isDrawingMode && drawingTool === 'select') {
         e.preventDefault();
         captureHistory();
@@ -877,11 +890,17 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
-  // Ruler height step: targets ~2 screen px per button press.
-  const rulerStep = useMemo(
-    () => imgH > 0 && viewTransform.scale > 0 ? 2 / (imgH * viewTransform.scale) * 100 : 0.1,
-    [imgH, viewTransform.scale]
-  );
+  // Ruler height step: base unit is ~2 screen px per button press, scaled by stepMultiplier (÷2 / ×2 buttons).
+  // rulerHeight is % of imgH for vertical rulers and % of imgW for horizontal ones.
+  const [stepMultiplier, setStepMultiplier] = useState(1);
+  const baseStep = useMemo(() => {
+    const dim = rulerOrientation === 'horizontal' ? imgW : imgH;
+    return dim > 0 && viewTransform.scale > 0 ? 2 / (dim * viewTransform.scale) * 100 : 0.1;
+  }, [imgW, imgH, rulerOrientation, viewTransform.scale]);
+  const rulerStep = baseStep * stepMultiplier;
+  const rulerStepPx = 2 * stepMultiplier; // screen px per press, for display
+  const rulerStepRef = useRef(rulerStep);
+  rulerStepRef.current = rulerStep;
 
   // Slider view window — defines the linear range the slider covers.
   const [sliderViewMin, setSliderViewMin] = useState(0);
@@ -892,6 +911,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const rh = (saved != null && saved > 0) ? Math.min(LOG_RULER_MAX, saved) : (isCrochetLine ? 10 : 5);
     return Math.min(LOG_RULER_MAX, Math.max(MIN_VIEW_RANGE * 2, rh * 4));
   });
+
+  // Latest slider window for use inside hold-repeat callbacks (which outlive a single render).
+  const sliderViewRef = useRef({ min: 0, max: 0 });
+  sliderViewRef.current = { min: sliderViewMin, max: sliderViewMax };
 
   // Always-current snapshot of all per-image state (updated in render, like latestRef).
   // Used to save the current image's state before switching to another image.
@@ -980,6 +1003,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
     // Save current state for the image we're leaving (deep copy to prevent shared array refs)
     imageStatesRef.current[prevIdx] = structuredClone(perImageStateLatest.current);
+    skipSlotWriteRef.current = true;
     // Mark both images as visited
     setVisitedImageIndices(prev => new Set([...prev, prevIdx, activeFileIdx]));
 
@@ -1103,8 +1127,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
         userIdRef.current = uid;
       }
 
-      // Offline: queue locally and return without error (optimistic)
-      if (!isOnlineRef.current) {
+      // Offline — or earlier offline edits still waiting to be replayed — queue locally
+      // (optimistic). Writing directly while the queue is non-empty would let the stale
+      // queued payload overwrite this newer one when the replay runs.
+      if (!isOnlineRef.current || hasOfflineQueue()) {
         const queued = enqueueOfflineUpdate({ patternId: pattern.id, userId: uid, data, queuedAt: Date.now() });
         if (!queued) throw new Error('storage_full');
         return;
@@ -1141,7 +1167,15 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   useEffect(() => {
     // Keep imageStatesRef in sync with current image state before saving
-    imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
+    if (skipSlotWriteRef.current) {
+      skipSlotWriteRef.current = false; // this render still reflects the previous image
+    } else {
+      imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
+    }
+    if (isFirstSaveRef.current) {
+      isFirstSaveRef.current = false;
+      return;
+    }
     save({
       current_row: activeSub?.current_row || 0,
       // Keep top-level columns for backward compat (image 0 values)
@@ -1224,11 +1258,18 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const handleNotesUpdate = useCallback(
     (updatedNotes: Record<string, string>) => {
       setNotes(updatedNotes);
-      // Auto-add position for newly typed notes (no explicit placement yet).
-      // Positions are NOT removed here — use handleNoteDelete to remove both.
+      // Auto-add position for newly typed notes (no explicit placement yet),
+      // and drop positions whose note no longer exists (bulk clear / emptied text)
+      // so no empty bubbles linger on the chart.
       setNotePositions((prev) => {
         const next = { ...prev };
         let changed = false;
+        for (const key of Object.keys(next)) {
+          if (!updatedNotes[key]) {
+            delete next[key];
+            changed = true;
+          }
+        }
         const { rulerY: ry, rulerHeight: rh, containerH: H, containerW: W, imgH: iH, imgW: iW } = latestRef.current;
         // rulerY/rulerHeight are stored as image-space % (% of rendered image dims).
         // notePositions are container-space % (% of the full W×H container), since
@@ -1812,7 +1853,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
               onToggleSettings={handleToggleCrochetSettings}
               rotation={crochetRotation}
-              onRotationChange={(deg) => { captureHistory(); setCrochetRotation(deg); }}
+              onRotationChange={setCrochetRotation} /* CrochetRuler calls onDragStart() once per gesture */
               onShapeChange={handleCrochetShapeChange}
               showSettings={showCrochetSettings}
               initialShowActionBar={isFirstOpenRef.current}
@@ -1821,7 +1862,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               onDragStart={captureHistory}
               onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); updateActiveSub(s => ({ ...s, current_row: Math.max(0, s.current_row - 1) })); }}
               onDeleteAllRings={() => { captureHistory(); const count = latestRef.current.completedCrochetRings.length; setCompletedCrochetRings([]); updateActiveSub(s => ({ ...s, current_row: Math.max(0, s.current_row - count) })); }}
-              onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
+              onUpdateRing={handleCrochetRingUpdate} /* history captured in CrochetRuler onRingDown */
               onReset={() => {
                 captureHistory();
                 setCompletedCrochetRings([]);
@@ -1849,7 +1890,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               onDragStart={captureHistory}
               onDeleteRing={(i) => { captureHistory(); setCompletedCrochetRings(prev => prev.filter((_, idx) => idx !== i)); updateActiveSub(s => ({ ...s, current_row: Math.max(0, s.current_row - 1) })); }}
               onDeleteAllRings={() => { captureHistory(); const count = latestRef.current.completedCrochetRings.length; setCompletedCrochetRings([]); updateActiveSub(s => ({ ...s, current_row: Math.max(0, s.current_row - count) })); }}
-              onUpdateRing={(i, ring) => { captureHistory(); handleCrochetRingUpdate(i, ring); }}
+              onUpdateRing={handleCrochetRingUpdate} /* history captured in CrochetRuler onRingDown */
             />
           )}
 
@@ -2243,20 +2284,20 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 {/* Slant (rotation) controls */}
                 <div className="flex items-center gap-1 flex-shrink-0 sm:border-r sm:border-[#d4b896] sm:pr-2">
                   <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">기울기</span>
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => { captureHistory(); setRulerRotation(r => Math.max(-45, Math.round((r - 0.1) * 10) / 10)); }}
+                  <HoldRepeatButton
+                    onPressStart={captureHistory}
+                    onStep={() => setRulerRotation(r => Math.max(-45, Math.round((r - 0.1) * 10) / 10))}
                     className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
-                  >−</button>
+                  >−</HoldRepeatButton>
                   <input type="range" min={-45} max={45} step={0.1} value={rulerRotation}
                     onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
                     onChange={(e) => setRulerRotation(Math.round(Number(e.target.value) * 10) / 10)}
                     className="accent-[#b5541e] cursor-pointer flex-shrink-0" style={{ width: '64px', height: '20px' }} />
-                  <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => { captureHistory(); setRulerRotation(r => Math.min(45, Math.round((r + 0.1) * 10) / 10)); }}
+                  <HoldRepeatButton
+                    onPressStart={captureHistory}
+                    onStep={() => setRulerRotation(r => Math.min(45, Math.round((r + 0.1) * 10) / 10))}
                     className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
-                  >+</button>
+                  >+</HoldRepeatButton>
                   <span className="text-[10px] text-[#b5541e] font-mono w-10 text-center flex-shrink-0">{Number(rulerRotation.toFixed(2))}°</span>
                 </div>
                 {/* Close button — mobile only */}
@@ -2272,29 +2313,37 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => {
+                    if (stepMultiplier <= STEP_MULT_MIN) return;
+                    setStepMultiplier(m => Math.max(STEP_MULT_MIN, m / 2));
                     const range = sliderViewMax - sliderViewMin;
                     const newRange = Math.max(MIN_VIEW_RANGE, range / 2);
                     const newMin = Math.max(0, Math.min(rulerHeight - newRange / 2, LOG_RULER_MAX - newRange));
                     setSliderViewMin(newMin);
                     setSliderViewMax(newMin + newRange);
                   }}
-                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="슬라이더 범위 절반으로 (세밀 조절)"
+                  disabled={stepMultiplier <= STEP_MULT_MIN}
+                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="조절 단위 절반으로 (세밀 조절)"
                 >÷2</button>
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onClick={() => {
-                    const newH = Math.max(0, rulerHeight - rulerStep);
+                <HoldRepeatButton
+                  onPressStart={captureHistory}
+                  onStep={() => {
+                    const { rulerHeight: rh } = latestRef.current;
+                    const newH = Math.max(0, rh - rulerStepRef.current);
+                    latestRef.current.rulerHeight = newH;
                     setRulerHeight(newH);
-                    if (newH <= sliderViewMin && sliderViewMin > 0) {
-                      const range = sliderViewMax - sliderViewMin;
-                      const newMin = Math.max(0, newH - range * 0.25);
-                      setSliderViewMin(newMin);
-                      setSliderViewMax(newMin + range);
+                    const { min, max } = sliderViewRef.current;
+                    if (newH <= min && min > 0) {
+                      const range = max - min;
+                      const nm = Math.max(0, newH - range * 0.25);
+                      sliderViewRef.current = { min: nm, max: nm + range };
+                      setSliderViewMin(nm);
+                      setSliderViewMax(nm + range);
                     }
                   }}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                >−</button>
+                  title="높이 줄이기 (길게 누르면 연속)"
+                >−</HoldRepeatButton>
                 <div className="flex-1 min-w-0 flex flex-col" style={{ gap: '1px' }}>
                   <input
                     type="range" min={0} max={10000} step={1}
@@ -2327,6 +2376,9 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                           return <line key={`mn${i}`} x1={`${i * 2}%`} x2={`${i * 2}%`} y1={0} y2={3} stroke="#d4b896" strokeWidth={0.5} />;
                         })}
                         <text x="1" y="15" fontSize="6" fill="#7a5c46" fontFamily="monospace">{fmtV(sliderViewMin)}%</text>
+                        <text x="50%" y="15" fontSize="6" fill="#b5541e" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+                          {fmtV(rulerHeight)}% · ±{Number(rulerStepPx.toFixed(2))}px
+                        </text>
                         <text x="99%" y="15" fontSize="6" fill="#7a5c46" fontFamily="monospace" textAnchor="end">{fmtV(sliderViewMax)}%</text>
                         <rect x="0" y="18" width="100%" height="3" fill="#e8d8c0" rx="1.5" />
                         <rect
@@ -2342,31 +2394,39 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     );
                   })()}
                 </div>
-                <button
-                  onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
-                  onClick={() => {
-                    const newH = Math.min(LOG_RULER_MAX, rulerHeight + rulerStep);
+                <HoldRepeatButton
+                  onPressStart={captureHistory}
+                  onStep={() => {
+                    const { rulerHeight: rh } = latestRef.current;
+                    const newH = Math.min(LOG_RULER_MAX, rh + rulerStepRef.current);
+                    latestRef.current.rulerHeight = newH;
                     setRulerHeight(newH);
-                    if (newH >= sliderViewMax && sliderViewMax < LOG_RULER_MAX) {
-                      const range = sliderViewMax - sliderViewMin;
-                      const newMax = Math.min(LOG_RULER_MAX, newH + range * 0.25);
-                      setSliderViewMax(newMax);
-                      setSliderViewMin(Math.max(0, newMax - range));
+                    const { min, max } = sliderViewRef.current;
+                    if (newH >= max && max < LOG_RULER_MAX) {
+                      const range = max - min;
+                      const nx = Math.min(LOG_RULER_MAX, newH + range * 0.25);
+                      sliderViewRef.current = { min: Math.max(0, nx - range), max: nx };
+                      setSliderViewMax(nx);
+                      setSliderViewMin(Math.max(0, nx - range));
                     }
                   }}
                   className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
-                >+</button>
+                  title="높이 늘리기 (길게 누르면 연속)"
+                >+</HoldRepeatButton>
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => {
+                    if (stepMultiplier >= STEP_MULT_MAX) return;
+                    setStepMultiplier(m => Math.min(STEP_MULT_MAX, m * 2));
                     const range = sliderViewMax - sliderViewMin;
                     const newRange = Math.min(LOG_RULER_MAX, range * 2);
                     const newMin = Math.max(0, Math.min(rulerHeight - newRange / 2, LOG_RULER_MAX - newRange));
                     setSliderViewMin(newMin);
                     setSliderViewMax(newMin + newRange);
                   }}
-                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0"
-                  title="슬라이더 범위 두 배로 (빠른 조절)"
+                  disabled={stepMultiplier >= STEP_MULT_MAX}
+                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="조절 단위 두 배로 (빠른 조절)"
                 >×2</button>
                 {/* Close button — desktop only */}
                 <button

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RowCounterProps {
@@ -38,23 +38,32 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
     setIsEditing(false);
   };
 
-  const startLongPress = (delta: number) => {
-    longPressCountRef.current = 0;
-    longPressFiredRef.current = false;
-    longPressRef.current = setInterval(() => {
-      longPressCountRef.current += 1;
-      longPressFiredRef.current = true;
-      const step = longPressCountRef.current > 10 ? 5 : 1;
-      onChangeRef.current(Math.max(0, currentRef.current + delta * step));
-    }, 120);
-  };
-
   const stopLongPress = () => {
     if (longPressRef.current) {
       clearInterval(longPressRef.current);
       longPressRef.current = null;
     }
   };
+
+  const startLongPress = (delta: number) => {
+    stopLongPress();
+    longPressCountRef.current = 0;
+    longPressFiredRef.current = false;
+    longPressRef.current = setInterval(() => {
+      longPressCountRef.current += 1;
+      longPressFiredRef.current = true;
+      const step = longPressCountRef.current > 10 ? 5 : 1;
+      const next = Math.max(0, currentRef.current + delta * step);
+      // Stop at the floor: the button becomes disabled under the finger and some
+      // browsers then stop delivering pointerup, which would leave the interval running.
+      if (next === currentRef.current) { stopLongPress(); return; }
+      currentRef.current = next;
+      onChangeRef.current(next);
+    }, 120);
+  };
+
+  // Never leave an interval running after unmount
+  useEffect(() => stopLongPress, []);
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -63,6 +72,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
         onPointerDown={() => startLongPress(-1)}
         onPointerUp={stopLongPress}
         onPointerLeave={stopLongPress}
+        onPointerCancel={stopLongPress}
         disabled={current <= 0}
         className="w-9 h-9 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-[#7a5c46] text-lg font-bold flex items-center justify-center hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#ede5cc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label={t('aria.rowDecrease')}
@@ -99,6 +109,7 @@ export default function RowCounter({ current, total, onChange }: RowCounterProps
         onPointerDown={() => startLongPress(1)}
         onPointerUp={stopLongPress}
         onPointerLeave={stopLongPress}
+        onPointerCancel={stopLongPress}
         className="w-9 h-9 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-[#fdf6e8] text-lg font-bold flex items-center justify-center hover:bg-[#9a4318] active:bg-[#7a3510] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-[2px_2px_0_#9a4318]"
         aria-label={t('aria.rowIncrease')}
       >

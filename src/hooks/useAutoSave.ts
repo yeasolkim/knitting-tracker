@@ -14,6 +14,11 @@ export function useAutoSave<T>(
   // Flushed immediately on unmount so browser-back / swipe-to-go-back
   // never silently drops a pending save.
   const pendingDataRef = useRef<T | null>(null);
+  // Saves run strictly one after another so a slow older request can never
+  // land after (and overwrite) a newer one. Only the newest save drives status.
+  const chainRef = useRef<Promise<void>>(Promise.resolve());
+  const seqRef = useRef(0);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep saveFn ref up to date without causing save() to be recreated
   useEffect(() => {
@@ -32,8 +37,9 @@ export function useAutoSave<T>(
       // This covers browser back button, swipe-to-go-back (iOS), and any
       // navigation that bypasses the in-app back button's explicit saveAll().
       if (pendingDataRef.current !== null) {
-        saveFnRef.current(pendingDataRef.current).catch(() => {});
+        const data = pendingDataRef.current;
         pendingDataRef.current = null;
+        chainRef.current = chainRef.current.then(() => saveFnRef.current(data)).catch(() => {});
       }
     };
   }, []);
@@ -46,20 +52,24 @@ export function useAutoSave<T>(
         clearTimeout(timeoutRef.current);
       }
 
-      timeoutRef.current = setTimeout(async () => {
+      timeoutRef.current = setTimeout(() => {
         if (!isMountedRef.current) return;
         pendingDataRef.current = null;
+        const seq = ++seqRef.current;
+        if (idleTimerRef.current) { clearTimeout(idleTimerRef.current); idleTimerRef.current = null; }
         setStatus('saving');
-        try {
-          await saveFnRef.current(data);
-          if (!isMountedRef.current) return;
-          setStatus('saved');
-          setTimeout(() => {
-            if (isMountedRef.current) setStatus('idle');
-          }, 2000);
-        } catch {
-          if (isMountedRef.current) setStatus('error');
-        }
+        chainRef.current = chainRef.current
+          .then(() => saveFnRef.current(data))
+          .then(() => {
+            if (!isMountedRef.current || seq !== seqRef.current) return;
+            setStatus('saved');
+            idleTimerRef.current = setTimeout(() => {
+              if (isMountedRef.current && seq === seqRef.current) setStatus('idle');
+            }, 2000);
+          })
+          .catch(() => {
+            if (isMountedRef.current && seq === seqRef.current) setStatus('error');
+          });
       }, delay);
     },
     [delay]

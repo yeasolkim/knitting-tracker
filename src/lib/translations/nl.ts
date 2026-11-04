@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Niet beschikbaar offline.',
   'offline.syncError': 'Synchronisatie mislukt',
   'offline.syncErrorRetry': 'Opnieuw proberen',
+  'view.saveErrorPopup.title': 'Opslaan mislukt',
+  'view.saveErrorPopup.desc': 'Je wijzigingen zijn mogelijk niet opgeslagen omdat de verbinding wegviel of je sessie is verlopen. Controleer het en probeer opnieuw.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Nieuwere wijzigingen van een ander apparaat',
+  'offline.conflictPopup.desc': 'Offline gemaakte wijzigingen op dit apparaat botsten met recentere wijzigingen die vanaf een ander apparaat zijn opgeslagen. De versie van het andere apparaat is behouden; de wijzigingen van dit apparaat zijn niet toegepast.',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': 'Volgorde & namen',
 };

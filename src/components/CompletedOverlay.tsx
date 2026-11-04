@@ -20,6 +20,8 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ clientY: number; startY: number; startH: number; clientX: number; startX: number } | null>(null);
+  // Set during a move/resize drag; the click that follows pointerup must not toggle selection.
+  const didDragRef = useRef(false);
 
   const toPercentY = useCallback((clientY: number) => {
     if (!containerRef.current) return 0;
@@ -56,6 +58,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
     (e: React.PointerEvent) => {
       if (dragMode === null || selectedIndex === null || !dragStartRef.current) return;
       e.stopPropagation();
+      didDragRef.current = true;
 
       const mark = marks[selectedIndex];
       const isHorizontal = mark.orientation === 'horizontal';
@@ -101,6 +104,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
   }, []);
 
   const handleBackgroundClick = useCallback(() => {
+    if (didDragRef.current) { didDragRef.current = false; return; }
     setSelectedIndex(null);
   }, []);
 
@@ -132,6 +136,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
               style={{ left: `${mark.y}%`, width: `${mark.height}%`, transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
               onClick={(e) => {
                 e.stopPropagation();
+                if (didDragRef.current) { didDragRef.current = false; return; }
                 setSelectedIndex(isSelected ? null : i);
               }}
             >
@@ -198,6 +203,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
             style={{ top: `${mark.y}%`, height: `${mark.height}%`, transform: rotation ? `rotate(${rotation}deg)` : undefined, transformOrigin: 'center center' }}
             onClick={(e) => {
               e.stopPropagation();
+              if (didDragRef.current) { didDragRef.current = false; return; }
               setSelectedIndex(isSelected ? null : i);
             }}
           >

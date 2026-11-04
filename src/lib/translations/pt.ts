@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Não disponível offline.',
   'offline.syncError': 'Falha na sincronização',
   'offline.syncErrorRetry': 'Tentar novamente',
+  'view.saveErrorPopup.title': 'Falha ao salvar',
+  'view.saveErrorPopup.desc': 'Suas alterações podem não ter sido salvas porque a conexão caiu ou a sessão expirou. Verifique e tente novamente.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Alterações mais recentes de outro dispositivo',
+  'offline.conflictPopup.desc': 'As alterações feitas offline neste dispositivo entraram em conflito com alterações mais recentes salvas em outro dispositivo. A versão do outro dispositivo foi mantida e as alterações deste não foram aplicadas.',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': 'Ordem e nomes',
 };

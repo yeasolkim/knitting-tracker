@@ -319,7 +319,7 @@ export default function DrawingCanvas({
         // 4. Hit-test all paths (reverse order = topmost first)
         const iW2 = imgW > 0 ? imgW : containerW;
         const iH2 = imgH > 0 ? imgH : containerH;
-        const scaleY = iH2 > 0 ? iW2 / iH2 : 1; // normalize Y axis to X-axis scale
+        const scaleY = iW2 > 0 ? iH2 / iW2 : 1; // y% → x%-units: y_px = y%·iH, in x% = y%·iH/iW
         const imgPt = screenPxToImagePct(pos.x, pos.y, viewTransform, containerW, containerH, imgW, imgH);
         let foundPath: DrawPath | null = null;
         for (let i = paths.length - 1; i >= 0; i--) {

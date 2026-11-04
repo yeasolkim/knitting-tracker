@@ -222,4 +222,11 @@ export default {
   'offline.actionBlocked': 'Ikke tilgjengelig offline.',
   'offline.syncError': 'Synkronisering mislyktes',
   'offline.syncErrorRetry': 'Prøv igjen',
+  'view.saveErrorPopup.title': 'Lagring mislyktes',
+  'view.saveErrorPopup.desc': 'Endringene dine ble kanskje ikke lagret fordi tilkoblingen ble brutt eller økten utløp. Sjekk og prøv igjen.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Nyere endringer fra en annen enhet',
+  'offline.conflictPopup.desc': 'Endringer gjort frakoblet på denne enheten var i konflikt med nyere endringer lagret fra en annen enhet. Versjonen fra den andre enheten ble beholdt, og endringene på denne enheten ble ikke brukt.',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': 'Rekkefølge og navn',
 };

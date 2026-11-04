@@ -152,13 +152,13 @@ const RowRuler = memo(function RowRuler({
         const currentPct = toPercentX(e.clientX);
         const startPct = toPercentX(dragStartRef.current.clientX);
         const delta = currentPct - startPct;
-        const newX = Math.max(0, Math.min(100 - height, dragStartRef.current.startX + delta));
+        const newX = Math.max(0, Math.min(Math.max(0, 100 - height), dragStartRef.current.startX + delta));
         onChangePositionX?.(newX);
       } else {
         const currentPct = toPercentY(e.clientY);
         const startPct = toPercentY(dragStartRef.current.clientY);
         const delta = currentPct - startPct;
-        const newY = Math.max(0, Math.min(100 - height, dragStartRef.current.startY + delta));
+        const newY = Math.max(0, Math.min(Math.max(0, 100 - height), dragStartRef.current.startY + delta));
         onChangePosition(newY);
       }
     },
@@ -292,7 +292,7 @@ const RowRuler = memo(function RowRuler({
               </button>
               <div className="w-px bg-[#d4b896]" />
               <button
-                onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(100 - height, positionX + 0.1)); }}
+                onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePositionX?.(Math.min(Math.max(0, 100 - height), positionX + 0.1)); }}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
                 title="진행선 오른쪽으로"
@@ -414,7 +414,7 @@ const RowRuler = memo(function RowRuler({
             </button>
             <div className="w-px bg-[#d4b896]" />
             <button
-              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(100 - height, positionY + 0.1)); }}
+              onClick={(e) => { e.stopPropagation(); triggerPreview(); onChangePosition(Math.min(Math.max(0, 100 - height), positionY + 0.1)); }}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center px-3.5 py-2.5 text-[#b07840] hover:bg-[#f5edd6] hover:text-[#b5541e] active:scale-95 transition-all"
               title="진행선 아래로"

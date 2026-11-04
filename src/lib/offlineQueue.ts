@@ -31,9 +31,15 @@ export function getOfflineQueue(): OfflineQueueItem[] {
   }
 }
 
-export function removeFromOfflineQueue(patternId: string): void {
+/**
+ * Remove a queued item. When `queuedAt` is given, only entries queued at or before
+ * that time are removed, so an edit re-enqueued while the old one was in flight survives.
+ */
+export function removeFromOfflineQueue(patternId: string, queuedAt?: number): void {
   try {
-    const queue = getOfflineQueue().filter(i => i.patternId !== patternId);
+    const queue = getOfflineQueue().filter(i =>
+      i.patternId !== patternId || (queuedAt != null && i.queuedAt > queuedAt)
+    );
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch {}
 }

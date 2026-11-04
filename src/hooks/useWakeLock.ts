@@ -3,16 +3,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export function useWakeLock() {
   const [isActive, setIsActive] = useState(false);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  // User intent: true between request() and release(). The browser drops the
+  // sentinel whenever the page is hidden, so isActive alone cannot drive re-acquire.
+  const wantedRef = useRef(false);
 
   const request = useCallback(async () => {
+    wantedRef.current = true;
     try {
       if ('wakeLock' in navigator) {
-        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        if (wakeLockRef.current && !wakeLockRef.current.released) return;
+        const sentinel = await navigator.wakeLock.request('screen');
+        wakeLockRef.current = sentinel;
         setIsActive(true);
-
-        wakeLockRef.current.addEventListener('release', () => {
+        sentinel.addEventListener('release', () => {
+          if (wakeLockRef.current === sentinel) wakeLockRef.current = null;
           setIsActive(false);
-        });
+        }, { once: true });
       }
     } catch {
       setIsActive(false);
@@ -20,23 +26,32 @@ export function useWakeLock() {
   }, []);
 
   const release = useCallback(async () => {
+    wantedRef.current = false;
     if (wakeLockRef.current) {
-      await wakeLockRef.current.release();
+      const sentinel = wakeLockRef.current;
       wakeLockRef.current = null;
+      try { await sentinel.release(); } catch { /* ignore */ }
       setIsActive(false);
     }
   }, []);
 
-  // Re-acquire on visibility change
+  // Re-acquire when the page becomes visible again (browser releases it when hidden)
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && isActive) {
+      if (document.visibilityState === 'visible' && wantedRef.current) {
         request();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [isActive, request]);
+  }, [request]);
+
+  // Release on unmount
+  useEffect(() => () => {
+    wantedRef.current = false;
+    wakeLockRef.current?.release().catch(() => {});
+    wakeLockRef.current = null;
+  }, []);
 
   return { isActive, request, release };
 }

@@ -238,4 +238,11 @@ export default {
   'offline.actionBlocked': 'オフライン中は使用できません。',
   'offline.syncError': '同期に失敗しました',
   'offline.syncErrorRetry': '再試行',
+  'view.saveErrorPopup.title': '保存に失敗しました',
+  'view.saveErrorPopup.desc': '接続が切れたかセッションが期限切れのため、変更が保存されていない可能性があります。確認してもう一度お試しください。',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': '他の端末で保存された内容があります',
+  'offline.conflictPopup.desc': 'オフライン中に行った変更が、他の端末でより新しく保存された内容と競合しました。他の端末の内容が保持され、この端末の変更は適用されませんでした。',
+  'offline.conflictPopup.close': 'OK',
+  'form.imageOrderAndName': '順序と名前',
 };

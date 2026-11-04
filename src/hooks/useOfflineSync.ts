@@ -14,18 +14,26 @@ export function useOfflineSync(): { status: SyncStatus; retry: () => void; confl
   const [conflictCount, setConflictCount] = useState(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const processingRef = useRef(false);
+
   const processQueue = useCallback(async () => {
     if (!navigator.onLine) return;
-    const queue = getOfflineQueue();
-    if (queue.length === 0) return;
+    if (processingRef.current) return; // 'online' event + mount + retry can overlap
+    if (!hasOfflineQueue()) return;
 
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
     }
 
+    processingRef.current = true;
     setSyncStatus('syncing');
 
+    // Items may be enqueued while we are replaying; loop until the queue stops shrinking.
+    let queue = getOfflineQueue();
+    let pass = 0;
+    while (queue.length > 0 && pass < 5) {
+      pass += 1;
     for (const item of queue) {
       try {
         // Conflict resolution: compare server's updated_at with local queuedAt.
@@ -44,7 +52,7 @@ export function useOfflineSync(): { status: SyncStatus; retry: () => void; confl
 
         if (serverTime > item.queuedAt) {
           // Server is newer (edited on another device) — discard local change
-          removeFromOfflineQueue(item.patternId);
+          removeFromOfflineQueue(item.patternId, item.queuedAt);
           setConflictCount(prev => prev + 1);
           continue;
         }
@@ -57,12 +65,18 @@ export function useOfflineSync(): { status: SyncStatus; retry: () => void; confl
             { onConflict: 'pattern_id,user_id' }
           );
 
-        if (!error) removeFromOfflineQueue(item.patternId);
+        if (!error) removeFromOfflineQueue(item.patternId, item.queuedAt);
         // If error: leave in queue, retry after delay
       } catch {
         // Network error mid-sync — leave item in queue
       }
     }
+      const remaining = getOfflineQueue();
+      // Stop if nothing was consumed this pass (persistent failure) to avoid a hot loop
+      if (remaining.length >= queue.length) { queue = remaining; break; }
+      queue = remaining;
+    }
+    processingRef.current = false;
 
     if (!hasOfflineQueue()) {
       setSyncStatus('done');

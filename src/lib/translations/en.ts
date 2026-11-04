@@ -239,4 +239,10 @@ export default {
   'form.imageOrderAndName': 'Order & names',
   'dropzone.labelMultiple': 'Drop pattern images here',
   'dropzone.hintMultiple': 'Select multiple at once · PDF · max {max} MB',
+  'view.saveErrorPopup.title': 'Save failed',
+  'view.saveErrorPopup.desc': 'Your changes may not have been saved because the connection dropped or your session expired. Please check and try again.',
+  'view.saveErrorPopup.close': 'OK',
+  'offline.conflictPopup.title': 'Newer changes from another device',
+  'offline.conflictPopup.desc': 'Changes made offline on this device conflicted with more recent changes saved from another device. The other device’s version was kept and this device’s changes were not applied.',
+  'offline.conflictPopup.close': 'OK',
 };
