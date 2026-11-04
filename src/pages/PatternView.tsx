@@ -154,6 +154,8 @@ type Snapshot = {
   crochetRotation: number;
   completedCrochetRings: CrochetRing[];
   drawingPaths: DrawPath[];
+  notes: Record<string, string>;
+  notePositions: Record<string, NotePosition>;
 };
 
 const MAX_HISTORY = 20;
@@ -469,6 +471,12 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [showRulerSettings, setShowRulerSettings] = useState(false);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const handleToggleRulerSettings = useCallback(() => setShowRulerSettings(v => !v), []);
+  // The settings panel covers the top of the viewer; bring the ruler into the visible middle.
+  useEffect(() => {
+    if (!showRulerSettings) return;
+    const raf = requestAnimationFrame(() => viewerRef.current?.goToRuler({ keepScale: true }));
+    return () => cancelAnimationFrame(raf);
+  }, [showRulerSettings]);
   const handleToggleCrochetSettings = useCallback(() => setShowCrochetSettings(v => !v), []);
   const [showOverlays, setShowOverlays] = useState(true);
 const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
@@ -683,6 +691,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     crochetRotation,
     completedCrochetRings,
     drawingPaths,
+    notes: {},
+    notePositions: {},
   });
 
   const captureHistory = useCallback(() => {
@@ -711,6 +721,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     setCompletedCrochetRings(snap.completedCrochetRings);
     setDrawingPaths(snap.drawingPaths);
     setSelectedPathId(null);
+    setNotes(snap.notes);
+    setNotePositions(snap.notePositions);
   }, []);
 
   const handleUndo = useCallback(() => {
@@ -979,7 +991,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [placingNoteKey, setPlacingNoteKey] = useState<string | null>(null);
 
   // Keep undoStateRef in sync — direct assignment avoids scheduling an effect on every drag frame
-  undoStateRef.current = { subPatterns, activeSubId, rulers, activeRulerId, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths };
+  undoStateRef.current = { subPatterns, activeSubId, rulers, activeRulerId, completedMarks, crochetMarks, knittingMarks, crochetCx, crochetCy, crochetR, crochetRy, crochetRowHeight, crochetRotation, completedCrochetRings, drawingPaths, notes: {}, notePositions: {} };
 
   const [notes, setNotes] = useState<Record<string, string>>(
     img0?.notes ?? (pattern.progress?.notes as Record<string, string>) ?? {}
@@ -987,6 +999,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [notePositions, setNotePositions] = useState<Record<string, NotePosition>>(
     img0?.note_positions ?? (pattern.progress?.note_positions as Record<string, NotePosition>) ?? {}
   );
+  // Notes are declared after undoStateRef; complete the snapshot here (same render pass).
+  undoStateRef.current.notes = notes;
+  undoStateRef.current.notePositions = notePositions;
+  const notesCountRef = useRef(0);
+  notesCountRef.current = Object.keys(notes).length;
   // Ruler height step: base unit is ~2 screen px per button press, scaled by stepMultiplier (÷2 / ×2 buttons).
   // rulerHeight is % of imgH for vertical rulers and % of imgW for horizontal ones.
   const [stepMultiplier, setStepMultiplier] = useState(1);
@@ -1350,6 +1367,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
   const handleNotesUpdate = useCallback(
     (updatedNotes: Record<string, string>) => {
+      // Removing notes (clear current / clear all) is undoable
+      if (Object.keys(updatedNotes).length < notesCountRef.current) captureHistory();
       setNotes(updatedNotes);
       // Auto-add position for newly typed notes (no explicit placement yet),
       // and drop positions whose note no longer exists (bulk clear / emptied text)
@@ -1384,11 +1403,12 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
         return changed ? next : prev;
       });
     },
-    []
+    [captureHistory]
   );
 
   // Delete a note: removes both text and position
   const handleNoteDelete = useCallback((key: string) => {
+    captureHistory();
     setNotes((prev) => {
       if (!(key in prev)) return prev;
       const next = { ...prev };
@@ -1401,7 +1421,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       delete next[key];
       return next;
     });
-  }, []);
+  }, [captureHistory]);
 
   const handleComplete = useCallback(() => {
     captureHistory();
@@ -1985,7 +2005,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 key={i}
                 type="button"
                 onClick={() => setActiveFileIdx(i)}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-t-lg text-xs font-semibold tracking-wide border-2 border-b-0 transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-2 min-h-[40px] rounded-t-lg text-xs font-semibold tracking-wide border-2 border-b-0 transition-colors ${
                   isActive
                     ? 'border-[#b07840] bg-[#fdf6e8] text-[#3d2b1f]'
                     : 'border-transparent bg-transparent text-[#a08060] hover:text-[#7a5c46]'
@@ -2390,7 +2410,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 handlePlaceNote(screenX, screenY);
               }}
             >
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#b07840] text-[#fdf6e8] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
+              <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] flex items-center gap-2 bg-[#b07840] text-[#fdf6e8] text-xs font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none select-none">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"/>
                 </svg>
@@ -2581,7 +2601,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={() => jumpToRuler(r.id)}
-                      className={`flex items-center gap-1 px-2 h-6 rounded-full border text-[10px] font-bold select-none transition-colors ${
+                      className={`flex items-center gap-1 px-2.5 h-8 rounded-full border text-[11px] font-bold select-none transition-colors ${
                         isAct ? 'border-[#9a4318] bg-[#b5541e] text-[#fdf6e8]' : 'border-[#b07840] bg-white text-[#7a5c46] hover:bg-[#fdf6e8]'
                       }`}
                     >
@@ -2597,16 +2617,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     onClick={handleAddRuler}
                     title={t('ruler.add')}
                     aria-label={t('ruler.add')}
-                    className="flex items-center justify-center w-6 h-6 rounded-full border border-dashed border-[#b07840] text-[#b5541e] text-sm font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
+                    className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-[#b07840] text-[#b5541e] text-sm font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
                   >+</button>
                 )}
-                <label className="ml-auto flex items-center gap-1 text-[9px] text-[#7a5c46] font-bold whitespace-nowrap">
+                <label className="ml-auto flex items-center gap-1 text-[10px] text-[#7a5c46] font-bold whitespace-nowrap">
                   {t('ruler.linkedPart')}
                   <select
                     value={activeRuler.sub_id && subPatterns.some((s) => s.id === activeRuler.sub_id) ? activeRuler.sub_id : ''}
                     onPointerDown={(e) => e.stopPropagation()}
                     onChange={(e) => handleLinkRulerToSub(activeRuler.id, e.target.value || undefined)}
-                    className="h-6 max-w-[120px] text-[10px] border border-[#b07840] rounded bg-white text-[#3d2b1f] px-1"
+                    className="h-8 max-w-[140px] text-[11px] border border-[#b07840] rounded bg-white text-[#3d2b1f] px-1"
                   >
                     <option value="">{t('ruler.noLink')}</option>
                     {subPatterns.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -2619,7 +2639,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   title={t('ruler.rename')}
                   aria-label={t('ruler.rename')}
                   aria-pressed={editingRulerId === activeRuler.id}
-                  className={`flex items-center justify-center w-6 h-6 rounded border border-[#b07840] active:scale-95 select-none ${
+                  className={`flex items-center justify-center w-8 h-8 rounded border border-[#b07840] active:scale-95 select-none ${
                     editingRulerId === activeRuler.id ? 'bg-[#b5541e] text-[#fdf6e8]' : 'bg-[#fdf6e8] text-[#7a5c46] hover:bg-[#ede5cc]'
                   }`}
                 >
@@ -2634,7 +2654,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     onClick={() => handleDeleteRuler(activeRuler.id)}
                     title={t('ruler.deleteRuler')}
                     aria-label={t('ruler.deleteRuler')}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#9a4318] hover:bg-[#ede5cc] active:scale-95 select-none"
+                    className="flex items-center justify-center w-8 h-8 rounded border border-[#b07840] bg-[#fdf6e8] text-[#9a4318] hover:bg-[#ede5cc] active:scale-95 select-none"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -2657,7 +2677,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                       if (e.key === 'Escape') setEditingRulerId(null);
                     }}
-                    className="h-7 w-32 text-base sm:text-xs border border-[#b07840] rounded px-2 bg-white text-[#3d2b1f] focus:outline-none focus:border-[#b5541e]"
+                    className="h-8 w-32 text-base sm:text-xs border border-[#b07840] rounded px-2 bg-white text-[#3d2b1f] focus:outline-none focus:border-[#b5541e]"
                   />
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {RULER_COLORS.map((c) => (
@@ -2668,7 +2688,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                         onClick={() => handleRecolorRuler(activeRuler.id, c)}
                         aria-label={c}
                         aria-pressed={activeRuler.color === c}
-                        className="w-6 h-6 rounded-full border-2 active:scale-90 transition-transform"
+                        className="w-8 h-8 rounded-full border-2 active:scale-90 transition-transform"
                         style={{ background: c, borderColor: activeRuler.color === c ? '#3d2b1f' : '#fdf6e8', boxShadow: '0 0 0 1px #b07840' }}
                       />
                     ))}
@@ -2677,7 +2697,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     type="button"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => setEditingRulerId(null)}
-                    className="ml-auto h-7 px-2.5 rounded border border-[#b07840] bg-[#fdf6e8] text-[10px] font-bold text-[#7a5c46] hover:bg-[#ede5cc]"
+                    className="ml-auto h-8 px-2.5 rounded border border-[#b07840] bg-[#fdf6e8] text-[10px] font-bold text-[#7a5c46] hover:bg-[#ede5cc]"
                   >{t('ruler.editDone')}</button>
                 </div>
               )}
@@ -2705,11 +2725,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 </div>
                 {/* Slant (rotation) controls */}
                 <div className="flex items-center gap-1 flex-shrink-0 sm:border-r sm:border-[#d4b896] sm:pr-2">
-                  <span className="text-[9px] text-[#7a5c46] font-bold flex-shrink-0">{t('ruler.slant')}</span>
+                  <span className="text-[10px] text-[#7a5c46] font-bold flex-shrink-0">{t('ruler.slant')}</span>
                   <HoldRepeatButton
                     onPressStart={captureHistory}
                     onStep={() => setRulerRotation(r => Math.max(-45, Math.round((r - 0.1) * 10) / 10))}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                    className="flex items-center justify-center w-8 h-8 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
                   >−</HoldRepeatButton>
                   <input type="range" min={-45} max={45} step={0.1} value={rulerRotation}
                     onPointerDown={(e) => { e.stopPropagation(); captureHistory(); }}
@@ -2718,7 +2738,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                   <HoldRepeatButton
                     onPressStart={captureHistory}
                     onStep={() => setRulerRotation(r => Math.min(45, Math.round((r + 0.1) * 10) / 10))}
-                    className="flex items-center justify-center w-6 h-6 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
+                    className="flex items-center justify-center w-8 h-8 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none flex-shrink-0"
                   >+</HoldRepeatButton>
                   <span className="text-[10px] text-[#b5541e] font-mono w-10 text-center flex-shrink-0">{Number(rulerRotation.toFixed(2))}°</span>
                 </div>
@@ -2726,7 +2746,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setShowRulerSettings(false)}
-                  className="sm:hidden flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
+                  className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-auto"
                   title={t('common.close')}
                 >×</button>
               </div>
@@ -2744,7 +2764,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     setSliderViewMax(newMin + newRange);
                   }}
                   disabled={stepMultiplier <= STEP_MULT_MIN}
-                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center min-w-[36px] h-8 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                   title={t('ruler.stepHalf')}
                 >÷2</button>
                 <HoldRepeatButton
@@ -2763,7 +2783,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       setSliderViewMax(nm + range);
                     }
                   }}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                   title={t('ruler.heightDecrease')}
                 >−</HoldRepeatButton>
                 <div className="flex-1 min-w-0 flex flex-col" style={{ gap: '1px' }}>
@@ -2789,6 +2809,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     const fmtV = (v: number) => v === 0 ? '0' : v < 0.001 ? v.toExponential(1) : v < 0.1 ? v.toFixed(3) : v < 1 ? v.toFixed(2) : v.toFixed(1);
                     const viewPct = (v: number) => Math.max(0, Math.min(100, v / LOG_RULER_MAX * 100));
                     return (
+                      <>
+                      <div className="sm:hidden text-center text-[11px] font-bold text-[#b5541e] font-mono leading-tight py-0.5">
+                        {fmtV(rulerHeight)}% · ±{Number(rulerStepPx.toFixed(2))}px
+                      </div>
+                      <div className="hidden sm:block">
                       <svg width="100%" height="22" style={{ display: 'block', overflow: 'visible' }}>
                         {Array.from({ length: 11 }, (_, i) => (
                           <line key={`mj${i}`} x1={`${i * 10}%`} x2={`${i * 10}%`} y1={0} y2={7} stroke="#b07840" strokeWidth={0.9} />
@@ -2813,6 +2838,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                           y1="16.5" y2="21.5" stroke="#b5541e" strokeWidth="1.5"
                         />
                       </svg>
+                      </div>
+                      </>
                     );
                   })()}
                 </div>
@@ -2832,7 +2859,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                       setSliderViewMin(Math.max(0, nx - range));
                     }
                   }}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#b07840] bg-white text-[#b5541e] font-bold text-base hover:bg-[#fdf6e8] active:scale-95 select-none leading-none flex-shrink-0"
                   title={t('ruler.heightIncrease')}
                 >+</HoldRepeatButton>
                 <button
@@ -2847,14 +2874,14 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                     setSliderViewMax(newMin + newRange);
                   }}
                   disabled={stepMultiplier >= STEP_MULT_MAX}
-                  className="flex items-center justify-center min-w-[28px] h-7 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[9px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center min-w-[36px] h-8 rounded border border-[#b07840] bg-[#fdf6e8] text-[#7a5c46] text-[10px] font-bold hover:bg-[#ede5cc] active:scale-95 select-none leading-none flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                   title={t('ruler.stepDouble')}
                 >×2</button>
                 {/* Close button — desktop only */}
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setShowRulerSettings(false)}
-                  className="hidden sm:flex items-center justify-center w-7 h-7 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
+                  className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-[#e8d8c0] text-[#7a5c46] text-sm font-bold hover:bg-[#d4b896] active:scale-95 select-none leading-none flex-shrink-0 ml-1"
                   title={t('common.close')}
                 >×</button>
               </div>
@@ -2864,12 +2891,13 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
 
         {/* Floating ruler switcher — one tap switches AND jumps to that ruler */}
-        {(!isCrochet || crochetShape === 'line') && showOverlays && !showGuide && !showRulerSettings && imgH > 0 && rulers.length > 1 && (
+        {(!isCrochet || crochetShape === 'line') && showOverlays && !showGuide && !showRulerSettings && imgH > 0
+          && (rulers.length > 1 || (subPatterns.length > 1 && rulers.length < MAX_RULERS)) && (
           <div
-            className="absolute left-2 sm:left-4 bottom-[108px] sm:bottom-[130px] z-20 flex flex-col items-start gap-1"
+            className="absolute left-2 sm:left-4 bottom-[122px] sm:bottom-[152px] z-20 flex flex-col items-start gap-1"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {rulers.map((r) => {
+            {rulers.length > 1 && rulers.map((r) => {
               const isAct = r.id === activeRulerId;
               const linked = r.sub_id ? subPatterns.find((sp) => sp.id === r.sub_id) : undefined;
               return (
@@ -2914,25 +2942,31 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
                 onClick={handleAddRuler}
                 title={t('ruler.add')}
                 aria-label={t('ruler.add')}
-                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-dashed border-[#b07840]/70 bg-[#fdf6e8]/70 backdrop-blur-sm text-[#b5541e] text-base font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none"
-              >+</button>
+                className={`flex items-center justify-center gap-1 h-8 sm:h-9 rounded-full border-2 border-dashed border-[#b07840]/70 bg-[#fdf6e8]/75 backdrop-blur-sm text-[#b5541e] font-bold hover:bg-[#fdf6e8] active:scale-95 select-none leading-none ${
+                  rulers.length > 1 ? 'w-8 sm:w-9 text-base' : 'px-3 text-[11px]'
+                }`}
+              >
+                <span className="text-base leading-none">+</span>
+                {rulers.length === 1 && <span>{t('ruler.add')}</span>}
+              </button>
             )}
           </div>
         )}
 
+        {/* Transient notices live at the bottom center, where the knitter is already looking */}
         {repeatToast && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 max-w-[90%] pointer-events-none">
-            <div className="flex items-center gap-2 bg-[#3d2b1f]/90 text-[#fdf6e8] text-xs font-bold px-3.5 py-2 rounded-full shadow-lg backdrop-blur-sm">
+          <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-40 pointer-events-none">
+            <div className="flex items-center gap-2 bg-[#3d2b1f]/90 text-[#fdf6e8] text-xs font-bold px-3.5 py-2 rounded-2xl shadow-lg backdrop-blur-sm">
               <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 9A8 8 0 0119 7.3M18.4 15A8 8 0 015 16.7" />
               </svg>
-              <span className="truncate">{repeatToast}</span>
+              <span className="leading-snug">{repeatToast}</span>
             </div>
           </div>
         )}
 
         {hasMarkSelection && showOverlays && completedMarks.length > 1 && !showRulerSettings && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30">
+          <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-30">
             <button
               onClick={() => {
                 if (confirm(t('view.deleteAllMarks'))) {

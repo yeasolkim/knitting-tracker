@@ -252,6 +252,7 @@ export default {
   'ruler.linkedPart': 'Linked part',
   'ruler.noLink': 'Not linked',
   'ruler.tapToActivate': 'Tap to use this ruler',
+  'counter.editHint': 'Long-press or double-click to type a number',
   'common.close': 'Close',
   'ruler.slant': 'Slant',
   'ruler.stepHalf': 'Halve step (fine)',

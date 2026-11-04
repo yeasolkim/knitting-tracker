@@ -252,6 +252,7 @@ export default {
   'ruler.linkedPart': '連携パート',
   'ruler.noLink': '連携なし',
   'ruler.tapToActivate': 'タップしてこの進行線を使う',
+  'counter.editHint': '長押しまたはダブルクリックで直接入力',
   'common.close': '閉じる',
   'ruler.slant': '傾き',
   'ruler.stepHalf': '調整単位を半分に（微調整）',

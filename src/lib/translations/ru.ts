@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Связанная часть',
   'ruler.noLink': 'Не связана',
   'ruler.tapToActivate': 'Нажмите, чтобы использовать эту линейку',
+  'counter.editHint': 'Долгое нажатие или двойной клик для ввода',
   'common.close': 'Закрыть',
   'ruler.slant': 'Наклон',
   'ruler.stepHalf': 'Шаг вдвое меньше (точно)',

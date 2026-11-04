@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Verknüpfter Teil',
   'ruler.noLink': 'Nicht verknüpft',
   'ruler.tapToActivate': 'Tippen, um dieses Lineal zu verwenden',
+  'counter.editHint': 'Lang drücken oder doppelklicken zum Eingeben',
   'common.close': 'Schließen',
   'ruler.slant': 'Neigung',
   'ruler.stepHalf': 'Schritt halbieren (fein)',

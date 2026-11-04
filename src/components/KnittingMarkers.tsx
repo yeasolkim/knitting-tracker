@@ -158,7 +158,7 @@ const KnittingMarkers = memo(function KnittingMarkers({
       onClick={handleContainerClick}
     >
       {isPlacing && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-30 pointer-events-auto">
           <div className="flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
             <span className="animate-pulse w-2 h-2 bg-white rounded-full" />
             {t('marker.placeHint')}

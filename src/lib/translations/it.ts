@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Parte collegata',
   'ruler.noLink': 'Non collegato',
   'ruler.tapToActivate': 'Tocca per usare questo righello',
+  'counter.editHint': 'Tieni premuto o doppio clic per digitare',
   'common.close': 'Chiudi',
   'ruler.slant': 'Inclinazione',
   'ruler.stepHalf': 'Passo dimezzato (fine)',

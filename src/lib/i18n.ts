@@ -173,6 +173,7 @@ const ko = {
   'ruler.linkedPart': '연결 파트',
   'ruler.noLink': '연결 안 함',
   'ruler.tapToActivate': '탭하여 이 진행선 사용',
+  'counter.editHint': '길게 누르거나 두 번 클릭해 직접 입력',
   'common.close': '닫기',
   'ruler.slant': '기울기',
   'ruler.stepHalf': '조절 단위 절반으로 (세밀 조절)',

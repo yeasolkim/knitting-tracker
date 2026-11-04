@@ -252,6 +252,7 @@ export default {
   'ruler.linkedPart': '关联部件',
   'ruler.noLink': '不关联',
   'ruler.tapToActivate': '点击使用此进度线',
+  'counter.editHint': '长按或双击直接输入',
   'common.close': '关闭',
   'ruler.slant': '倾斜',
   'ruler.stepHalf': '步长减半（精细）',

@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Partie liée',
   'ruler.noLink': 'Non liée',
   'ruler.tapToActivate': 'Touchez pour utiliser cette règle',
+  'counter.editHint': 'Appui long ou double-clic pour saisir',
   'common.close': 'Fermer',
   'ruler.slant': 'Inclinaison',
   'ruler.stepHalf': 'Pas divisé par 2 (fin)',

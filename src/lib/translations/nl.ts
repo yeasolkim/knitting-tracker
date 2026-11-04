@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Gekoppeld deel',
   'ruler.noLink': 'Niet gekoppeld',
   'ruler.tapToActivate': 'Tik om deze liniaal te gebruiken',
+  'counter.editHint': 'Lang indrukken of dubbelklikken om te typen',
   'common.close': 'Sluiten',
   'ruler.slant': 'Helling',
   'ruler.stepHalf': 'Stap halveren (fijn)',

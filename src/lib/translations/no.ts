@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Koblet del',
   'ruler.noLink': 'Ikke koblet',
   'ruler.tapToActivate': 'Trykk for å bruke denne linjalen',
+  'counter.editHint': 'Hold inne eller dobbeltklikk for å skrive',
   'common.close': 'Lukk',
   'ruler.slant': 'Helling',
   'ruler.stepHalf': 'Halver steg (fint)',

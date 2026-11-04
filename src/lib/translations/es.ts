@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Parte vinculada',
   'ruler.noLink': 'Sin vincular',
   'ruler.tapToActivate': 'Toca para usar esta regla',
+  'counter.editHint': 'Mantén pulsado o haz doble clic para escribir',
   'common.close': 'Cerrar',
   'ruler.slant': 'Inclinación',
   'ruler.stepHalf': 'Paso a la mitad (fino)',

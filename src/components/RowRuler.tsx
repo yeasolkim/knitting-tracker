@@ -272,10 +272,15 @@ const RowRuler = memo(function RowRuler({
         </div>
 
         {/* Action bar popup — tap ruler to show/hide */}
-        {showActionBar && !isDragging && (
+        {showActionBar && !isDragging && (() => {
+          // Not enough room on the left (band near the left edge) → open on the right side
+          const barLeft = containerSize.w === 0 || (positionX / 100) * containerSize.w >= 240;
+          return (
           <div
             className="absolute top-1/2 pointer-events-auto z-20"
-            style={{ left: `${positionX}%`, transform: 'translate(calc(-100% - 8px), -50%)' }}
+            style={barLeft
+              ? { left: `${positionX}%`, transform: 'translate(calc(-100% - 8px), -50%)' }
+              : { left: `calc(${positionX + height}% + 8px)`, transform: 'translate(0, -50%)' }}
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
           >
@@ -331,10 +336,15 @@ const RowRuler = memo(function RowRuler({
                 </svg>
               </button>
             </div>
-            {/* Arrow pointing right toward ruler */}
-            <div className="absolute top-1/2 right-0 translate-x-full -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-t-transparent border-b-transparent border-l-[#d4b896]" />
+            {/* Arrow pointing toward the ruler */}
+            {barLeft ? (
+              <div className="absolute top-1/2 right-0 translate-x-full -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-t-transparent border-b-transparent border-l-[#d4b896]" />
+            ) : (
+              <div className="absolute top-1/2 left-0 -translate-x-full -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-t-transparent border-b-transparent border-r-[#d4b896]" />
+            )}
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   }
@@ -397,10 +407,15 @@ const RowRuler = memo(function RowRuler({
       </div>
 
       {/* Action bar popup — tap ruler to show/hide */}
-      {showActionBar && !isDragging && (
+      {showActionBar && !isDragging && (() => {
+        // Not enough room above (band near the top edge) → open below the band
+        const barAbove = containerSize.h === 0 || (positionY / 100) * containerSize.h >= 64;
+        return (
         <div
           className="absolute left-1/2 pointer-events-auto z-20"
-          style={{ top: `${positionY}%`, transform: 'translate(-50%, calc(-100% - 8px))' }}
+          style={barAbove
+            ? { top: `${positionY}%`, transform: 'translate(-50%, calc(-100% - 8px))' }
+            : { top: `calc(${positionY + height}% + 8px)`, transform: 'translate(-50%, 0)' }}
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
@@ -456,10 +471,15 @@ const RowRuler = memo(function RowRuler({
               </svg>
             </button>
           </div>
-          {/* Arrow pointing down toward ruler */}
-          <div className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />
+          {/* Arrow pointing toward the ruler */}
+          {barAbove ? (
+            <div className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#d4b896]" />
+          ) : (
+            <div className="absolute top-0 left-1/2 -translate-y-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-l-transparent border-r-transparent border-b-[#d4b896]" />
+          )}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 });

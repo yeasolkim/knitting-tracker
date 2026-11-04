@@ -30,6 +30,17 @@ export default function RowCounter({ current, total, onChange, repeatLabel, repe
     setEditValue(String(current));
     setIsEditing(true);
   };
+  // Editing opens on long-press (touch) or double-click (mouse) so a stray tap next to
+  // the −/+ buttons never pops the keyboard.
+  const editPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelEditPress = () => {
+    if (editPressTimerRef.current) { clearTimeout(editPressTimerRef.current); editPressTimerRef.current = null; }
+  };
+  const startEditPress = () => {
+    cancelEditPress();
+    editPressTimerRef.current = setTimeout(() => { editPressTimerRef.current = null; startEdit(); }, 450);
+  };
+  useEffect(() => cancelEditPress, []);
 
   const commitEdit = () => {
     const val = parseInt(editValue);
@@ -84,8 +95,14 @@ export default function RowCounter({ current, total, onChange, repeatLabel, repe
         −
       </button>
       <div
-        className={`text-center min-w-[40px] sm:min-w-[52px] ${shake ? 'animate-shake' : ''}`}
-        onClick={startEdit}
+        className={`text-center min-w-[40px] sm:min-w-[52px] select-none ${shake ? 'animate-shake' : ''}`}
+        onPointerDown={() => { if (!isEditing) startEditPress(); }}
+        onPointerUp={cancelEditPress}
+        onPointerLeave={cancelEditPress}
+        onPointerCancel={cancelEditPress}
+        onContextMenu={(e) => e.preventDefault()}
+        onDoubleClick={() => { if (!isEditing) startEdit(); }}
+        title={t('counter.editHint')}
       >
         {isEditing ? (
           <input

@@ -236,6 +236,7 @@ export default {
   'ruler.linkedPart': 'Parte vinculada',
   'ruler.noLink': 'Sem vínculo',
   'ruler.tapToActivate': 'Toque para usar esta régua',
+  'counter.editHint': 'Toque longo ou duplo clique para digitar',
   'common.close': 'Fechar',
   'ruler.slant': 'Inclinação',
   'ruler.stepHalf': 'Passo pela metade (fino)',

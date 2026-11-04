@@ -172,7 +172,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
                 <>
                   {/* Left resize handle */}
                   <div
-                    className="absolute top-0 bottom-0 left-0 w-3 cursor-ew-resize z-20 flex items-center justify-center -translate-x-1/2"
+                    className="absolute top-0 bottom-0 left-0 w-6 cursor-ew-resize z-20 flex items-center justify-center -translate-x-1/2"
                     onPointerDown={handlePointerDown(i, 'resize-top')}
                   >
                     <div className="h-8 w-1 rounded-full bg-emerald-500" />
@@ -180,14 +180,14 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
 
                   {/* Right resize handle */}
                   <div
-                    className="absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize z-20 flex items-center justify-center translate-x-1/2"
+                    className="absolute top-0 bottom-0 right-0 w-6 cursor-ew-resize z-20 flex items-center justify-center translate-x-1/2"
                     onPointerDown={handlePointerDown(i, 'resize-bottom')}
                   >
                     <div className="h-8 w-1 rounded-full bg-emerald-500" />
                   </div>
 
                   {/* Delete button */}
-                  <div className="absolute top-1 left-1/2 -translate-x-1/2 flex gap-1 z-30">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 z-30">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -195,9 +195,11 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
                         setSelectedIndex(null);
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="w-5 h-5 flex items-center justify-center bg-[#9a4318] text-[#fdf6e8] rounded-full hover:bg-[#7a3310] transition-colors shadow-sm"
+                      aria-label={t('sub.delete')}
+                      title={t('sub.delete')}
+                      className="w-8 h-8 flex items-center justify-center bg-[#9a4318] text-[#fdf6e8] rounded-full hover:bg-[#7a3310] transition-colors shadow-md ring-2 ring-[#fdf6e8]"
                     >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -239,7 +241,7 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
               <>
                 {/* Top resize handle */}
                 <div
-                  className="absolute left-0 right-0 top-0 h-3 cursor-ns-resize z-20 flex items-center justify-center -translate-y-1/2"
+                  className="absolute left-0 right-0 top-0 h-6 cursor-ns-resize z-20 flex items-center justify-center -translate-y-1/2"
                   onPointerDown={handlePointerDown(i, 'resize-top')}
                 >
                   <div className="w-8 h-1 rounded-full bg-emerald-500" />
@@ -247,14 +249,14 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
 
                 {/* Bottom resize handle */}
                 <div
-                  className="absolute left-0 right-0 bottom-0 h-3 cursor-ns-resize z-20 flex items-center justify-center translate-y-1/2"
+                  className="absolute left-0 right-0 bottom-0 h-6 cursor-ns-resize z-20 flex items-center justify-center translate-y-1/2"
                   onPointerDown={handlePointerDown(i, 'resize-bottom')}
                 >
                   <div className="w-8 h-1 rounded-full bg-emerald-500" />
                 </div>
 
                 {/* Delete button */}
-                <div className="absolute left-1 top-1/2 -translate-y-1/2 flex gap-1 z-30">
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-1 z-30">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -262,9 +264,11 @@ const CompletedOverlay = memo(function CompletedOverlay({ marks, rotation = 0, o
                       setSelectedIndex(null);
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="w-5 h-5 flex items-center justify-center bg-[#9a4318] text-[#fdf6e8] rounded-full hover:bg-[#7a3310] transition-colors shadow-sm"
+                    aria-label={t('sub.delete')}
+                    title={t('sub.delete')}
+                    className="w-8 h-8 flex items-center justify-center bg-[#9a4318] text-[#fdf6e8] rounded-full hover:bg-[#7a3310] transition-colors shadow-md ring-2 ring-[#fdf6e8]"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
