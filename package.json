@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predev": "node scripts/copy-cmaps.mjs",
+    "prebuild": "node scripts/copy-cmaps.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1014.0",

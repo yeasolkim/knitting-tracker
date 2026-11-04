@@ -43,6 +43,8 @@ interface PatternViewerProps {
   contentOverlay?: React.ReactNode;
   children?: React.ReactNode;
   isDrawingMode?: boolean;
+  /** View lock: ignore pan/pinch/wheel/double-tap (buttons still work). */
+  locked?: boolean;
 }
 
 /** Gap between PDF pages, proportional to page width.
@@ -55,11 +57,13 @@ const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, onGoToRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, onGoToRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false, locked = false }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, resetInteraction, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef);
+    const gesturesEnabledRef = useRef(!locked);
+    gesturesEnabledRef.current = !locked;
+    const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, resetInteraction, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef, gesturesEnabledRef);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
     const [pdfVer, setPdfVer] = useState(pdfVersion);
@@ -809,7 +813,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         <div
           ref={containerRef}
           className={`w-full h-full touch-none ${isDrawingMode ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
-          {...(isDrawingMode ? {
+          {...(locked ? {} : isDrawingMode ? {
             onTouchStart: (e: React.TouchEvent) => { if (e.touches.length >= 2) handlers.onTouchStart(e); },
             onTouchMove:  (e: React.TouchEvent) => { if (e.touches.length >= 2) handlers.onTouchMove(e); },
             onTouchEnd:   handlers.onTouchEnd,

@@ -34,7 +34,9 @@ function applyZoom(prev: Transform, newScale: number, pivotX = 0, pivotY = 0): T
 export function useGestures(
   minScale = 0.5,
   maxScale = 5,
-  contentSizeRef?: React.RefObject<{ w: number; h: number }>
+  contentSizeRef?: React.RefObject<{ w: number; h: number }>,
+  /** When it holds `false`, wheel zoom is ignored (the caller also withholds the pointer handlers). */
+  enabledRef?: React.RefObject<boolean>
 ) {
   const [transform, setTransform] = useState<Transform>({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -74,6 +76,7 @@ export function useGestures(
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (enabledRef && enabledRef.current === false) return;
       const ratio = e.deltaY > 0 ? 0.9 : 1.1;
       setTransform((prev) => applyZoom(prev, clampScale(prev.scale * ratio)));
     };

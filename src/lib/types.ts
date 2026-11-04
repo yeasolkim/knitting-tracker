@@ -22,9 +22,13 @@ export interface Pattern {
   needle: string;
   file_size?: number | null;
   image_names?: string[];
+  /** Library status. Column added by migration 20261104000000; absent = 'active'. */
+  status?: PatternStatus | null;
   created_at: string;
   updated_at: string;
 }
+
+export type PatternStatus = 'active' | 'done' | 'archived';
 
 export interface CompletedMark {
   y: number;      // position % along the primary axis (top for vertical, left for horizontal)
@@ -79,6 +83,13 @@ export interface SubPattern {
   repeat_start?: number;
   repeat_rows?: number;
   repeat_count?: number;
+  /** Stitch counter (within the current row). */
+  stitch_count?: number;
+  /** Reset the stitch counter to 0 whenever a row is completed. */
+  stitch_reset_on_row?: boolean;
+  /** Crochet motifs: how many finished / how many planned (0 or absent = no motif tracking). */
+  motif_count?: number;
+  motif_target?: number;
 }
 
 export interface DrawPoint {
@@ -98,6 +109,23 @@ export interface DrawPath {
   tool: DrawTool;
 }
 
+export interface CompletedRingSaved {
+  cx: number; cy: number; r: number; rInner?: number; ry?: number; ryInner?: number; shape?: string;
+  /** Partial round: arc from `start` to `end` degrees (0 = 12 o'clock, clockwise). Absent = full round. */
+  sweep?: { start: number; end: number };
+}
+
+export interface CrochetRulerData {
+  shape?: string;
+  cx?: number;
+  cy?: number;
+  r?: number;
+  ry?: number;
+  rowHeight?: number;
+  rotation?: number;
+  completedRings?: (number | CompletedRingSaved)[];
+}
+
 export interface ImagePerState {
   // Multi-ruler state. When present it is authoritative; the ruler_* fields below
   // mirror rulers[0] for older clients.
@@ -114,16 +142,13 @@ export interface ImagePerState {
   completed_marks?: CompletedMark[];
   knitting_marks?: KnittingMark[];
   crochet_marks?: CrochetMark[];
-  crochet_ruler_data?: {
-    shape?: string;
-    cx?: number;
-    cy?: number;
-    r?: number;
-    ry?: number;
-    rowHeight?: number;
-    rotation?: number;
-    completedRings?: (number | { cx: number; cy: number; r: number; ry?: number; shape?: string })[];
-  };
+  crochet_ruler_data?: CrochetRulerData;
+  /** Per-sub-pattern (motif) ring state. Keyed by SubPattern.id; wins over crochet_ruler_data for that sub. */
+  crochet_ruler_data_by_sub?: Record<string, CrochetRulerData>;
+  /** Which image was open when the pattern was last left (true on exactly one slot). */
+  last_active?: boolean;
+  /** Cached PDF page aspect ratios (height / width) so re-opens skip the pre-parse. */
+  pdf_page_ratios?: number[];
   notes?: Record<string, string>;
   note_positions?: Record<string, NotePosition>;
   // View transform saved as image-relative % (device-independent)
