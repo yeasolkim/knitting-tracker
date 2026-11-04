@@ -1561,7 +1561,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   }, []);
   // One-tap switch: activate a ruler and scroll the view to it. Tapping the active one just jumps.
   const jumpToRuler = useCallback((id: string) => {
-    if (id === activeRulerIdRef.current) { viewerRef.current?.goToRuler(); return; }
+    if (id === activeRulerIdRef.current) { viewerRef.current?.goToRuler({ keepScale: true }); return; }
     pendingGoToRulerIdRef.current = id;
     activateRuler(id);
   }, [activateRuler]);
@@ -1592,7 +1592,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   useEffect(() => {
     if (pendingGoToRulerIdRef.current !== activeRulerId) return;
     pendingGoToRulerIdRef.current = null;
-    const raf = requestAnimationFrame(() => viewerRef.current?.goToRuler());
+    // Switching rulers must never change the zoom level — only scroll to the new ruler.
+    const raf = requestAnimationFrame(() => viewerRef.current?.goToRuler({ keepScale: true }));
     return () => cancelAnimationFrame(raf);
   }, [activeRulerId]);
 

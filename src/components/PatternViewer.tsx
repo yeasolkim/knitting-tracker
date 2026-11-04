@@ -22,7 +22,8 @@ const PdfPage = lazy(() =>
 export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
   scrollToContentY: (contentYPercent: number) => void;
-  goToRuler: () => void;
+  /** Center the view on the ruler. `keepScale` never changes zoom (position is clamped instead). */
+  goToRuler: (opts?: { keepScale?: boolean }) => void;
   fitWidthGoToRuler: () => void;
   fitWidthTop: () => void;
   restoreTransform: (scale: number, x: number, y: number) => void;
@@ -547,28 +548,34 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       return (imageXPct / 100) * W;
     }, [getStableContentDims]);
 
-    const goToRuler = useCallback(() => {
+    const goToRuler = useCallback((opts?: { keepScale?: boolean }) => {
+      const keepScale = !!opts?.keepScale;
       const H = sizeRef.current?.clientHeight || 1;
       const W = sizeRef.current?.clientWidth || 1;
       const contentY = imageToContentY(rulerYPercent);
-      const { h: imgH } = getStableContentDims();
+      const { w: imgW, h: imgH } = getStableContentDims();
 
       // If current scale can't scroll ruler to center (image smaller than container),
-      // compute minimum scale needed so ruler can be centered.
+      // compute minimum scale needed so ruler can be centered — unless the caller asked
+      // to keep the zoom (ruler switching), in which case we only move as far as allowed.
       let targetScale = transform.scale;
       const needed_ty = -(contentY - H / 2) * targetScale;
-      const maxTy = Math.max(0, (imgH * targetScale - H) / 2);
-      if (imgH > 0 && Math.abs(needed_ty) > maxTy + 0.5) {
+      const maxTy0 = Math.max(0, (imgH * targetScale - H) / 2);
+      if (!keepScale && imgH > 0 && Math.abs(needed_ty) > maxTy0 + 0.5) {
         const distY = Math.abs(contentY - H / 2);
         const denom = imgH - 2 * distY;
         targetScale = Math.min(10, Math.max(targetScale, denom > 0 ? H / denom : 1.5));
       }
 
-      const newY = -(contentY - H / 2) * targetScale;
+      const clamp = (v: number, lim: number) => Math.max(-lim, Math.min(lim, v));
+      const maxTy = imgH > 0 ? Math.max(0, (imgH * targetScale - H) / 2) : Infinity;
+      const newY = clamp(-(contentY - H / 2) * targetScale, maxTy);
       if (rulerXPercent !== undefined) {
         const contentX = imageToContentX(rulerXPercent);
-        const newX = -(contentX - W / 2) * targetScale;
-        setFullTransform({ scale: targetScale, x: newX, y: newY });
+        const maxTx = imgW > 0 ? Math.max(0, (imgW * targetScale - W) / 2) : Infinity;
+        const newX = clamp(-(contentX - W / 2) * targetScale, maxTx);
+        if (targetScale !== transform.scale) setFullTransform({ scale: targetScale, x: newX, y: newY });
+        else setXY(newX, newY);
       } else if (targetScale !== transform.scale) {
         setFullTransform({ scale: targetScale, x: transform.x, y: newY });
       } else {
@@ -605,8 +612,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         const contentY = imageToContentY(imageYPercent);
         setXY(transform.x, -(contentY - H / 2) * transform.scale);
       },
-      goToRuler() {
-        goToRuler();
+      goToRuler(opts?: { keepScale?: boolean }) {
+        goToRuler(opts);
       },
       fitWidthGoToRuler() {
         const W = sizeRef.current?.clientWidth || 1;
@@ -1084,7 +1091,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         {/* Ruler navigation — bottom-left */}
         <div className={`absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex flex-col items-stretch gap-1 sm:gap-1.5 ${highlightBringRuler ? 'z-50' : 'z-20'} w-13 sm:w-16`}>
           <button
-            onClick={onGoToRuler ?? goToRuler}
+            onClick={() => (onGoToRuler ? onGoToRuler() : goToRuler())}
             className="h-10 sm:h-12 bg-[#fdf6e8]/90 backdrop-blur-sm rounded-xl border-2 border-[#b07840] flex items-center justify-center text-[#7a5c46] hover:border-[#b5541e] hover:text-[#b5541e] active:bg-[#f5edd6] transition-colors"
             aria-label={t('viewer.goToRuler')}
           >
