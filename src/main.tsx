@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { applyTextSize } from './lib/prefs';
+applyTextSize();
 import { createClient } from './lib/supabase/client';
 
 // Handle Supabase OAuth callback

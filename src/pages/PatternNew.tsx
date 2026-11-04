@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import type { ExtraPatternFile, PatternType } from '@/lib/types';
@@ -7,10 +7,14 @@ import Navbar from '@/components/Navbar';
 import AuthGuard from '@/components/AuthGuard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { configurePdfWorker } from '@/lib/pdfWorker';
+import { downscaleImage, makeThumbnail } from '@/lib/imageUtils';
+
+const isUploadable = (f: File) => f.type.startsWith('image/') || f.type === 'application/pdf';
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  configurePdfWorker(pdfjsLib.GlobalWorkerOptions);
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -55,6 +59,29 @@ async function uploadFile(
   });
   if (!res.ok) throw new Error(t('form.error.upload'));
   return fileUrl as string;
+}
+
+/** Upload a generated blob (thumbnail) to a fixed path. Returns the public URL or null; never throws. */
+async function uploadBlob(
+  supabase: ReturnType<typeof createClient>,
+  blob: Blob,
+  path: string,
+  contentType: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('r2-presign', {
+      body: { path, contentType },
+    });
+    if (error || !data) return null;
+    const res = await fetch(data.presignedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: blob,
+    });
+    return res.ok ? (data.fileUrl as string) : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function PatternNew() {
@@ -114,28 +141,64 @@ function UploadForm() {
   const [uploadTotal, setUploadTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pdfThumbWarning, setPdfThumbWarning] = useState(false);
+  const [resized, setResized] = useState(false);
 
   const MAX_FILES = 11; // 1 primary + up to 10 extra
 
-  const addFiles = (incoming: File[]) => {
+  // Latest file count for async adders (downscale/paste finish after the closure was created)
+  const filesCountRef = useRef(0);
+  filesCountRef.current = files.length;
+
+  // Paste hint is pointless on touch-only devices (no Ctrl+V)
+  const canPaste = useMemo(
+    () => !(typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches),
+    [],
+  );
+
+  const addFiles = async (incoming: File[]) => {
+    const accepted = incoming.filter(isUploadable);
+    if (accepted.length === 0) return;
+    // Large photos are downscaled before they ever enter the list (and the upload).
+    const processed = await Promise.all(
+      accepted.map((f) => (f.type.startsWith('image/') ? downscaleImage(f) : Promise.resolve(f))),
+    );
+    if (processed.some((f, i) => f !== accepted[i])) setResized(true);
+
     // Compute outside the updater: updaters may run twice (StrictMode) and must be pure,
     // otherwise previews/imageNames get duplicated entries and blob URLs leak.
-    const remaining = Math.max(0, MAX_FILES - files.length);
-    const toAdd = incoming.slice(0, remaining);
+    const wasEmpty = filesCountRef.current === 0;
+    const remaining = Math.max(0, MAX_FILES - filesCountRef.current);
+    const toAdd = processed.slice(0, remaining);
     if (toAdd.length === 0) return;
+    filesCountRef.current += toAdd.length;
     const newPreviews = toAdd.map((f) => {
       if (!f.type.startsWith('image/')) return '';
       const url = URL.createObjectURL(f);
       blobUrlsRef.current.push(url);
       return url;
     });
-    if (files.length === 0 && !title) {
-      setTitle(toAdd[0].name.replace(/\.[^.]+$/, ''));
+    if (wasEmpty) {
+      const fallback = toAdd[0].name.replace(/\.[^.]+$/, '');
+      setTitle((prev) => prev || fallback);
     }
     setFiles((prev) => [...prev, ...toAdd]);
     setPreviews((p) => [...p, ...newPreviews]);
     setImageNames((n) => [...n, ...toAdd.map(() => '')]);
   };
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+
+  // Clipboard paste (images / PDFs) goes through the same add path
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const pasted = Array.from(e.clipboardData?.files ?? []).filter(isUploadable);
+      if (pasted.length === 0) return;
+      e.preventDefault();
+      void addFilesRef.current(pasted);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, []);
 
   const removeFile = (index: number) => {
     const url = previews[index];
@@ -160,7 +223,7 @@ function UploadForm() {
 
   const handleAddMore = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
-    if (selected.length > 0) addFiles(selected);
+    if (selected.length > 0) void addFiles(selected);
     e.target.value = '';
   };
 
@@ -246,7 +309,16 @@ const thumbPromise = isPdf
         }
         setUploadStep(2);
       } else {
+        // Small JPEG thumbnail for the dashboard card; fall back to the full image.
         thumbnailUrl = fileUrl;
+        const thumbBlob = await makeThumbnail(primaryFile);
+        if (thumbBlob) {
+          const thumbUrl = await uploadBlob(supabase, thumbBlob, `${user.id}/${pattern.id}/thumb_${Date.now()}.jpg`, 'image/jpeg');
+          if (thumbUrl) {
+            thumbnailUrl = thumbUrl;
+            uploadedUrls.push(thumbUrl);
+          }
+        }
       }
 
       // Upload extra images
@@ -388,10 +460,8 @@ const thumbPromise = isPdf
           onDragOver={files.length === 0 ? (e) => e.preventDefault() : undefined}
           onDrop={files.length === 0 ? (e) => {
             e.preventDefault();
-            const dropped = Array.from(e.dataTransfer.files).filter(f =>
-              f.type.startsWith('image/') || f.type === 'application/pdf'
-            );
-            if (dropped.length > 0) addFiles(dropped);
+            const dropped = Array.from(e.dataTransfer.files).filter(isUploadable);
+            if (dropped.length > 0) void addFiles(dropped);
           } : undefined}
         >
           {files.length === 0 ? (
@@ -468,7 +538,7 @@ const thumbPromise = isPdf
                     type="button"
                     onClick={() => removeFile(i)}
                     className="absolute top-0.5 right-0.5 w-7 h-7 bg-[#b5541e] text-[#fdf6e8] rounded-full text-sm flex items-center justify-center leading-none font-bold hover:bg-[#9a4318] transition-colors opacity-80 hover:opacity-100"
-                    aria-label="remove"
+                    aria-label={t('form.remove')}
                   >
                     ×
                   </button>
@@ -492,6 +562,19 @@ const thumbPromise = isPdf
         {files.length === 0 && (
           <p className="text-[11px] text-[#a08060] text-center mt-2.5">
             {t('form.tapOrDrag')}
+          </p>
+        )}
+        {canPaste && (
+          <p className={`text-[11px] text-[#c4a882] mt-1.5 ${files.length === 0 ? 'text-center' : ''}`}>
+            {t('form.pasteHint')}
+          </p>
+        )}
+        {resized && (
+          <p className="text-[11px] text-[#b07840] mt-1.5 flex items-center gap-1">
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7" />
+            </svg>
+            {t('form.resized')}
           </p>
         )}
         {files.length > 1 && (
@@ -532,6 +615,7 @@ const thumbPromise = isPdf
                         type="button"
                         onClick={() => moveFile(i, -1)}
                         disabled={i === 0}
+                        aria-label={t('form.moveUp')}
                         className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -542,6 +626,7 @@ const thumbPromise = isPdf
                         type="button"
                         onClick={() => moveFile(i, 1)}
                         disabled={i === files.length - 1}
+                        aria-label={t('form.moveDown')}
                         className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -558,7 +643,7 @@ const thumbPromise = isPdf
         {files.length > 0 && (
           <button
             type="button"
-            onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); setImageNames([]); }}
+            onClick={() => { previews.forEach((u) => u && URL.revokeObjectURL(u)); setFiles([]); setPreviews([]); setImageNames([]); setResized(false); filesCountRef.current = 0; }}
             className="mt-1 min-h-[44px] flex items-center text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
           >
             {t('form.resetFiles')}

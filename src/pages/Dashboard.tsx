@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, SubPattern } from '@/lib/types';
+import type { PatternStatus, PatternWithProgress, SubPattern } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
-import PatternCard from '@/components/PatternCard';
+import PatternCard, { effectiveStatus } from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import { cachePatterns, getCachedPatterns } from '@/lib/offlineQueue';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { filterUnreferencedUrls } from '@/lib/storageRefs';
+import { getPref, setPref } from '@/lib/prefs';
 
 
 type TypeFilter = 'all' | 'knitting' | 'crochet';
 type SortKey = 'updated' | 'created' | 'title' | 'progress';
+
+const STATUS_TABS: PatternStatus[] = ['active', 'done', 'archived'];
 
 const chipClass = (active: boolean) =>
   `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[44px] ${
@@ -30,6 +33,15 @@ function getProgress(pattern: PatternWithProgress): number {
     ? subs.reduce((s, p) => s + (p.current_row || 0), 0)
     : pattern.progress?.current_row || 0;
   return total > 0 ? (current / total) * 100 : 0;
+}
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
 }
 
 export default function Dashboard() {
@@ -54,12 +66,17 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [creatingSample, setCreatingSample] = useState(false);
   const [isFromCache, setIsFromCache] = useState(false);
+  const [mobileTipDismissed, setMobileTipDismissed] = useState<boolean>(() => getPref('mobileTipDismissed'));
   const isOnline = useOnlineStatus();
 
   // Filter & sort state
+  const [statusFilter, setStatusFilter] = useState<PatternStatus>('active');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [sortBy, setSortBy] = useState<SortKey>('updated');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounced(search, 200);
 
   const { t } = useLanguage();
 
@@ -71,7 +88,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
   const fetchPatterns = useCallback(async (signal?: AbortSignal) => {
     const { data, error } = await supabase
       .from('patterns')
-      .select('id,title,type,file_url,thumbnail_url,extra_image_urls,total_rows,yarn,needle,created_at,updated_at,progress:pattern_progress(sub_patterns,current_row)')
+      .select('*, progress:pattern_progress(sub_patterns,current_row)')
       .order('updated_at', { ascending: false })
       .abortSignal(signal ?? new AbortController().signal);
 
@@ -116,11 +133,30 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     }
   }, [isOnline, isFromCache, fetchPatterns]);
 
+  // Patterns in the selected status tab (before type/search filtering)
+  const statusPatterns = useMemo(
+    () => patterns.filter((p) => effectiveStatus(p) === statusFilter),
+    [patterns, statusFilter],
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<PatternStatus, number> = { active: 0, done: 0, archived: 0 };
+    for (const p of patterns) counts[effectiveStatus(p)]++;
+    return counts;
+  }, [patterns]);
+
   // Derived: filtered + sorted patterns
   const filteredPatterns = useMemo(() => {
-    let result = [...patterns];
+    let result = [...statusPatterns];
 
     if (typeFilter !== 'all') result = result.filter(p => p.type === typeFilter);
+
+    const q = debouncedSearch.trim().toLowerCase();
+    if (q) {
+      result = result.filter((p) =>
+        [p.title, p.yarn, p.needle].some((v) => (v ?? '').toLowerCase().includes(q))
+      );
+    }
 
     result.sort((a, b) => {
       if (sortBy === 'updated') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
@@ -131,9 +167,9 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     });
 
     return result;
-  }, [patterns, typeFilter, sortBy]);
+  }, [statusPatterns, typeFilter, sortBy, debouncedSearch]);
 
-  const isFiltered = typeFilter !== 'all' || sortBy !== 'updated';
+  const isFiltered = typeFilter !== 'all' || sortBy !== 'updated' || search.trim() !== '';
 
   const handleDelete = useCallback(async (id: string) => {
     if (!navigator.onLine) {
@@ -207,6 +243,68 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
       setDuplicatingId(null);
     }
   }, [supabase, patterns, t, navigate, fetchPatterns, showToast, duplicatingId]);
+
+  const handleStatusChange = useCallback(async (id: string, status: PatternStatus) => {
+    if (!navigator.onLine) {
+      showToast(t('offline.actionBlocked'));
+      return;
+    }
+    const previous = patterns.find((p) => p.id === id)?.status ?? null;
+    // Optimistic update
+    setPatterns((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+
+    const { error } = await supabase.from('patterns').update({ status }).eq('id', id);
+    if (error) {
+      setPatterns((prev) => prev.map((p) => (p.id === id ? { ...p, status: previous } : p)));
+      showToast(t('dashboard.statusError'), 5000);
+      return;
+    }
+    cachePatterns(patterns.map((p) => (p.id === id ? { ...p, status } : p)));
+  }, [supabase, patterns, showToast, t]);
+
+  const handleCreateSample = useCallback(async () => {
+    if (creatingSample) return;
+    if (!navigator.onLine) {
+      showToast(t('offline.actionBlocked'));
+      return;
+    }
+    setCreatingSample(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('no user');
+      const sampleUrl = `${window.location.origin}/sample-chart.svg`;
+      const { data, error } = await supabase.from('patterns').insert({
+        user_id: user.id,
+        title: t('dashboard.sampleTitle'),
+        type: 'knitting',
+        file_url: sampleUrl,
+        file_type: 'image',
+        thumbnail_url: sampleUrl,
+        total_rows: 24,
+        yarn: '',
+        needle: '',
+      }).select('id').single();
+      if (error || !data) throw error ?? new Error('insert failed');
+      // Best-effort progress row (PatternView upserts on first save anyway)
+      await supabase.from('pattern_progress').insert({
+        pattern_id: data.id,
+        user_id: user.id,
+        current_row: 0,
+        ruler_position_y: 50,
+        ruler_height: 0,
+        notes: {},
+      }).then(() => {}, () => {});
+      navigate(`/patterns/${data.id}`);
+    } catch {
+      showToast(t('dashboard.sampleError'));
+      setCreatingSample(false);
+    }
+  }, [creatingSample, supabase, t, navigate, showToast]);
+
+  const dismissMobileTip = useCallback(() => {
+    setPref('mobileTipDismissed', true);
+    setMobileTipDismissed(true);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -322,7 +420,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
         {toast ?? ''}
       </div>
 
-      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full">
         {isFromCache && (
           <p className="text-[11px] text-[#b07840] text-center mb-3 bg-[#fdf6e8] border-2 border-[#d4b896] rounded-lg px-3 py-2">
             {t('offline.cacheNote')}
@@ -345,15 +443,29 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
             </div>
             <p className="text-[#3d2b1f] font-semibold mb-1.5">{t('dashboard.empty.title')}</p>
             <p className="text-sm text-[#7a5c46] mb-8">{t('dashboard.empty.sub')}</p>
-            <button
-              onClick={() => navigate('/patterns/new')}
-              className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-5 py-3 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              {t('dashboard.addBtn')}
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => navigate('/patterns/new')}
+                className="inline-flex items-center gap-2 bg-[#b5541e] text-[#fdf6e8] px-5 py-3 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-[#9a4318] active:scale-95 transition-all border-2 border-[#9a4318] shadow-[2px_2px_0_#9a4318] min-h-[44px]"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                {t('dashboard.addBtn')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateSample}
+                disabled={creatingSample}
+                className="inline-flex items-center gap-2 bg-[#fdf6e8] text-[#7a5c46] px-5 py-3 rounded-lg text-xs font-bold tracking-wide hover:border-[#b5541e] hover:text-[#b5541e] active:scale-95 transition-all border-2 border-[#b07840] min-h-[44px] disabled:opacity-50 disabled:cursor-wait"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path strokeLinecap="round" d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+                </svg>
+                {creatingSample ? '…' : t('dashboard.sample')}
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -362,9 +474,9 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
                 <p className="text-xs text-[#a08060] mt-1 tracking-wide">
-                  {filteredPatterns.length === patterns.length
-                    ? t('dashboard.count', { n: patterns.length })
-                    : t('dashboard.count.filtered', { shown: filteredPatterns.length, total: patterns.length })}
+                  {filteredPatterns.length === statusPatterns.length
+                    ? t('dashboard.count', { n: statusPatterns.length })
+                    : t('dashboard.count.filtered', { shown: filteredPatterns.length, total: statusPatterns.length })}
                 </p>
               </div>
               <button
@@ -378,9 +490,75 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
               </button>
             </div>
 
-            <p className="text-[11px] text-[#a08060] text-center mb-3 sm:hidden">
-              {t('dashboard.mobileWarning')}
-            </p>
+            {!mobileTipDismissed && (
+              <div className="sm:hidden flex items-start gap-2 mb-3 bg-[#fdf6e8] border border-[#e0b98a] rounded-lg pl-3 pr-1 py-1">
+                <p className="flex-1 text-[11px] text-[#a08060] leading-snug py-1.5">
+                  {t('dashboard.mobileWarning')}
+                </p>
+                <button
+                  type="button"
+                  onClick={dismissMobileTip}
+                  aria-label={t('common.close')}
+                  className="shrink-0 w-9 h-9 -my-0.5 flex items-center justify-center text-[#b07840] hover:text-[#7a5c46] transition-colors rounded"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {/* 상태 탭 & 검색 */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
+              <div className="flex items-center gap-1" role="tablist">
+                {STATUS_TABS.map((s) => (
+                  <button
+                    key={s}
+                    role="tab"
+                    aria-selected={statusFilter === s}
+                    onClick={() => setStatusFilter(s)}
+                    className={chipClass(statusFilter === s)}
+                  >
+                    {t(`dashboard.status.${s}`)}
+                    {statusCounts[s] > 0 && (
+                      <span className={`ml-1 tabular-nums ${statusFilter === s ? 'text-[#fdf6e8]/80' : 'text-[#b07840]'}`}>
+                        {statusCounts[s]}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1 min-w-[150px] sm:max-w-xs sm:ml-auto">
+                <svg
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b07840]"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path strokeLinecap="round" d="M20 20l-3.5-3.5" />
+                </svg>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('dashboard.search')}
+                  aria-label={t('dashboard.search')}
+                  enterKeyHint="search"
+                  className="w-full text-xs text-[#3d2b1f] border-2 border-[#b07840] rounded-full pl-8 pr-8 py-1.5 bg-[#fdf6e8] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] min-h-[44px] transition-colors [&::-webkit-search-cancel-button]:hidden"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    aria-label={t('common.close')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-[#b07840] hover:text-[#7a5c46] rounded-full"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
 
             {/* 필터 & 정렬 바 */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5 sm:mb-6">
@@ -420,10 +598,12 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
             {/* 그리드 or 필터 결과 없음 */}
             {filteredPatterns.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-sm font-semibold text-[#7a5c46] mb-3">{t('dashboard.noResult')}</p>
+                <p className="text-sm font-semibold text-[#7a5c46] mb-3">
+                  {search.trim() ? t('dashboard.noResults') : t('dashboard.noResult')}
+                </p>
                 {isFiltered && (
                   <button
-                    onClick={() => { setTypeFilter('all'); setSortBy('updated'); }}
+                    onClick={() => { setTypeFilter('all'); setSortBy('updated'); setSearch(''); }}
                     className="text-xs text-[#b5541e] hover:underline font-semibold"
                   >
                     {t('dashboard.noResult.reset')}
@@ -438,6 +618,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                     pattern={pattern}
                     onDelete={handleDelete}
                     onDuplicate={handleDuplicate}
+                    onStatusChange={handleStatusChange}
                     duplicating={duplicatingId === pattern.id}
                   />
                 ))}

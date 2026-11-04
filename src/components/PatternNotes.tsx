@@ -11,6 +11,8 @@ interface PatternNotesProps {
   onUpdate: (notes: Record<string, string>) => void;
   onDelete: (key: string) => void;
   onPlaceNote: (key: string) => void;
+  /** Amber dot on the toggle: the row being worked has a note. */
+  hasRowNotes?: boolean;
 }
 
 function parseNoteKey(key: string): { subId: string; row: number } | null {
@@ -34,6 +36,7 @@ export default function PatternNotes({
   onUpdate,
   onDelete,
   onPlaceNote,
+  hasRowNotes = false,
 }: PatternNotesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -130,6 +133,7 @@ export default function PatternNotes({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           {t('notes.title')}{totalCount > 0 && <span className="text-[#b5541e]"> ({totalCount})</span>}
+          {hasRowNotes && !isOpen && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />}
           {hasNewDraft && <span className="text-[9px] text-amber-500 font-bold tracking-widest">{t('notes.unsaved')}</span>}
           <svg
             className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`}

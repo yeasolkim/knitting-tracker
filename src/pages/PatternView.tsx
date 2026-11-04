@@ -3,10 +3,15 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import YarnLoader from '@/components/YarnLoader';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternWithProgress, PatternProgress, PatternType, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool, Ruler } from '@/lib/types';
+import type { CrochetRulerData, PatternWithProgress, PatternProgress, PatternType, CompletedMark, RulerDirection, RulerOrientation, NotePosition, SubPattern, CrochetMark, KnittingMark, ImagePerState, DrawPath, DrawTool, Ruler } from '@/lib/types';
 import type { SetStateAction } from 'react';
 import type { TranslationKey } from '@/lib/i18n';
 import InactiveRulerBand from '@/components/InactiveRulerBand';
+import HelpSheet from '@/components/HelpSheet';
+import StitchCounter from '@/components/StitchCounter';
+import { getPref, setPref, getViewLocked, setViewLocked, applyTextSize, getSession, addSession, type TextSize } from '@/lib/prefs';
+import { useMediaQuery, LANDSCAPE_PHONE_QUERY } from '@/hooks/useMediaQuery';
+import { buildProgressImage, shareOrDownload, downloadJson } from '@/lib/exportProgress';
 import { repeatInfoForRow } from '@/lib/repeat';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
@@ -136,7 +141,7 @@ interface Props {
   isFromCache?: boolean;
 }
 
-type CrochetRing = { cx: number; cy: number; r: number; rInner?: number; ry?: number; ryInner?: number; shape?: 'circle' | 'ellipse' | 'rect' };
+type CrochetRing = { cx: number; cy: number; r: number; rInner?: number; ry?: number; ryInner?: number; shape?: 'circle' | 'ellipse' | 'rect'; sweep?: { start: number; end: number } };
 
 type Snapshot = {
   subPatterns: SubPattern[];
@@ -161,7 +166,8 @@ type Snapshot = {
 const MAX_HISTORY = 20;
 const MAX_RULERS = 4;
 // Band colors per ruler slot. Ruler 1 keeps the app accent; its completed marks keep the default green.
-const RULER_COLORS = ['#b5541e', '#2563eb', '#9333ea', '#db2777', '#059669', '#d97706', '#0891b2', '#4b5563'];
+// Colour-blind friendly set (Okabe–Ito based). Brand orange first; no greens (completed marks are green).
+const RULER_COLORS = ['#b5541e', '#0072B2', '#CC79A7', '#56B4E9', '#6A3D9A', '#4B5563'];
 const DEFAULT_RULER_COLOR = RULER_COLORS[0];
 
 /**
@@ -309,7 +315,8 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const viewerRef = useRef<PatternViewerHandle>(null);
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
+  const { request: requestWakeLock, release: releaseWakeLock, isActive: wakeLockActive } = useWakeLock();
+  const wakeLockSupported = typeof navigator !== 'undefined' && 'wakeLock' in navigator;
 
   const isCrochet = pattern.type === 'crochet';
 
@@ -414,6 +421,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { rotation?: number } | undefined;
     return saved?.rotation ?? 0;
   });
+  // Per-motif (sub-pattern) ring state for crochet rounds. The active sub's data is the live
+  // state above; other subs live in this map until they become active again.
+  const crochetBySubRef = useRef<Record<string, CrochetRulerData>>(img0?.crochet_ruler_data_by_sub ?? {});
+  // Cached PDF page ratios per image (skips the pre-parse on reopen)
+  const [pdfPageRatios, setPdfPageRatios] = useState<number[] | undefined>(img0?.pdf_page_ratios);
+  // Bumped to force the viewer to re-fetch after a load error
+  const [reloadKey, setReloadKey] = useState(0);
   const [completedCrochetRings, setCompletedCrochetRings] = useState<CrochetRing[]>(() => {
     const saved = (img0?.crochet_ruler_data ?? pattern.progress?.crochet_ruler_data) as { cx?: number; cy?: number; completedRings?: (number | CrochetRing)[] } | undefined;
     const savedCx = saved?.cx ?? 50;
@@ -454,6 +468,13 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const [imageLoadError, setImageLoadError] = useState(false);
   // Tracks previous image index so we can save its state before switching
   const prevFileIdxRef = useRef(0);
+  // Reopen on the image that was open last time (state init always starts from image 0; the
+  // regular switch effect then swaps the per-image state in).
+  useEffect(() => {
+    const saved = imageStatesRef.current.findIndex((st) => st?.last_active);
+    if (saved > 0 && saved < allFiles.length) setActiveFileIdx(saved);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Set by the image-switch effect; the auto-save effect (same commit) skips writing
   // imageStatesRef[newIdx] once, because perImageStateLatest still holds the OLD image.
   const skipSlotWriteRef = useRef(false);
@@ -469,6 +490,28 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
     return visited;
   });
   const [showRulerSettings, setShowRulerSettings] = useState(false);
+  // ---- session conveniences (device-local prefs) ----
+  const [showHelp, setShowHelp] = useState(false);
+  const [followRuler, setFollowRuler] = useState<boolean>(() => getPref('followRuler'));
+  const followRulerRef = useRef(followRuler); followRulerRef.current = followRuler;
+  const toggleFollowRuler = useCallback(() => setFollowRuler((v) => { setPref('followRuler', !v); return !v; }), []);
+  const [viewLocked, setViewLockedState] = useState<boolean>(() => getViewLocked(pattern.id));
+  const toggleViewLock = useCallback(() => setViewLockedState((v) => { setViewLocked(pattern.id, !v); return !v; }), [pattern.id]);
+  const [showStitchCounter, setShowStitchCounter] = useState<boolean>(() => { try { return localStorage.getItem('kis_stitch_counter') === '1'; } catch { return false; } });
+  const toggleStitchCounter = useCallback(() => setShowStitchCounter((v) => { try { localStorage.setItem('kis_stitch_counter', v ? '0' : '1'); } catch { /* ignore */ } return !v; }), []);
+  const [textSize, setTextSizeState] = useState<TextSize>(() => getPref('textSize'));
+  const changeTextSize = useCallback((v: TextSize) => { setPref('textSize', v); applyTextSize(v); setTextSizeState(v); }, []);
+  const [splitIdx, setSplitIdx] = useState<number | null>(null);
+  const isLandscapePhone = useMediaQuery(LANDSCAPE_PHONE_QUERY);
+  const [exporting, setExporting] = useState(false);
+  const [sessionStats, setSessionStats] = useState(() => getSession(pattern.id));
+  // Knitting time: count a minute whenever the tab stays visible for one.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') { addSession(pattern.id, { seconds: 60 }); setSessionStats(getSession(pattern.id)); }
+    }, 60000);
+    return () => clearInterval(id);
+  }, [pattern.id]);
   const [showCrochetSettings, setShowCrochetSettings] = useState(false);
   const handleToggleRulerSettings = useCallback(() => setShowRulerSettings(v => !v), []);
   // The settings panel covers the top of the viewer; bring the ruler into the visible middle.
@@ -607,8 +650,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // Ref for stable callbacks that need latest transform/ruler values.
   // Updated directly in render (not via useEffect) so it is always current
   // before any pointer event fires — even in the same frame as a state change.
-  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation });
-  latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation };
+  const latestRef = useRef({ rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation, notesMap: {} as Record<string, string> });
+  latestRef.current = { rulerY, rulerHeight, rulerX, rulerOrientation, rulerDirection, rulers, activeRulerId, subPatterns, activeSubId, viewTransform, containerH, containerW, imgH, imgW, crochetR, crochetRy, crochetCx, crochetCy, crochetShape, completedCrochetRings, crochetRowHeight, crochetRotation, notesMap: latestRef.current.notesMap };
 
   // containerH starts as a 600px placeholder; never derive the initial ruler height from it.
   const containerMeasuredRef = useRef(false);
@@ -1004,6 +1047,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   undoStateRef.current.notePositions = notePositions;
   const notesCountRef = useRef(0);
   notesCountRef.current = Object.keys(notes).length;
+  latestRef.current.notesMap = notes;
   // Ruler height step: base unit is ~2 screen px per button press, scaled by stepMultiplier (÷2 / ×2 buttons).
   // rulerHeight is % of imgH for vertical rulers and % of imgW for horizontal ones.
   const [stepMultiplier, setStepMultiplier] = useState(1);
@@ -1043,10 +1087,15 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     ruler_orientation: ruler0.orientation,
     ruler_rotation: ruler0.rotation || undefined,
     active_sub_id: activeSubId,
+    last_active: true,
     completed_marks: completedMarks,
     knitting_marks: knittingMarks,
     crochet_marks: crochetMarks,
     crochet_ruler_data: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings },
+    crochet_ruler_data_by_sub: isCrochet
+      ? { ...crochetBySubRef.current, [activeSubId]: { shape: crochetShape, cx: crochetCx, cy: crochetCy, r: crochetR, ry: crochetRy, rowHeight: crochetRowHeight ?? undefined, rotation: crochetRotation || undefined, completedRings: completedCrochetRings } }
+      : undefined,
+    pdf_page_ratios: pdfPageRatios,
     notes,
     note_positions: notePositions,
     // Save view as image-relative % so it restores correctly on any screen size.
@@ -1119,6 +1168,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
     // Save current state for the image we're leaving (deep copy to prevent shared array refs)
     imageStatesRef.current[prevIdx] = structuredClone(perImageStateLatest.current);
+    for (let i = 0; i < imageStatesRef.current.length; i++) {
+      const slot = imageStatesRef.current[i];
+      if (slot && slot.last_active && i !== activeFileIdx) slot.last_active = false;
+    }
     skipSlotWriteRef.current = true;
     // Mark both images as visited
     setVisitedImageIndices(prev => new Set([...prev, prevIdx, activeFileIdx]));
@@ -1158,11 +1211,18 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           : { ...r, shape: r.shape as 'circle' | 'ellipse' | 'rect' | undefined }
       )
     );
+    setPdfPageRatios(next?.pdf_page_ratios);
+    setReloadKey(0);
 
     // A sub-pattern deleted after this slot was saved must not become the active one.
-    if (next?.active_sub_id && latestRef.current.subPatterns.some((s) => s.id === next.active_sub_id)) {
-      setActiveSubId(next.active_sub_id);
-    }
+    const nextSubId = next?.active_sub_id && latestRef.current.subPatterns.some((s) => s.id === next.active_sub_id)
+      ? next.active_sub_id : latestRef.current.activeSubId;
+    if (nextSubId !== latestRef.current.activeSubId) setActiveSubId(nextSubId);
+    // Per-motif rings: this image's map; the active sub's entry wins over the legacy single state.
+    crochetBySubRef.current = { ...(next?.crochet_ruler_data_by_sub ?? {}) };
+    crochetPrevSubRef.current = nextSubId; // the sub-change effect must not treat this switch as a motif change
+    const mine = crochetBySubRef.current[nextSubId];
+    if (mine) applyCrochetData(mine);
 
     setNotes(next?.notes ?? {});
     setNotePositions(next?.note_positions ?? {});
@@ -1186,11 +1246,84 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFileIdx]);
 
+  const applyCrochetData = useCallback((d: CrochetRulerData) => {
+    if (d.cx != null) setCrochetCx(d.cx);
+    if (d.cy != null) setCrochetCy(d.cy);
+    if (d.r != null) setCrochetR(d.r);
+    setCrochetRy(d.ry ?? d.r ?? 3);
+    setCrochetRowHeight(d.rowHeight ?? null);
+    setCrochetRotation(d.rotation ?? 0);
+    const cx0 = d.cx ?? 50, cy0 = d.cy ?? 50;
+    setCompletedCrochetRings((d.completedRings ?? []).map((r) =>
+      typeof r === 'number' ? { cx: cx0, cy: cy0, r } : { ...r, shape: r.shape as 'circle' | 'ellipse' | 'rect' | undefined }
+    ));
+  }, []);
+  const snapshotCrochetData = useCallback((): CrochetRulerData => {
+    const l = latestRef.current;
+    return { shape: l.crochetShape, cx: l.crochetCx, cy: l.crochetCy, r: l.crochetR, ry: l.crochetRy, rowHeight: l.crochetRowHeight ?? undefined, rotation: l.crochetRotation || undefined, completedRings: l.completedCrochetRings };
+  }, []);
+  // Switching motif (sub-pattern) in crochet round mode swaps the ring set; geometry carries over
+  // to a motif that has no rings yet.
+  const crochetPrevSubRef = useRef<string>(activeSubId);
+  useEffect(() => {
+    const prev = crochetPrevSubRef.current;
+    if (prev === activeSubId) return;
+    crochetPrevSubRef.current = activeSubId;
+    if (!isCrochet || crochetShape === 'line') return;
+    crochetBySubRef.current[prev] = snapshotCrochetData();
+    const mine = crochetBySubRef.current[activeSubId];
+    if (mine) applyCrochetData(mine);
+    else setCompletedCrochetRings([]);
+  }, [activeSubId, isCrochet, crochetShape, snapshotCrochetData, applyCrochetData]);
+
+  // Motif flow: finishing the last round of a motif offers "start next motif".
+  const [motifToast, setMotifToast] = useState<{ n: number; total: number } | null>(null);
+  const completePressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completeLongPressedRef = useRef(false);
+  useEffect(() => () => { if (completePressTimerRef.current) clearTimeout(completePressTimerRef.current); }, []);
+  useEffect(() => {
+    if (!motifToast) return;
+    const id = setTimeout(() => setMotifToast(null), 12000);
+    return () => clearTimeout(id);
+  }, [motifToast]);
+  const handleNextMotif = useCallback(() => {
+    captureHistory();
+    updateActiveSub((su) => ({ ...su, motif_count: Math.min(su.motif_target ?? 0, (su.motif_count ?? 0) + 1), current_row: 0, stitch_count: su.stitch_reset_on_row ? 0 : su.stitch_count }));
+    setCompletedCrochetRings([]);
+    setMotifToast(null);
+  }, [captureHistory, updateActiveSub]);
+
+  // Half round (long-press on Complete in round mode): records a 180° band at the current size
+  // without advancing the row; the next Complete turns it into a full round.
+  const handleCrochetHalfRound = useCallback(() => {
+    const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H, imgW: iW, imgH: iH, crochetRowHeight: rowH } = latestRef.current;
+    if (shape === 'rect') return;
+    const last = rings.length > 0 ? rings[rings.length - 1] : null;
+    if (last?.sweep) return; // already a half round pending
+    captureHistory();
+    const is2D = shape === 'ellipse';
+    const lastRy = last ? (last.ry ?? last.r) : 0;
+    const lastR = last ? last.r : 0;
+    const stepRy = rowH ?? Math.max(cry - lastRy, cry * 0.3);
+    const refW = iW > 0 ? iW : W;
+    const refH = iH > 0 ? iH : H;
+    const stepR = (is2D || rowH != null) && refW > 0 && refH > 0 ? (stepRy / 100) * refH / refW * 100 : Math.max(cr - lastR, cr * 0.3);
+    setCompletedCrochetRings((prev) => [...prev, {
+      cx, cy, r: cr, rInner: Math.max(0, cr - stepR),
+      ry: is2D ? cry : undefined, ryInner: is2D ? Math.max(0, cry - stepRy) : undefined,
+      shape: shape === 'circle' ? undefined : (shape as 'ellipse' | 'rect'),
+      sweep: { start: 0, end: 180 },
+    }]);
+  }, [captureHistory]);
+
   const handleCrochetCircleComplete = useCallback(() => {
     captureHistory();
     const { crochetR: cr, crochetRy: cry, crochetCx: cx, crochetCy: cy, completedCrochetRings: rings, crochetShape: shape, containerW: W, containerH: H, imgW: iW, imgH: iH, crochetRowHeight: rowH } = latestRef.current;
     const is2D = shape === 'ellipse' || shape === 'rect';
-    const lastRing = rings.length > 0 ? rings[rings.length - 1] : null;
+    // A pending half round becomes the full round instead of adding a second band.
+    const pendingHalf = rings.length > 0 && !!rings[rings.length - 1].sweep;
+    const fullRings = pendingHalf ? rings.slice(0, -1) : rings;
+    const lastRing = fullRings.length > 0 ? fullRings[fullRings.length - 1] : null;
     const lastRy = lastRing ? (lastRing.ry ?? lastRing.r) : 0;
     const lastR = lastRing ? lastRing.r : 0;
     // rowH is image-relative % of imgH; convert to image-relative % of imgW for rx step
@@ -1200,19 +1333,39 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     const stepR = (is2D || rowH != null) && refW > 0 && refH > 0
       ? (stepRy / 100) * refH / refW * 100
       : Math.max(cr - lastR, cr * 0.3);
-    setCompletedCrochetRings(prev => [...prev, {
-      cx, cy,
-      r: cr,
-      rInner: Math.max(0, cr - stepR),
-      ry: is2D ? cry : undefined,
-      ryInner: is2D ? Math.max(0, cry - stepRy) : undefined,
-      shape: shape === 'circle' ? undefined : shape as 'ellipse' | 'rect',
-    }]);
+    setCompletedCrochetRings(prev => {
+      const base = (prev.length > 0 && prev[prev.length - 1].sweep) ? prev.slice(0, -1) : prev;
+      return [...base, {
+        cx, cy,
+        r: cr,
+        rInner: Math.max(0, cr - stepR),
+        ry: is2D ? cry : undefined,
+        ryInner: is2D ? Math.max(0, cry - stepRy) : undefined,
+        shape: shape === 'circle' ? undefined : shape as 'ellipse' | 'rect',
+      }];
+    });
+    {
+      const sub = latestRef.current.subPatterns.find((x) => x.id === latestRef.current.activeSubId);
+      if (sub && (sub.motif_target ?? 0) > 0 && (sub.motif_count ?? 0) < (sub.motif_target ?? 0) && sub.current_row + 1 >= sub.total_rows) {
+        setMotifToast({ n: (sub.motif_count ?? 0) + 1, total: sub.motif_target ?? 0 });
+      }
+    }
     setCrochetR(cr + stepR);
     if (is2D) setCrochetRy(cry + stepRy);
     else if (rowH != null) setCrochetRy(cry + stepRy);
-    updateActiveSub(s => ({ ...s, current_row: s.current_row + 1 }));
-  }, [captureHistory, updateActiveSub]);
+    updateActiveSub(s => ({ ...s, current_row: s.current_row + 1, ...(s.stitch_reset_on_row ? { stitch_count: 0 } : {}) }));
+    addSession(pattern.id, { rows: 1 }); setSessionStats(getSession(pattern.id));
+    // Follow: keep the growing ring inside the viewport
+    if (followRulerRef.current) {
+      const t = latestRef.current.viewTransform;
+      const refH2 = iH > 0 ? iH : H;
+      const topPx = (iH > 0 ? (H - iH) / 2 : 0) + ((cy - (cry + stepRy)) / 100) * refH2;
+      const botPx = (iH > 0 ? (H - iH) / 2 : 0) + ((cy + (cry + stepRy)) / 100) * refH2;
+      const sTop = (topPx - H / 2) * t.scale + H / 2 + t.y;
+      const sBot = (botPx - H / 2) * t.scale + H / 2 + t.y;
+      if (sTop < 0 || sBot > H) requestAnimationFrame(() => viewerRef.current?.goToRuler({ keepScale: true }));
+    }
+  }, [captureHistory, updateActiveSub, pattern.id]);
 
   const userIdRef = useRef<string | null>(null);
 
@@ -1433,7 +1586,8 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       ? ruler.sub_id
       : (subs.some((s) => s.id === asid) ? asid : subs[0]?.id);
     const targetSub = subs.find((s) => s.id === targetSubId);
-    setSubPatterns((prev) => prev.map((s) => (s.id === targetSubId ? { ...s, current_row: s.current_row + 1 } : s)));
+    setSubPatterns((prev) => prev.map((s) => (s.id === targetSubId ? { ...s, current_row: s.current_row + 1, ...(s.stitch_reset_on_row ? { stitch_count: 0 } : {}) } : s)));
+    addSession(pattern.id, { rows: 1 }); setSessionStats(getSession(pattern.id));
 
     // Repeat section: finishing the last row of a pass (but not the final pass) sends the
     // ruler back to the first row of the section instead of one row forward.
@@ -1457,8 +1611,16 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
       return [...prev, newMark];
     });
     if (isHoriz) setRulerX(rx + travel); else setRulerY(ry + travel);
+    // Follow: when the moved ruler leaves the middle band of the screen, scroll to it (zoom unchanged).
+    if (followRulerRef.current) {
+      const { viewTransform: tr, containerH: H, containerW: W, imgH: iH, imgW: iW } = latestRef.current;
+      const frac = isHoriz
+        ? (((iW > 0 ? (W - iW) / 2 : 0) + ((rx + travel + rh / 2) / 100) * (iW > 0 ? iW : W) - W / 2) * tr.scale + W / 2 + tr.x) / W
+        : (((iH > 0 ? (H - iH) / 2 : 0) + ((ry + travel + rh / 2) / 100) * (iH > 0 ? iH : H) - H / 2) * tr.scale + H / 2 + tr.y) / H;
+      if (frac < 0.22 || frac > 0.78) requestAnimationFrame(() => viewerRef.current?.goToRuler({ keepScale: true }));
+    }
     if (wraps) setRepeatToast(t('repeat.nextPass', { pass: info!.pass + 1, count: info!.count }));
-  }, [captureHistory, setRulerX, setRulerY, t]);
+  }, [captureHistory, setRulerX, setRulerY, t, pattern.id]);
 
   // ---- Multi-ruler management ----
   // Activating a ruler also activates its linked sub-pattern, so the row counter follows.
@@ -1550,6 +1712,39 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   }, []);
   useEffect(() => cancelChipPress, [cancelChipPress]);
 
+  // Row-linked note reminder: notes are keyed "subId:row[:uuid]".
+  const notesForRow = useCallback((subId: string, row: number): string[] => {
+    const out: string[] = [];
+    for (const [key, text] of Object.entries(latestRef.current.notesMap ?? {})) {
+      const parts = key.split(':');
+      if (parts.length >= 2 && parts[0] === subId && Number(parts[1]) === row && text?.trim()) out.push(text.trim());
+    }
+    return out;
+  }, []);
+  const hasRowNotes = useMemo(() => {
+    const sid = activeSub?.id; if (!sid) return false;
+    return notesForRow(sid, activeSub.current_row || 0).length > 0 || notesForRow(sid, (activeSub.current_row || 0) + 1).length > 0;
+  }, [activeSub, notesForRow]);
+  const [noteToast, setNoteToast] = useState<string | null>(null);
+  const lastReminderRef = useRef<string>('');
+  useEffect(() => {
+    if (!activeSub) return;
+    const row = activeSub.current_row || 0;
+    const key = `${activeSub.id}:${row}`;
+    if (lastReminderRef.current === '') { lastReminderRef.current = key; return; } // no toast on mount
+    if (lastReminderRef.current === key) return;
+    lastReminderRef.current = key;
+    const now = notesForRow(activeSub.id, row);
+    const next = notesForRow(activeSub.id, row + 1);
+    const msg = now.length ? `${t('notes.reminderNow', { row })}: ${now[0]}` : next.length ? `${t('notes.reminderNext', { row: row + 1 })}: ${next[0]}` : null;
+    if (msg) setNoteToast(msg.length > 90 ? msg.slice(0, 88) + '…' : msg);
+  }, [activeSub, notesForRow, t]);
+  useEffect(() => {
+    if (!noteToast) return;
+    const id = setTimeout(() => setNoteToast(null), 5000);
+    return () => clearTimeout(id);
+  }, [noteToast]);
+
   // Short notice when the ruler jumps back for the next repeat pass
   const [repeatToast, setRepeatToast] = useState<string | null>(null);
   useEffect(() => {
@@ -1617,6 +1812,64 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     return () => cancelAnimationFrame(raf);
   }, [activeRulerId]);
 
+  // Remote / keyboard: page-turner remotes send PageDown/ArrowRight (Complete) and PageUp/ArrowLeft (Undo).
+  const keyActionsRef = useRef({ complete: () => {}, undo: () => {} });
+  keyActionsRef.current = {
+    complete: (!isCrochet || crochetShape === 'line') ? handleComplete : handleCrochetCircleComplete,
+    undo: handleUndo,
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (isTextInputTarget(e.target)) return;
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && ae.tagName !== 'HTML') return; // let focused buttons keep Space/Enter
+      if (!rulerUiVisibleRef.current && !isCrochet) return;
+      const fwd = e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Enter';
+      const back = e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace';
+      if (!fwd && !back) return;
+      e.preventDefault();
+      if (fwd) keyActionsRef.current.complete(); else keyActionsRef.current.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isCrochet]);
+
+  // ---- help sheet actions ----
+  const handleReplayGuide = useCallback(() => {
+    try { localStorage.removeItem('kis_guide_dismissed'); } catch { /* ignore */ }
+    setShowHelp(false);
+    setShowRulerSettings(false);
+    setShowSubPatternGuide(true);
+  }, []);
+  const handleShareImage = useCallback(async () => {
+    const file = allFiles[activeFileIdx];
+    if (!file || (file.file_type ?? pattern.file_type) === 'pdf') { alert(t('export.fail')); return; }
+    setExporting(true);
+    try {
+      const { rulers: rs, activeRulerId: aid, subPatterns: subs, activeSubId: asid } = latestRef.current;
+      const sub = subs.find((x) => x.id === asid);
+      const blob = await buildProgressImage({
+        imageUrl: file.url, marks: completedMarks, rulers: (!isCrochet || crochetShape === 'line') ? rs : [], activeRulerId: aid, title: pattern.title,
+        caption: sub ? `${sub.name} · ${sub.current_row}/${sub.total_rows}` : undefined,
+      });
+      const how = await shareOrDownload(blob, `${pattern.title}-progress.jpg`, pattern.title);
+      if (how === 'downloaded') alert(t('export.shareFail'));
+    } catch {
+      alert(t('export.fail'));
+    } finally {
+      setExporting(false);
+    }
+  }, [allFiles, activeFileIdx, pattern.file_type, pattern.title, completedMarks, isCrochet, crochetShape, t]);
+  const handleBackup = useCallback(() => {
+    imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
+    downloadJson({
+      exported_at: new Date().toISOString(),
+      pattern: { id: pattern.id, title: pattern.title, type: pattern.type, file_url: pattern.file_url, file_type: pattern.file_type, extra_image_urls: pattern.extra_image_urls ?? [], image_names: pattern.image_names ?? [], total_rows: pattern.total_rows, yarn: pattern.yarn, needle: pattern.needle },
+      progress: { sub_patterns: subPatterns, active_sub_pattern_id: activeSubId, image_states: imageStatesRef.current },
+    }, `${pattern.title}-backup.json`);
+  }, [activeFileIdx, pattern, subPatterns, activeSubId]);
+
   // Completed marks are tinted with their ruler's color; the default accent keeps the classic green.
   const markColors = useMemo(
     () => Object.fromEntries(rulers.filter((r) => r.color !== DEFAULT_RULER_COLOR).map((r) => [r.id, r.color])) as Record<string, string>,
@@ -1626,14 +1879,20 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
   const [repeatLabel, repeatLabelShort] = useMemo((): [string | undefined, string | undefined] => {
     if (!activeSub) return [undefined, undefined];
     const info = repeatInfoForRow(activeSub, (activeSub.current_row || 0) + 1);
-    if (!info) return [undefined, undefined];
+    if (!info) {
+      if (isCrochet && (activeSub.motif_target ?? 0) > 0) {
+        const m = t('crochet.motifProgress', { n: activeSub.motif_count ?? 0, total: activeSub.motif_target ?? 0 });
+        return [m, m];
+      }
+      return [undefined, undefined];
+    }
     if (info.phase === 'before') return [t('repeat.before'), t('repeat.before')];
     if (info.phase === 'after') return [t('repeat.done'), t('repeat.done')];
     return [
       t('repeat.status', { pass: info.pass, count: info.count, row: info.rowInPass, rows: info.rows }),
       t('repeat.short', { pass: info.pass, count: info.count }),
     ];
-  }, [activeSub, t]);
+  }, [activeSub, t, isCrochet]);
 
   // Convert screen % → image-space % for marker placement (markers now outside CSS transform)
   // Accounts for letterbox offset so positions are device-independent.
@@ -1780,6 +2039,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     setRulers((prev) => prev.some((r) => r.sub_id === id) ? prev.map((r) => (r.sub_id === id ? { ...r, sub_id: undefined } : r)) : prev);
     const next = subPatterns.filter((s) => s.id !== id);
     setSubPatterns(next);
+    delete crochetBySubRef.current[id];
     if (activeSubId === id && next.length > 0) setActiveSubId(next[0].id);
     // Other images may have this sub saved as their active one; point them at the first sub.
     for (const slot of imageStatesRef.current) {
@@ -1843,6 +2103,7 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     ry: ring.ry != null ? contentToScreenRy(ring.ry) : undefined,
     ryInner: ring.ryInner != null ? contentToScreenRy(ring.ryInner) : undefined,
     shape: ring.shape,
+    sweep: ring.sweep,
   })), [completedCrochetRings, viewTransform, containerH, containerW, imgH, imgW]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -1903,6 +2164,23 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               </span>
             </div>
             <div className="flex items-center gap-2 min-h-[14px]">
+              <button
+                type="button"
+                onClick={() => { if (!wakeLockSupported) alert(t('wake.unsupported')); else if (!wakeLockActive) requestWakeLock(); }}
+                className={`flex items-center gap-1 text-[10px] shrink-0 ${wakeLockActive ? 'text-[#7a9c72]' : 'text-[#b5541e]'}`}
+                title={!wakeLockSupported ? t('wake.unsupported') : wakeLockActive ? t('wake.on') : t('wake.off')}
+                aria-label={!wakeLockSupported ? t('wake.unsupported') : wakeLockActive ? t('wake.on') : t('wake.off')}
+              >
+                {wakeLockActive ? (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M3 3l18 18" />
+                  </svg>
+                )}
+              </button>
               {(pattern.yarn || pattern.needle) && (
                 <p className="hidden sm:block text-[11px] text-[#a08060] truncate">
                   {[pattern.yarn, pattern.needle].filter(Boolean).join(' · ')}
@@ -1960,6 +2238,27 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             </svg>
           </button>
 
+          {allFiles.length > 1 && !isLandscapePhone && (
+            <button
+              onClick={() => setSplitIdx((v) => (v == null ? (activeFileIdx === 0 ? 1 : 0) : null))}
+              className={`hidden lg:flex h-9 px-2 items-center gap-1 rounded-lg transition-colors ${splitIdx != null ? 'bg-[#b5541e] text-[#fdf6e8]' : 'text-[#7a5c46] hover:bg-[#ede5cc]'}`}
+              title={splitIdx != null ? t('view.sideBySideOff') : t('view.sideBySide')}
+              aria-pressed={splitIdx != null}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="4" width="8" height="16" rx="1.5" /><rect x="13" y="4" width="8" height="16" rx="1.5" /></svg>
+              <span className="text-[10px] font-semibold">{t('view.sideBySide')}</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowHelp(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-[#7a5c46] hover:bg-[#ede5cc] active:bg-[#b07840] transition-colors"
+            title={t('help.title')}
+            aria-label={t('help.title')}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="9" /><path strokeLinecap="round" d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5M12 17h.01" />
+            </svg>
+          </button>
           {/* Save view button */}
           <button
             onClick={handleSaveView}
@@ -2023,8 +2322,10 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
         </div>
       )}
 
+      <div className={isLandscapePhone ? 'flex flex-row flex-1 min-h-0' : 'contents'}>
+      <div className="flex-1 min-h-0 flex flex-row">
       {/* Viewer area */}
-      <div className="flex-1 relative min-h-0 p-1 sm:p-2">
+      <div className="flex-1 relative min-h-0 min-w-0 p-1 sm:p-2">
         <PatternViewer
           ref={viewerRef}
           fileUrl={allFiles[activeFileIdx]?.url ?? pattern.file_url}
@@ -2033,6 +2334,11 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           rulerXPercent={isCrochet && crochetShape !== 'line' ? crochetCx : rulerOrientation === 'horizontal' ? rulerX + rulerHeight / 2 : undefined}
           onTransformChange={handleTransformChange}
           onImageSize={handleImageSize}
+          locked={viewLocked}
+          reloadKey={reloadKey}
+          onLoadError={() => { setIsImageLoading(false); setImageLoadError(true); }}
+          cachedPageRatios={pdfPageRatios}
+          onPageRatios={setPdfPageRatios}
           onGoToRuler={(!isCrochet || crochetShape === 'line') ? handleGoToRuler : undefined}
           highlightBringRuler={showGuide}
           isDrawingMode={isDrawingMode}
@@ -2383,6 +2689,27 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             </button>
             <button
               className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
+                viewLocked
+                  ? 'bg-[#3d2b1f]/85 text-[#fdf6e8] border-[#3d2b1f] hover:bg-[#3d2b1f]'
+                  : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
+              }`}
+              onClick={toggleViewLock}
+              onPointerDown={(e) => e.stopPropagation()}
+              title={viewLocked ? t('view.viewLockOff') : t('view.viewLock')}
+              aria-pressed={viewLocked}
+            >
+              {viewLocked ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="5" y="11" width="14" height="10" rx="2" /><path strokeLinecap="round" d="M8 11V7a4 4 0 118 0v4" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="5" y="11" width="14" height="10" rx="2" /><path strokeLinecap="round" d="M8 11V7a4 4 0 017.8-1.3" />
+                </svg>
+              )}
+            </button>
+            <button
+              className={`pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full border shadow transition-colors ${
                 isDrawingMode
                   ? 'bg-[#b5541e] text-[#fdf6e8] border-[#b5541e] hover:bg-[#9a4318]'
                   : 'bg-[#fdf6e8]/90 text-[#7a5c46] border-[#b07840] hover:bg-[#fdf6e8]'
@@ -2436,12 +2763,20 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
               {imageLoadError ? (
                 <>
                   <p className="text-sm text-[#7a5c46] leading-relaxed whitespace-pre-line">{t('viewer.imageLoadError')}</p>
-                  <button
-                    onClick={() => setImageLoadError(false)}
-                    className="text-xs font-semibold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] px-4 py-2 rounded-lg hover:bg-[#9a4318] active:scale-95 transition-all"
-                  >
-                    {t('viewer.imageLoadErrorClose')}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setImageLoadError(false); setIsImageLoading(true); setReloadKey((k) => k + 1); }}
+                      className="text-xs font-semibold text-[#fdf6e8] bg-[#b5541e] border-2 border-[#9a4318] px-4 py-2 rounded-lg hover:bg-[#9a4318] active:scale-95 transition-all"
+                    >
+                      {t('viewer.retry')}
+                    </button>
+                    <button
+                      onClick={() => setImageLoadError(false)}
+                      className="text-xs font-semibold text-[#7a5c46] bg-[#fdf6e8] border-2 border-[#b07840] px-4 py-2 rounded-lg hover:bg-[#f5edd6] active:scale-95 transition-all"
+                    >
+                      {t('viewer.imageLoadErrorClose')}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div className="w-8 h-8 border-[3px] border-[#b07840] border-t-[#b5541e] rounded-full animate-spin" />
@@ -2954,6 +3289,27 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
         )}
 
         {/* Transient notices live at the bottom center, where the knitter is already looking */}
+        {noteToast && (
+          <div className="absolute bottom-[88px] sm:bottom-[100px] left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-40 pointer-events-none">
+            <div className="flex items-center gap-2 bg-amber-600/90 text-[#fdf6e8] text-xs font-bold px-3.5 py-2 rounded-2xl shadow-lg backdrop-blur-sm">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2z"/></svg>
+              <span className="leading-snug">{noteToast}</span>
+            </div>
+          </div>
+        )}
+        {motifToast && (
+          <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-40">
+            <div className="flex items-center gap-2 bg-[#3d2b1f]/92 text-[#fdf6e8] text-xs font-bold pl-3.5 pr-2 py-1.5 rounded-2xl shadow-lg backdrop-blur-sm">
+              <span className="leading-snug">{t('crochet.motifDone', { n: motifToast.n, total: motifToast.total })}</span>
+              <button
+                type="button"
+                onClick={handleNextMotif}
+                className="h-8 px-3 rounded-full bg-[#b5541e] text-[#fdf6e8] text-[11px] font-bold hover:bg-[#9a4318] whitespace-nowrap"
+              >{t('crochet.nextMotif')}</button>
+              <button type="button" onClick={() => setMotifToast(null)} className="w-7 h-7 rounded-full text-[#fdf6e8]/70 hover:text-[#fdf6e8]" aria-label={t('common.close')}>×</button>
+            </div>
+          </div>
+        )}
         {repeatToast && (
           <div className="absolute bottom-9 sm:bottom-12 left-1/2 -translate-x-1/2 max-w-[calc(100%-136px)] sm:max-w-[calc(100%-200px)] z-40 pointer-events-none">
             <div className="flex items-center gap-2 bg-[#3d2b1f]/90 text-[#fdf6e8] text-xs font-bold px-3.5 py-2 rounded-2xl shadow-lg backdrop-blur-sm">
@@ -2980,12 +3336,36 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           </div>
         )}
       </div>
+      {/* Side-by-side: a second, read-only viewer for another file (desktop) */}
+      {splitIdx != null && !isLandscapePhone && allFiles[splitIdx] && (
+        <div className="hidden lg:flex w-[42%] min-w-0 flex-col border-l-2 border-[#b07840] bg-[#f5edd6]">
+          <div className="flex items-center gap-2 px-2 py-1 border-b border-[#d4b896]">
+            <span className="text-[10px] font-bold text-[#7a5c46]">{t('view.secondFile')}</span>
+            <select
+              value={splitIdx}
+              onChange={(e) => setSplitIdx(Number(e.target.value))}
+              className="h-7 text-xs border border-[#b07840] rounded bg-white text-[#3d2b1f] px-1 max-w-[60%]"
+            >
+              {allFiles.map((f, i) => (
+                <option key={i} value={i}>{(pattern.image_names?.[i] && pattern.image_names[i] !== '') ? pattern.image_names[i] : t('form.imageN').replace('{n}', String(i + 1))}</option>
+              ))}
+            </select>
+            <button onClick={() => setSplitIdx(null)} className="ml-auto w-7 h-7 rounded-full text-[#7a5c46] hover:bg-[#ede5cc]" aria-label={t('view.sideBySideOff')}>×</button>
+          </div>
+          <div className="flex-1 relative min-h-0 p-1 sm:p-2">
+            <PatternViewer key={`split-${splitIdx}`} fileUrl={allFiles[splitIdx].url} fileType={allFiles[splitIdx].file_type ?? pattern.file_type} />
+          </div>
+        </div>
+      )}
+      </div>
 
-      {/* Bottom controls — compact single row + collapsible notes */}
-      <div className="bg-[#fdf6e8] border-t-2 border-[#b07840] shrink-0 safe-bottom">
+      {/* Bottom controls — compact single row + collapsible notes (a right-side rail on landscape phones) */}
+      <div className={isLandscapePhone
+        ? 'bg-[#fdf6e8] border-l-2 border-[#b07840] shrink-0 w-[150px] flex flex-col overflow-y-auto safe-right'
+        : 'bg-[#fdf6e8] border-t-2 border-[#b07840] shrink-0 safe-bottom'}>
         {/* Single control row: SubPattern | slim progress bar | counter | markers */}
         <div
-          className={`px-2 sm:px-3 py-1.5 flex items-center gap-1.5 sm:gap-2 transition-all ${showSubPatternGuide ? 'animate-pulse' : ''}`}
+          className={`px-2 sm:px-3 py-1.5 flex ${isLandscapePhone ? 'flex-col items-stretch' : 'items-center'} gap-1.5 sm:gap-2 transition-all ${showSubPatternGuide ? 'animate-pulse' : ''}`}
           style={showSubPatternGuide ? { outline: '2px dashed #b5541e', outlineOffset: '2px' } : {}}
         >
           <SubPatternSelector
@@ -3001,9 +3381,22 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
 
           {/* Complete button — prominent, fills the flex-1 space formerly used by the progress bar */}
           <button
-            onClick={(!isCrochet || crochetShape === 'line') ? handleComplete : handleCrochetCircleComplete}
+            onClick={() => {
+              if (completeLongPressedRef.current) { completeLongPressedRef.current = false; return; }
+              if (!isCrochet || crochetShape === 'line') handleComplete(); else handleCrochetCircleComplete();
+            }}
+            onPointerDown={() => {
+              if (!(isCrochet && crochetShape !== 'line' && crochetShape !== 'rect')) return;
+              completeLongPressedRef.current = false;
+              if (completePressTimerRef.current) clearTimeout(completePressTimerRef.current);
+              completePressTimerRef.current = setTimeout(() => { completeLongPressedRef.current = true; handleCrochetHalfRound(); }, 550);
+            }}
+            onPointerUp={() => { if (completePressTimerRef.current) { clearTimeout(completePressTimerRef.current); completePressTimerRef.current = null; } }}
+            onPointerLeave={() => { if (completePressTimerRef.current) { clearTimeout(completePressTimerRef.current); completePressTimerRef.current = null; } }}
+            onPointerCancel={() => { if (completePressTimerRef.current) { clearTimeout(completePressTimerRef.current); completePressTimerRef.current = null; } }}
+            onContextMenu={(e) => { if (isCrochet && crochetShape !== 'line') e.preventDefault(); }}
             className="flex-1 min-w-0 flex items-center justify-center gap-2 h-11 text-sm font-bold tracking-wide bg-[#b5541e] text-[#fdf6e8] rounded-lg border-2 border-[#9a4318] hover:bg-[#9a4318] active:scale-[0.97] transition-all shadow-[3px_3px_0_#9a4318]"
-            title={t('ruler.complete')}
+            title={isCrochet && crochetShape !== 'line' && crochetShape !== 'rect' ? t('crochet.halfRoundHint') : t('ruler.complete')}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -3056,8 +3449,32 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
           })()}
         </div>
 
+        {/* Stitch counter (optional second row) */}
+        {showStitchCounter && activeSub && (
+          <div className={`px-2 sm:px-3 pb-1 flex ${isLandscapePhone ? 'flex-col items-stretch' : 'items-center flex-wrap'} gap-2`}>
+            <StitchCounter
+              count={activeSub.stitch_count ?? 0}
+              onChange={(n) => updateActiveSub((su) => ({ ...su, stitch_count: Math.max(0, n) }))}
+            />
+            <label className="flex items-center gap-1.5 text-[10px] text-[#7a5c46] font-semibold select-none min-h-[32px]">
+              <input
+                type="checkbox"
+                className="accent-[#b5541e] w-3.5 h-3.5"
+                checked={!!activeSub.stitch_reset_on_row}
+                onChange={(e) => updateActiveSub((su) => ({ ...su, stitch_reset_on_row: e.target.checked }))}
+              />
+              {t('counter.stitchResetOnRow')}
+            </label>
+            <button
+              type="button"
+              onClick={() => updateActiveSub((su) => ({ ...su, stitch_count: 0 }))}
+              className="h-8 px-2.5 rounded-lg border border-[#b07840] bg-[#f5edd6] text-[10px] font-bold text-[#7a5c46] hover:bg-[#ede5cc]"
+            >{t('counter.stitchReset')}</button>
+          </div>
+        )}
+
         {/* Notes — collapsible, scrollable */}
-        <div className="px-2 sm:px-3 pb-1.5 sm:pb-2 overflow-y-auto max-h-[28vh] sm:max-h-[20vh]">
+        <div className={`px-2 sm:px-3 pb-1.5 sm:pb-2 overflow-y-auto ${isLandscapePhone ? 'flex-1 min-h-0' : 'max-h-[28vh] sm:max-h-[20vh]'}`}>
           <PatternNotes
             currentRow={activeSub?.current_row || 0}
             activeSubPattern={activeSub || subPatterns[0]}
@@ -3067,9 +3484,30 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
             onUpdate={handleNotesUpdate}
             onDelete={handleNoteDelete}
             onPlaceNote={setPlacingNoteKey}
+            hasRowNotes={hasRowNotes}
           />
         </div>
       </div>
+      </div>
+
+      <HelpSheet
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
+        isCrochetRound={isCrochet && crochetShape !== 'line'}
+        followRuler={followRuler}
+        onToggleFollowRuler={toggleFollowRuler}
+        viewLocked={viewLocked}
+        onToggleViewLock={toggleViewLock}
+        showStitchCounter={showStitchCounter}
+        onToggleStitchCounter={toggleStitchCounter}
+        textSize={textSize}
+        onTextSize={changeTextSize}
+        session={sessionStats}
+        onReplayGuide={handleReplayGuide}
+        onShareImage={handleShareImage}
+        onBackup={handleBackup}
+        exporting={exporting}
+      />
     </div>
   );
 }

@@ -9,6 +9,8 @@ interface CompletedRingData {
   ry?: number;
   ryInner?: number;
   shape?: string;
+  /** Partial round, degrees: 0 = 12 o'clock, clockwise. Matches CompletedRingSaved.sweep. Ignored for rect. */
+  sweep?: { start: number; end: number };
 }
 
 interface Props {
@@ -25,6 +27,8 @@ interface Props {
   initialShowActionBar?: boolean;
   isAdjusting?: boolean;
   ringsOnly?: boolean;
+  /** Label each completed ring with its round number at 3 o'clock (default true). */
+  showRingNumbers?: boolean;
   onCenterChange?: (cx: number, cy: number) => void;
   onRadiusChange?: (r: number) => void;
   onRyChange?: (ry: number) => void;
@@ -94,6 +98,7 @@ const CrochetRuler = memo(function CrochetRuler({
   initialShowActionBar = false,
   isAdjusting = false,
   ringsOnly = false,
+  showRingNumbers = true,
   onCenterChange, onRadiusChange, onRyChange, onRowHeightChange, onAdjustingChange, onToggleSettings, rotation = 0, onRotationChange, onShapeChange, onDragStart,
   onDeleteRing, onDeleteAllRings, onReset, onUpdateRing,
 }: Props) {
@@ -132,6 +137,8 @@ const CrochetRuler = memo(function CrochetRuler({
 
   // Unique mask ID so multiple SVG instances don't conflict
   const maskIdRef = useRef(`cr-mask-${Math.random().toString(36).slice(2, 8)}`);
+  // Diagonal hatch overlaid on completed rings so completed vs current is legible without hue.
+  const hatchIdRef = useRef(`cr-hatch-${Math.random().toString(36).slice(2, 8)}`);
 
   // Action bar state — tap ring body to toggle
   const [showActionBar, setShowActionBar] = useState(initialShowActionBar);
@@ -259,6 +266,61 @@ const CrochetRuler = memo(function CrochetRuler({
   const ringPath = (ringShape: string | undefined, ecx: number, ecy: number, erx: number, ery: number) =>
     ringShape === 'rect' ? rectPath(ecx, ecy, erx, ery) : ellipsePath(ecx, ecy, erx, ery);
 
+  // Point on an ellipse at `deg` degrees, 0 = 12 o'clock, clockwise (screen y grows downward).
+  const polarPt = (ecx: number, ecy: number, erx: number, ery: number, deg: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: ecx + erx * Math.sin(rad), y: ecy - ery * Math.cos(rad) };
+  };
+
+  /** Clockwise span of a sweep in (0, 360]. 0 (start === end) is treated as a full round. */
+  const sweepSpan = (sweep: { start: number; end: number }) => {
+    const span = (((sweep.end - sweep.start) % 360) + 360) % 360;
+    return span === 0 ? 360 : span;
+  };
+
+  /**
+   * Completed-ring band geometry. Returns the filled band path (outer minus inner, evenodd-safe)
+   * and the outline path used for the dashed stroke. Circle/ellipse rings with a partial sweep
+   * become an annular sector (pie wedge when there is no inner radius); rect rings ignore sweep.
+   */
+  const ringBandPaths = (ring: CompletedRingData) => {
+    const ecx = (ring.cx / 100) * containerW;
+    const ecy = (ring.cy / 100) * containerH;
+    const orx = Math.max(4, (ring.r / 100) * containerW);
+    const ory = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : orx;
+    const irx = ring.rInner != null ? Math.max(0, (ring.rInner / 100) * containerW) : 0;
+    const iry = ring.ryInner != null ? Math.max(0, (ring.ryInner / 100) * containerH) : irx;
+    const span = ring.sweep && ring.shape !== 'rect' ? sweepSpan(ring.sweep) : 360;
+
+    if (span >= 360) {
+      const outline = ringPath(ring.shape, ecx, ecy, orx, ory);
+      const band = irx > 0 ? outline + ' ' + ringPath(ring.shape, ecx, ecy, irx, iry) : outline;
+      return { ecx, ecy, orx, ory, band, outline };
+    }
+
+    const start = ring.sweep!.start;
+    const end = start + span;
+    const large = span > 180 ? 1 : 0;
+    const o1 = polarPt(ecx, ecy, orx, ory, start);
+    const o2 = polarPt(ecx, ecy, orx, ory, end);
+    // Outer arc, clockwise (sweep-flag 1 is clockwise on screen).
+    const outline = `M ${o1.x} ${o1.y} A ${orx} ${ory} 0 ${large} 1 ${o2.x} ${o2.y}`;
+    let band: string;
+    if (irx > 0 && iry > 0) {
+      const i1 = polarPt(ecx, ecy, irx, iry, start);
+      const i2 = polarPt(ecx, ecy, irx, iry, end);
+      band = `${outline} L ${i2.x} ${i2.y} A ${irx} ${iry} 0 ${large} 0 ${i1.x} ${i1.y} Z`;
+    } else {
+      band = `M ${ecx} ${ecy} L ${o1.x} ${o1.y} A ${orx} ${ory} 0 ${large} 1 ${o2.x} ${o2.y} Z`;
+    }
+    return { ecx, ecy, orx, ory, band, outline };
+  };
+
+  // Ring-number labels: every ring up to 15, then only every 5th plus the last.
+  const ringCount = completedRings.length;
+  const shouldLabelRing = (i: number) =>
+    showRingNumbers && (ringCount <= 15 || (i + 1) % 5 === 0 || i === ringCount - 1);
+
   // Ghost preview rings
   const lastCompleted = completedRings.length > 0 ? completedRings[completedRings.length - 1] : null;
   const lastRPx = lastCompleted ? Math.max(4, (lastCompleted.r / 100) * containerW) : 0;
@@ -299,6 +361,13 @@ const CrochetRuler = memo(function CrochetRuler({
         className="absolute inset-0"
         style={{ width: containerW, height: containerH, pointerEvents: 'none', overflow: 'visible' }}
       >
+        {/* Hatch pattern for completed rings — defined once per instance (unique id) */}
+        <defs>
+          <pattern id={hatchIdRef.current} patternUnits="userSpaceOnUse" width={6} height={6} patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={6} stroke="rgba(5,150,105,0.32)" strokeWidth={1.5} />
+          </pattern>
+        </defs>
+
         {/* Shadow overlay — mask-based so it always covers the full viewport
             without relying on overflow:visible (avoids Safari SVG clipping bugs) */}
         {!ringsOnly && (
@@ -320,22 +389,26 @@ const CrochetRuler = memo(function CrochetRuler({
 
           {/* Completed rings — rendered as bands (outer minus inner) so each row is individually visible */}
           {completedRings.map((ring, i) => {
-            const ringCxPx = (ring.cx / 100) * containerW;
-            const ringCyPx = (ring.cy / 100) * containerH;
-            const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
-            const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-            const ringRxPxInner = ring.rInner != null ? Math.max(0, (ring.rInner / 100) * containerW) : 0;
-            const ringRyPxInner = ring.ryInner != null ? Math.max(0, (ring.ryInner / 100) * containerH) : ringRxPxInner;
-            const outerPath = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
-            const rp = ringRxPxInner > 0
-              ? outerPath + ' ' + ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPxInner, ringRyPxInner)
-              : outerPath;
+            const { ecx: ringCxPx, ecy: ringCyPx, orx: ringRxPx, band: rp, outline: outerPath } = ringBandPaths(ring);
             const isSelected = selectedRingIndex === i;
+            // Label at the ring's right edge (3 o'clock); counter-rotated so text stays upright.
+            const labelX = ringCxPx + ringRxPx + 4;
+            const labelY = ringCyPx + 4;
             return (
               <g key={i} transform={rotation ? `rotate(${-rotation} ${cxPx} ${cyPx}) rotate(${rotation} ${ringCxPx} ${ringCyPx})` : undefined}>
                 <path d={rp} fill={isSelected ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.15)"} fillRule="evenodd" />
+                <path d={rp} fill={`url(#${hatchIdRef.current})`} fillRule="evenodd" />
                 <path d={outerPath} fill="none" stroke={isSelected ? "rgba(16,185,129,0.9)" : "rgba(16,185,129,0.5)"}
                   strokeWidth={isSelected ? 2 : 1.5} strokeDasharray="5 3" />
+                {shouldLabelRing(i) && (
+                  <text x={labelX} y={labelY} fontSize={11}
+                    fill="rgba(5,150,105,1)" fontWeight="800"
+                    stroke="rgba(253,246,232,0.85)" strokeWidth={3} paintOrder="stroke"
+                    transform={rotation ? `rotate(${-rotation} ${labelX} ${labelY})` : undefined}
+                    style={{ userSelect: 'none' }}>
+                    {i + 1}
+                  </text>
+                )}
               </g>
             );
           })}
@@ -395,16 +468,7 @@ const CrochetRuler = memo(function CrochetRuler({
 
           {/* Completed ring interaction areas — rendered above interior drag area; use band path so each ring captures only its own donut zone */}
           {completedRings.map((ring, i) => {
-            const ringCxPx = (ring.cx / 100) * containerW;
-            const ringCyPx = (ring.cy / 100) * containerH;
-            const ringRxPx = Math.max(4, (ring.r / 100) * containerW);
-            const ringRyPx = ring.ry != null ? Math.max(1, (ring.ry / 100) * containerH) : ringRxPx;
-            const ringRxPxInner = ring.rInner != null ? Math.max(0, (ring.rInner / 100) * containerW) : 0;
-            const ringRyPxInner = ring.ryInner != null ? Math.max(0, (ring.ryInner / 100) * containerH) : ringRxPxInner;
-            const outerPath = ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPx, ringRyPx);
-            const rp = ringRxPxInner > 0
-              ? outerPath + ' ' + ringPath(ring.shape, ringCxPx, ringCyPx, ringRxPxInner, ringRyPxInner)
-              : outerPath;
+            const { ecx: ringCxPx, ecy: ringCyPx, band: rp } = ringBandPaths(ring);
             const isSelected = selectedRingIndex === i;
             return (
               <path

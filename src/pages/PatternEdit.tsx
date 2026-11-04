@@ -10,15 +10,32 @@ import YarnLoader from '@/components/YarnLoader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { filterUnreferencedUrls } from '@/lib/storageRefs';
 import type { ImagePerState, SubPattern } from '@/lib/types';
+import { configurePdfWorker } from '@/lib/pdfWorker';
+import { downscaleImage, makeThumbnail } from '@/lib/imageUtils';
 
-interface OrderedImage {
-  url: string;
-  thumbUrl: string | null;
-  fileType: 'image' | 'pdf';
-  name: string;
-  /** Index this file had when the pattern was loaded — used to remap per-image progress. */
-  origIndex: number;
-}
+type ImageEntry =
+  | {
+      kind: 'existing';
+      key: string;
+      url: string;
+      thumbUrl: string | null;
+      fileType: 'image' | 'pdf';
+      name: string;
+      /** Index this file had when the pattern was loaded — used to remap per-image progress. */
+      origIndex: number;
+    }
+  | {
+      kind: 'new';
+      key: string;
+      file: File;
+      /** Blob URL for image previews; '' for PDFs. */
+      previewUrl: string;
+      name: string;
+    };
+
+const isUploadable = (f: File) => f.type.startsWith('image/') || f.type === 'application/pdf';
+let entryKeySeq = 0;
+const nextKey = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(entryKeySeq++).toString(36)}`;
 
 // Top-level pattern_progress columns mirror image_states[0] for backward compatibility.
 function compatColumnsFromState(s: ImagePerState | undefined): Record<string, unknown> {
@@ -41,7 +58,7 @@ function compatColumnsFromState(s: ImagePerState | undefined): Record<string, un
 
 async function generatePdfThumbnail(file: File): Promise<Blob> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+  configurePdfWorker(pdfjsLib.GlobalWorkerOptions);
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -65,6 +82,14 @@ async function generatePdfThumbnail(file: File): Promise<Blob> {
   });
 }
 
+/** PDF first-page thumbnail with a 10s cap; null on any failure. */
+function pdfThumbnailWithTimeout(file: File): Promise<Blob | null> {
+  return Promise.race([
+    generatePdfThumbnail(file),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+  ]).catch(() => null);
+}
+
 async function uploadFile(
   supabase: ReturnType<typeof createClient>,
   file: File,
@@ -86,6 +111,29 @@ async function uploadFile(
   });
   if (!res.ok) throw new Error(t('form.error.upload'));
   return fileUrl as string;
+}
+
+/** Upload a generated blob (thumbnail) to a fixed path. Returns the public URL or null; never throws. */
+async function uploadBlob(
+  supabase: ReturnType<typeof createClient>,
+  blob: Blob,
+  path: string,
+  contentType: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('r2-presign', {
+      body: { path, contentType },
+    });
+    if (error || !data) return null;
+    const res = await fetch(data.presignedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: blob,
+    });
+    return res.ok ? (data.fileUrl as string) : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function PatternEdit() {
@@ -117,29 +165,33 @@ function EditForm() {
   const [totalRows, setTotalRows] = useState('');
   const loadedTotalRowsRef = useRef<number>(1);
 
-  // All existing images in display order (primary first, then extras)
-  const [orderedImages, setOrderedImages] = useState<OrderedImage[]>([]);
+  // One ordered list: existing files (already uploaded) and new files (pending upload).
+  // entries[0] is the primary file.
+  const [entries, setEntries] = useState<ImageEntry[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [resized, setResized] = useState(false);
 
   const extraInputRef = useRef<HTMLInputElement>(null);
 
-  // New primary file (optional replacement of orderedImages[0])
+  // New primary file (optional replacement of an *existing* entries[0])
   const [newFile, setNewFile] = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
 
-  // New extra files (not yet uploaded, always appended to end)
-  const [newExtraFiles, setNewExtraFiles] = useState<File[]>([]);
-  const [newExtraPreviews, setNewExtraPreviews] = useState<string[]>([]);
-  const [newExtraNames, setNewExtraNames] = useState<string[]>([]);
   // Revoke any preview blob URLs still alive when leaving the page
   const newPreviewRef = useRef<string | null>(null);
   newPreviewRef.current = newPreview;
-  const newExtraPreviewsRef = useRef<string[]>([]);
-  newExtraPreviewsRef.current = newExtraPreviews;
+  const entriesRef = useRef<ImageEntry[]>([]);
+  entriesRef.current = entries;
   useEffect(() => () => {
     if (newPreviewRef.current) URL.revokeObjectURL(newPreviewRef.current);
-    newExtraPreviewsRef.current.forEach((u) => { if (u) URL.revokeObjectURL(u); });
+    entriesRef.current.forEach((e) => { if (e.kind === 'new' && e.previewUrl) URL.revokeObjectURL(e.previewUrl); });
   }, []);
+
+  // Paste hint is pointless on touch-only devices (no Ctrl+V)
+  const canPaste = useMemo(
+    () => !(typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches),
+    [],
+  );
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,15 +223,19 @@ function EditForm() {
         loadedTotalRowsRef.current = data.total_rows || 1;
 
         const names = (data.image_names as string[] | null) || [];
-        const imgs: OrderedImage[] = [
+        const imgs: ImageEntry[] = [
           {
+            kind: 'existing',
+            key: nextKey('ex'),
             url: data.file_url,
             thumbUrl: data.thumbnail_url,
             fileType: data.file_type as 'image' | 'pdf',
             name: names[0] || '',
             origIndex: 0,
           },
-          ...((data.extra_image_urls as ExtraPatternFile[]) || []).map((e, i) => ({
+          ...((data.extra_image_urls as ExtraPatternFile[]) || []).map((e, i): ImageEntry => ({
+            kind: 'existing',
+            key: nextKey('ex'),
             url: e.url,
             thumbUrl: e.thumbnail_url,
             fileType: (e.file_type ?? (e.url.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')) as 'image' | 'pdf',
@@ -187,60 +243,92 @@ function EditForm() {
             origIndex: i + 1,
           })),
         ];
-        setOrderedImages(imgs);
+        setEntries(imgs);
         setLoading(false);
       });
     return () => { cancelled = true; };
   }, [id, navigate, supabase]);
 
-  const handleFileSelect = (selectedFile: File) => {
+  const clearNewFile = () => {
+    if (newPreview) URL.revokeObjectURL(newPreview);
+    setNewPreview(null);
+    setNewFile(null);
+  };
+
+  // Replace the primary file (only offered while entries[0] is an existing file)
+  const handleFileSelect = async (selectedFile: File) => {
+    const processed = selectedFile.type.startsWith('image/') ? await downscaleImage(selectedFile) : selectedFile;
+    if (processed !== selectedFile) setResized(true);
     setIsDirty(true);
-    setNewFile(selectedFile);
+    setNewFile(processed);
     setNewPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev);
-      return selectedFile.type.startsWith('image/') ? URL.createObjectURL(selectedFile) : null;
+      return processed.type.startsWith('image/') ? URL.createObjectURL(processed) : null;
     });
   };
 
-  const handleExtraFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(e.target.files ?? []).filter((f) =>
-      f.type.startsWith('image/') || f.type === 'application/pdf'
+  // Append new files (file picker, paste) to the unified list
+  const addNewFiles = async (incoming: File[]) => {
+    const accepted = incoming.filter(isUploadable);
+    if (accepted.length === 0) return;
+    const processed = await Promise.all(
+      accepted.map((f) => (f.type.startsWith('image/') ? downscaleImage(f) : Promise.resolve(f))),
     );
-    if (selected.length === 0) return;
-    const newPreviews = selected.map((f) =>
-      f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
-    );
-    setNewExtraFiles((prev) => [...prev, ...selected]);
-    setNewExtraPreviews((prev) => [...prev, ...newPreviews]);
-    setNewExtraNames((prev) => [...prev, ...selected.map(() => '')]);
+    if (processed.some((f, i) => f !== accepted[i])) setResized(true);
+    // Create blob URLs outside the updater (updaters may run twice in StrictMode).
+    const added: ImageEntry[] = processed.map((file) => ({
+      kind: 'new',
+      key: nextKey('new'),
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+      name: '',
+    }));
+    setEntries((prev) => [...prev, ...added]);
     setIsDirty(true);
+  };
+  const addNewFilesRef = useRef(addNewFiles);
+  addNewFilesRef.current = addNewFiles;
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const pasted = Array.from(e.clipboardData?.files ?? []).filter(isUploadable);
+      if (pasted.length === 0) return;
+      e.preventDefault();
+      void addNewFilesRef.current(pasted);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, []);
+
+  const handleExtraFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length > 0) void addNewFiles(selected);
     e.target.value = '';
   };
 
-  const removeOrderedImage = (index: number) => {
-    if (orderedImages.length <= 1) return;
-    const img = orderedImages[index];
-    const toDelete = [img.url];
-    if (img.thumbUrl && img.thumbUrl !== img.url) toDelete.push(img.thumbUrl);
-    setImagesToDelete((prev) => [...prev, ...toDelete]);
-    setOrderedImages((prev) => prev.filter((_, i) => i !== index));
-    if (index === 0 && newFile) {
-      if (newPreview) URL.revokeObjectURL(newPreview);
-      setNewFile(null);
-      setNewPreview(null);
+  const removeEntry = (index: number) => {
+    if (entries.length <= 1) return; // at least one image must remain
+    const entry = entries[index];
+    if (!entry) return;
+    if (entry.kind === 'existing') {
+      const toDelete = [entry.url];
+      if (entry.thumbUrl && entry.thumbUrl !== entry.url) toDelete.push(entry.thumbUrl);
+      setImagesToDelete((prev) => [...prev, ...toDelete]);
+    } else if (entry.previewUrl) {
+      URL.revokeObjectURL(entry.previewUrl);
     }
+    // The pending primary replacement belonged to the slot being removed
+    if (index === 0 && newFile) clearNewFile();
+    setEntries((prev) => prev.filter((_, i) => i !== index));
     setIsDirty(true);
   };
 
-  const moveImage = (index: number, dir: -1 | 1) => {
+  const moveEntry = (index: number, dir: -1 | 1) => {
     const newIdx = index + dir;
-    if (newIdx < 0 || newIdx >= orderedImages.length) return;
-    if ((index === 0 || newIdx === 0) && newFile) {
-      if (newPreview) URL.revokeObjectURL(newPreview);
-      setNewFile(null);
-      setNewPreview(null);
-    }
-    setOrderedImages((prev) => {
+    if (newIdx < 0 || newIdx >= entries.length) return;
+    // A primary replacement is tied to whichever file sits at index 0; drop it when that changes.
+    if ((index === 0 || newIdx === 0) && newFile) clearNewFile();
+    setEntries((prev) => {
       const next = [...prev];
       [next[index], next[newIdx]] = [next[newIdx], next[index]];
       return next;
@@ -248,12 +336,9 @@ function EditForm() {
     setIsDirty(true);
   };
 
-  const removeNewExtra = (index: number) => {
-    const url = newExtraPreviews[index];
-    if (url) URL.revokeObjectURL(url);
-    setNewExtraFiles((prev) => prev.filter((_, i) => i !== index));
-    setNewExtraPreviews((prev) => prev.filter((_, i) => i !== index));
-    setNewExtraNames((prev) => prev.filter((_, i) => i !== index));
+  const renameEntry = (index: number, name: string) => {
+    setEntries((prev) => prev.map((e, i) => (i === index ? { ...e, name } : e)));
+    setIsDirty(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,104 +349,76 @@ function EditForm() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error(t('form.error.login'));
+      const userId = session.user.id;
 
-      const primaryImg = orderedImages[0];
-      if (!primaryImg) throw new Error(t('form.error.save'));
-      let fileUrl = primaryImg?.url ?? '';
-      let fileType = primaryImg?.fileType ?? 'image';
-      let thumbnailUrl = primaryImg?.thumbUrl ?? null;
+      const primary = entries[0];
+      if (!primary) throw new Error(t('form.error.save'));
       const urlsToDelete: string[] = [...imagesToDelete];
 
-      if (newFile) {
-        const isPdf = newFile.type === 'application/pdf';
-        const thumbPromise = isPdf ? generatePdfThumbnail(newFile).catch(() => null) : null;
+      // Upload one new file and produce its final record (url / thumbnail / type).
+      const uploadNewEntry = async (file: File, asPrimary: boolean): Promise<ExtraPatternFile> => {
+        const isPdf = file.type === 'application/pdf';
+        const thumbPromise = isPdf ? pdfThumbnailWithTimeout(file) : null;
+        const url = await uploadFile(supabase, file, userId, id!, t);
 
-        const uploadedUrl = await uploadFile(supabase, newFile, session.user.id, id!, t);
-
-        if (fileUrl && fileUrl !== uploadedUrl) urlsToDelete.push(fileUrl);
-        if (thumbnailUrl && thumbnailUrl !== fileUrl && thumbnailUrl !== uploadedUrl) urlsToDelete.push(thumbnailUrl);
-
-        fileUrl = uploadedUrl;
-        fileType = isPdf ? 'pdf' : 'image';
-
+        let thumbnailUrl: string | null = isPdf ? null : url;
         if (isPdf) {
           const thumbBlob = await thumbPromise;
           if (thumbBlob) {
-            try {
-              const thumbPath = `${session.user.id}/${id}/thumb_${Date.now()}.jpg`;
-              const { data: thumbPresignData, error: thumbPresignError } = await supabase.functions.invoke('r2-presign', {
-                body: { path: thumbPath, contentType: 'image/jpeg' },
-              });
-              if (!thumbPresignError && thumbPresignData) {
-                const { presignedUrl: thumbPresigned, fileUrl: thumbFileUrl } = thumbPresignData;
-                const thumbUpload = await fetch(thumbPresigned, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'image/jpeg' },
-                  body: thumbBlob,
-                });
-                if (thumbUpload.ok) thumbnailUrl = thumbFileUrl;
-              }
-            } catch {
-              // thumbnail 실패 시 무시
-            }
+            const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+            const path = `${userId}/${id}/${asPrimary ? 'thumb' : 'thumb_extra'}_${stamp}.jpg`;
+            const uploaded = await uploadBlob(supabase, thumbBlob, path, 'image/jpeg');
+            if (uploaded) thumbnailUrl = uploaded;
           }
-        } else {
-          thumbnailUrl = fileUrl;
+        } else if (asPrimary) {
+          // Small JPEG for the dashboard card; fall back to the full image.
+          const thumbBlob = await makeThumbnail(file);
+          if (thumbBlob) {
+            const uploaded = await uploadBlob(supabase, thumbBlob, `${userId}/${id}/thumb_${Date.now()}.jpg`, 'image/jpeg');
+            if (uploaded) thumbnailUrl = uploaded;
+          }
         }
+        return { url, thumbnail_url: thumbnailUrl, file_type: isPdf ? 'pdf' : 'image' };
+      };
+
+      // --- Primary ---
+      let fileUrl: string;
+      let fileType: 'image' | 'pdf';
+      let thumbnailUrl: string | null;
+      let fileSize: number | null = null;
+
+      if (primary.kind === 'existing' && newFile) {
+        // Replace an existing primary in place (its progress slot is kept)
+        const rec = await uploadNewEntry(newFile, true);
+        if (primary.url && primary.url !== rec.url) urlsToDelete.push(primary.url);
+        if (primary.thumbUrl && primary.thumbUrl !== primary.url && primary.thumbUrl !== rec.url) urlsToDelete.push(primary.thumbUrl);
+        fileUrl = rec.url;
+        fileType = rec.file_type ?? 'image';
+        thumbnailUrl = rec.thumbnail_url;
+        fileSize = newFile.size;
+      } else if (primary.kind === 'existing') {
+        fileUrl = primary.url;
+        fileType = primary.fileType;
+        thumbnailUrl = primary.thumbUrl;
+      } else {
+        const rec = await uploadNewEntry(primary.file, true);
+        fileUrl = rec.url;
+        fileType = rec.file_type ?? 'image';
+        thumbnailUrl = rec.thumbnail_url;
+        fileSize = primary.file.size;
       }
 
-      // Upload new extra images in parallel
-      const uploadedExtraFiles: ExtraPatternFile[] = await Promise.all(
-        newExtraFiles.map(async (extraFile, i) => {
-          const isExtraPdf = extraFile.type === 'application/pdf';
-          const extraUrl = await uploadFile(supabase, extraFile, session.user.id, id!, t);
-
-          let extraThumbUrl: string | null = isExtraPdf ? null : extraUrl;
-          if (isExtraPdf) {
-            try {
-              const thumbBlob = await Promise.race([
-                generatePdfThumbnail(extraFile),
-                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
-              ]).catch(() => null);
-              if (thumbBlob) {
-                const thumbPath = `${session.user.id}/${id}/thumb_extra_${Date.now()}_${i}.jpg`;
-                const { data: tpd, error: tpe } = await supabase.functions.invoke('r2-presign', {
-                  body: { path: thumbPath, contentType: 'image/jpeg' },
-                });
-                if (!tpe && tpd) {
-                  const tres = await fetch(tpd.presignedUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'image/jpeg' },
-                    body: thumbBlob,
-                  });
-                  if (tres.ok) extraThumbUrl = tpd.fileUrl;
-                }
-              }
-            } catch {
-              // thumbnail failed, proceed without
-            }
+      // --- Extras, in the unified order (new files uploaded in parallel) ---
+      const finalExtraImageUrls: ExtraPatternFile[] = await Promise.all(
+        entries.slice(1).map(async (entry): Promise<ExtraPatternFile> => {
+          if (entry.kind === 'existing') {
+            return { url: entry.url, thumbnail_url: entry.thumbUrl, file_type: entry.fileType };
           }
-
-          return {
-            url: extraUrl,
-            thumbnail_url: extraThumbUrl,
-            file_type: isExtraPdf ? 'pdf' : 'image',
-          } as ExtraPatternFile;
+          return uploadNewEntry(entry.file, false);
         })
       );
 
-      // orderedImages[1+] are the reordered existing extras
-      const existingExtras: ExtraPatternFile[] = orderedImages.slice(1).map((img) => ({
-        url: img.url,
-        thumbnail_url: img.thumbUrl,
-        file_type: img.fileType,
-      }));
-      const finalExtraImageUrls: ExtraPatternFile[] = [...existingExtras, ...uploadedExtraFiles];
-
-      const finalImageNames: string[] = [
-        ...orderedImages.map((img) => img.name),
-        ...newExtraNames,
-      ];
+      const finalImageNames: string[] = entries.map((entry) => entry.name);
 
       const newTotalRows = Math.min(99999, Math.max(1, parseInt(totalRows, 10) || 1));
       const { error: updateError } = await supabase
@@ -374,10 +431,10 @@ function EditForm() {
           thumbnail_url: thumbnailUrl,
           extra_image_urls: finalExtraImageUrls,
           image_names: finalImageNames,
-          ...(newFile ? { file_size: newFile.size } : {}),
+          ...(fileSize != null ? { file_size: fileSize } : {}),
         })
         .eq('id', id!)
-        .eq('user_id', session.user.id);
+        .eq('user_id', userId);
 
       if (updateError) throw updateError;
 
@@ -388,7 +445,7 @@ function EditForm() {
             .from('pattern_progress')
             .select('sub_patterns')
             .eq('pattern_id', id!)
-            .eq('user_id', session.user.id)
+            .eq('user_id', userId)
             .maybeSingle();
           const subs = prog?.sub_patterns as SubPattern[] | null | undefined;
           if (subs && subs.length === 1) {
@@ -396,15 +453,15 @@ function EditForm() {
               .from('pattern_progress')
               .update({ sub_patterns: [{ ...subs[0], total_rows: newTotalRows }] })
               .eq('pattern_id', id!)
-              .eq('user_id', session.user.id);
+              .eq('user_id', userId);
           }
         } catch { /* best-effort */ }
       }
 
       // Per-image progress (image_states) is indexed by file position. If files were
-      // reordered or removed, permute the saved states the same way so marks, ruler,
-      // notes and drawings stay with their image. New files get an empty slot.
-      const order = orderedImages.map((img) => img.origIndex);
+      // reordered, removed or inserted, permute the saved states the same way so marks,
+      // ruler, notes and drawings stay with their image. New files get an empty slot.
+      const order: (number | null)[] = entries.map((entry) => (entry.kind === 'existing' ? entry.origIndex : null));
       const orderChanged = order.some((orig, i) => orig !== i) || imagesToDelete.length > 0;
       if (orderChanged) {
         try {
@@ -412,17 +469,16 @@ function EditForm() {
             .from('pattern_progress')
             .select('image_states')
             .eq('pattern_id', id!)
-            .eq('user_id', session.user.id)
+            .eq('user_id', userId)
             .maybeSingle();
           const oldStates = (prog?.image_states as (ImagePerState | null)[] | null) ?? [];
           if (prog && oldStates.length > 0) {
-            const newStates: (ImagePerState | null)[] = order.map((orig) => oldStates[orig] ?? null);
-            while (newStates.length < order.length + newExtraFiles.length) newStates.push(null);
+            const newStates: (ImagePerState | null)[] = order.map((orig) => (orig == null ? null : oldStates[orig] ?? null));
             await supabase
               .from('pattern_progress')
               .update({ image_states: newStates, ...compatColumnsFromState(newStates[0] ?? undefined) })
               .eq('pattern_id', id!)
-              .eq('user_id', session.user.id);
+              .eq('user_id', userId);
           }
         } catch {
           // progress remap is best-effort; the pattern itself is already saved
@@ -432,7 +488,7 @@ function EditForm() {
       const uniqueToDelete = [...new Set(urlsToDelete)].filter(Boolean);
       if (uniqueToDelete.length > 0) {
         // A duplicate of this pattern may still point at these objects
-        const deletable = await filterUnreferencedUrls(supabase, session.user.id, uniqueToDelete, id!);
+        const deletable = await filterUnreferencedUrls(supabase, userId, uniqueToDelete, id!);
         if (deletable.length > 0) {
           supabase.functions.invoke('r2-delete', { body: { urls: deletable } }).catch(() => {});
         }
@@ -462,9 +518,27 @@ function EditForm() {
     );
   }
 
-  const primaryImg = orderedImages[0];
-  const displayThumb = newPreview || (newFile ? null : (primaryImg?.thumbUrl || (primaryImg?.fileType === 'image' ? primaryImg?.url : null)));
-  const totalImageCount = orderedImages.length + newExtraFiles.length;
+  const primary = entries[0];
+  const primaryIsNew = primary?.kind === 'new';
+  const displayThumb = newPreview
+    || (newFile ? null
+      : primary?.kind === 'existing'
+        ? (primary.thumbUrl || (primary.fileType === 'image' ? primary.url : null))
+        : primary?.kind === 'new' ? (primary.previewUrl || null) : null);
+  const primaryIsPdf = primary?.kind === 'existing' ? primary.fileType === 'pdf' : primary?.file.type === 'application/pdf';
+  const totalImageCount = entries.length;
+
+  const entryThumb = (entry: ImageEntry) => {
+    const src = entry.kind === 'existing'
+      ? (entry.thumbUrl || (entry.fileType !== 'pdf' ? entry.url : null))
+      : (entry.previewUrl || null);
+    if (src) return <img src={src} alt="" className="w-full h-full object-cover" />;
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
+      </div>
+    );
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -535,7 +609,7 @@ function EditForm() {
             </div>
             <button
               type="button"
-              onClick={() => { if (newPreview) URL.revokeObjectURL(newPreview); setNewFile(null); setNewPreview(null); }}
+              onClick={clearNewFile}
               className="text-xs text-[#a08060] hover:text-[#7a5c46] transition-colors tracking-wide"
             >
               {t('form.fileCancelReplace')}
@@ -552,14 +626,21 @@ function EditForm() {
                     <path d="M0,9 L7,0 L14,9 L21,0 L28,9" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                     <path d="M0,18 L7,9 L14,18 L21,9 L28,18" stroke="#b07840" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   </svg>
-                  <p className="text-sm text-[#a08060]">{primaryImg?.fileType === 'pdf' ? t('form.filePdf') : t('form.fileImage')}</p>
+                  <p className="text-sm text-[#a08060] truncate min-w-0">
+                    {primaryIsNew ? primary.file.name : primaryIsPdf ? t('form.filePdf') : t('form.fileImage')}
+                  </p>
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-[10px] text-[#a08060] mb-2 tracking-wide">{t('form.fileReplaceTip')}</p>
-              <FileDropZone onFileSelect={handleFileSelect} />
-            </div>
+            {/* Replacing in place only makes sense for an already-uploaded primary;
+                a new file at the top is simply what will be uploaded as primary. */}
+            {!primaryIsNew && (
+              <div>
+                <p className="text-[10px] text-[#a08060] mb-2 tracking-wide">{t('form.fileReplaceTip')}</p>
+                <FileDropZone onFileSelect={(f) => { void handleFileSelect(f); }} />
+                {canPaste && <p className="text-[11px] text-[#c4a882] mt-1.5">{t('form.pasteHint')}</p>}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -576,19 +657,14 @@ function EditForm() {
         </label>
 
         <div className="space-y-1.5">
-          {/* Existing images */}
-          {orderedImages.map((img, i) => (
-            <div key={`ord-${i}-${img.url}`} className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg overflow-hidden border border-[#b07840] flex-shrink-0 bg-[#fdf6e8]">
-                {img.thumbUrl ? (
-                  <img src={img.thumbUrl} alt="" className="w-full h-full object-cover" />
-                ) : img.fileType !== 'pdf' ? (
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
-                  </div>
-                )}
+          {entries.map((entry, i) => (
+            <div key={entry.key} className="flex items-center gap-2">
+              <div
+                className={`w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#fdf6e8] ${
+                  entry.kind === 'new' ? 'border-2 border-dashed border-[#b07840]' : 'border border-[#b07840]'
+                }`}
+              >
+                {entryThumb(entry)}
               </div>
               {i === 0 && (
                 <span className="text-[9px] font-bold text-[#b5541e] tracking-widest uppercase flex-shrink-0">
@@ -597,12 +673,8 @@ function EditForm() {
               )}
               <input
                 type="text"
-                value={img.name}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setOrderedImages((prev) => prev.map((item, idx) => idx === i ? { ...item, name: val } : item));
-                  setIsDirty(true);
-                }}
+                value={entry.name}
+                onChange={(e) => renameEntry(i, e.target.value)}
                 placeholder={t('form.imageN').replace('{n}', String(i + 1))}
                 className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
               />
@@ -610,8 +682,9 @@ function EditForm() {
                 <div className="flex flex-col flex-shrink-0">
                   <button
                     type="button"
-                    onClick={() => moveImage(i, -1)}
+                    onClick={() => moveEntry(i, -1)}
                     disabled={i === 0}
+                    aria-label={t('form.moveUp')}
                     className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -620,8 +693,9 @@ function EditForm() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => moveImage(i, 1)}
-                    disabled={i === orderedImages.length - 1 && newExtraFiles.length === 0}
+                    onClick={() => moveEntry(i, 1)}
+                    disabled={i === entries.length - 1}
+                    aria-label={t('form.moveDown')}
                     className="w-8 py-1.5 flex items-center justify-center text-[#b07840] disabled:opacity-25 hover:text-[#b5541e] transition-colors rounded"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -632,43 +706,10 @@ function EditForm() {
               )}
               <button
                 type="button"
-                onClick={() => removeOrderedImage(i)}
-                disabled={orderedImages.length <= 1 && newExtraFiles.length === 0}
+                onClick={() => removeEntry(i)}
+                disabled={entries.length <= 1}
+                aria-label={t('form.remove')}
                 className="w-9 h-9 flex items-center justify-center text-[#b07840] disabled:opacity-20 hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
-
-          {/* New extras (not yet uploaded) */}
-          {newExtraFiles.map((_, i) => (
-            <div key={`new-${i}`} className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg overflow-hidden border-2 border-dashed border-[#b07840] flex-shrink-0 bg-[#fdf6e8]">
-                {newExtraPreviews[i] ? (
-                  <img src={newExtraPreviews[i]} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[7px] text-[#a08060] font-bold">PDF</span>
-                  </div>
-                )}
-              </div>
-              <input
-                type="text"
-                value={newExtraNames[i] ?? ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setNewExtraNames((prev) => prev.map((n, ni) => ni === i ? val : n));
-                }}
-                placeholder={t('form.imageN').replace('{n}', String(orderedImages.length + i + 1))}
-                className="flex-1 min-w-0 border border-[#b07840] bg-[#fdf6e8] rounded-md px-2.5 py-1.5 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => removeNewExtra(i)}
-                className="w-9 h-9 flex items-center justify-center text-[#b07840] hover:text-[#b5541e] transition-colors rounded flex-shrink-0"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -687,6 +728,18 @@ function EditForm() {
             {t('form.addMoreImages')}
           </button>
         </div>
+
+        {canPaste && primaryIsNew && (
+          <p className="text-[11px] text-[#c4a882] mt-1">{t('form.pasteHint')}</p>
+        )}
+        {resized && (
+          <p className="text-[11px] text-[#b07840] mt-1 flex items-center gap-1">
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7" />
+            </svg>
+            {t('form.resized')}
+          </p>
+        )}
 
         <input
           ref={extraInputRef}

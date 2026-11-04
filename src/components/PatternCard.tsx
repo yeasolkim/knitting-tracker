@@ -1,6 +1,6 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PatternWithProgress } from '@/lib/types';
+import type { PatternStatus, PatternWithProgress, SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function fmtSize(bytes: number | null | undefined) {
@@ -9,30 +9,81 @@ function fmtSize(bytes: number | null | undefined) {
   return Math.round(bytes / 1024) + ' KB';
 }
 
+/** Row totals the same way Dashboard's getProgress does: sum sub-patterns when present. */
+export function getRowCounts(pattern: PatternWithProgress): { current: number; total: number } {
+  const subs = (pattern.progress?.sub_patterns as SubPattern[] | undefined) || [];
+  const total = subs.length > 0
+    ? subs.reduce((s, p) => s + (p.total_rows || 0), 0)
+    : pattern.total_rows || 0;
+  const current = subs.length > 0
+    ? subs.reduce((s, p) => s + (p.current_row || 0), 0)
+    : pattern.progress?.current_row || 0;
+  return { current, total };
+}
+
+export function effectiveStatus(pattern: { status?: PatternStatus | null }): PatternStatus {
+  return pattern.status ?? 'active';
+}
+
 interface PatternCardProps {
   pattern: PatternWithProgress;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
+  onStatusChange?: (id: string, status: PatternStatus) => void;
   duplicating?: boolean;
 }
 
-const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, duplicating = false }: PatternCardProps) {
+const menuItemClass =
+  'w-full text-left text-xs text-[#3d2b1f] px-3 py-2.5 min-h-[40px] hover:bg-[#f5edd6] transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed';
+
+const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, onStatusChange, duplicating = false }: PatternCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
   const typeLabel = pattern.type === 'crochet' ? t('card.type.crochet') : t('card.type.knitting');
+  const status = effectiveStatus(pattern);
+  const { current, total } = getRowCounts(pattern);
+  const pct = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
+  const suggestDone = status === 'active' && total > 0 && pct >= 100 && !!onStatusChange;
+
+  // Close the action menu on outside click / Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const setStatus = (next: PatternStatus) => {
+    setMenuOpen(false);
+    onStatusChange?.(pattern.id, next);
+  };
 
   return (
-    <div className="bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] overflow-hidden hover:shadow-[4px_4px_0_#b07840] transition-all group relative">
+    <div
+      className={`bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] hover:shadow-[4px_4px_0_#b07840] transition-all group relative flex flex-col ${
+        menuOpen ? 'z-20' : ''
+      } ${status === 'archived' ? 'opacity-80 hover:opacity-100' : ''}`}
+    >
       {/* Thumbnail */}
-      <Link to={`/patterns/${pattern.id}`}>
+      <Link to={`/patterns/${pattern.id}`} className="block rounded-t-[10px] overflow-hidden">
         <div className="aspect-[4/3] bg-[#f5edd6] relative overflow-hidden border-b-2 border-[#b07840]">
           {!imgFailed && (pattern.thumbnail_url || pattern.file_type === 'image') ? (
             <img
               src={pattern.thumbnail_url || pattern.file_url}
               alt={pattern.title}
+              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300 transform-gpu"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
@@ -59,10 +110,28 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
               )}
             </div>
           )}
-          {/* Type badge */}
-          <span className="absolute top-2 left-2 text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded">
-            {typeLabel}
-          </span>
+          {/* Type + status badges */}
+          <div className="absolute top-2 left-2 flex items-center gap-1 max-w-[calc(100%-16px)]">
+            <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded">
+              {typeLabel}
+            </span>
+            {status === 'done' && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-[#b5541e] text-[#fdf6e8] px-1.5 py-0.5 rounded">
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {t('dashboard.status.done')}
+              </span>
+            )}
+            {status === 'archived' && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-[#a08060] text-[#fdf6e8] px-1.5 py-0.5 rounded">
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                {t('dashboard.status.archived')}
+              </span>
+            )}
+          </div>
           {/* Extra image count badge */}
           {(pattern.extra_image_urls?.length ?? 0) > 0 && (
             <span className="absolute top-2 right-2 text-[9px] font-bold bg-[#b07840]/80 text-[#fdf6e8] px-1.5 py-0.5 rounded">
@@ -73,8 +142,8 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
       </Link>
 
       {/* Info */}
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-1 mb-2.5">
+      <div className="p-3 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-1">
           <Link to={`/patterns/${pattern.id}`} className="min-w-0 flex-1">
             <h3
               title={pattern.title}
@@ -92,7 +161,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
             )}
           </Link>
 
-          {/* Edit / Delete */}
+          {/* Actions: menu / edit / delete */}
           {confirmDelete ? (
             <div className="flex items-center gap-1 shrink-0">
               <button
@@ -114,19 +183,80 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-0.5 shrink-0">
-              {onDuplicate && (
-                <button
-                  onClick={(e) => { e.preventDefault(); if (!duplicating) onDuplicate(pattern.id); }}
-                  disabled={duplicating}
-                  className="text-[#b07840] hover:text-[#7a5c46] transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label={t('card.duplicate')}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <rect x="9" y="9" width="13" height="13" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                  </svg>
-                </button>
+            <div className="flex items-center gap-0.5 shrink-0 -mr-1.5 -mt-1">
+              {(onDuplicate || onStatusChange) && (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setMenuOpen((o) => !o); }}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    aria-label={t('help.options')}
+                    className={`transition-colors p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded ${
+                      menuOpen ? 'text-[#b5541e]' : 'text-[#b07840] hover:text-[#7a5c46]'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="5" cy="12" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
+                    </svg>
+                  </button>
+                  {menuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-full mt-1 w-44 bg-[#fdf6e8] border-2 border-[#b07840] rounded-lg shadow-[3px_3px_0_#b07840] py-1 z-30 overflow-hidden"
+                    >
+                      {onStatusChange && status !== 'done' && (
+                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('done')}>
+                          <svg className="w-3.5 h-3.5 text-[#b5541e] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {t('dashboard.markDone')}
+                        </button>
+                      )}
+                      {onStatusChange && status !== 'active' && (
+                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('active')}>
+                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 9A8 8 0 0119 7.3M18.4 15A8 8 0 015 16.7" />
+                          </svg>
+                          {t('dashboard.markActive')}
+                        </button>
+                      )}
+                      {onStatusChange && status !== 'archived' && (
+                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('archived')}>
+                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                          </svg>
+                          {t('dashboard.archive')}
+                        </button>
+                      )}
+                      {onStatusChange && status === 'archived' && (
+                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('active')}>
+                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-7 8V10m-3 3l3-3 3 3" />
+                          </svg>
+                          {t('dashboard.unarchive')}
+                        </button>
+                      )}
+                      {onDuplicate && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={duplicating}
+                          className={`${menuItemClass} border-t border-[#e8dcc8]`}
+                          onClick={() => { setMenuOpen(false); if (!duplicating) onDuplicate(pattern.id); }}
+                        >
+                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <rect x="9" y="9" width="13" height="13" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                          </svg>
+                          {duplicating ? '…' : t('card.duplicate')}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
               <Link
                 to={`/patterns/${pattern.id}/edit`}
@@ -151,6 +281,44 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
           )}
         </div>
 
+        {/* Row progress */}
+        {total > 0 && (
+          <div className="mt-2.5">
+            <div
+              className="h-1.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(pct)}
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${pct >= 100 ? 'bg-[#8a6a2a]' : 'bg-[#b5541e]'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="flex items-baseline justify-between gap-2 mt-1">
+              <span className="text-[10px] text-[#7a5c46] tracking-wide tabular-nums truncate">
+                <span className="font-semibold text-[#3d2b1f]">{t('card.rowCurrent', { n: current })}</span>{' '}
+                {t('card.rowTotal', { n: total })}
+              </span>
+              <span className="text-[10px] text-[#a08060] tabular-nums shrink-0">{Math.round(pct)}%</span>
+            </div>
+          </div>
+        )}
+
+        {/* Done suggestion */}
+        {suggestDone && (
+          <button
+            type="button"
+            onClick={() => setStatus('done')}
+            className="mt-2 w-full text-left text-[10px] leading-snug font-semibold text-[#b5541e] bg-[#fff9ee] border border-[#e0b98a] rounded-lg px-2 py-1.5 hover:bg-[#f5edd6] transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="min-w-0">{t('dashboard.doneSuggest')}</span>
+          </button>
+        )}
       </div>
     </div>
   );

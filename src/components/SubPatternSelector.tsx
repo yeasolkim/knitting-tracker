@@ -226,6 +226,17 @@ export default function SubPatternSelector({
                 </div>
               )}
 
+              {/* Crochet motifs: how many to make; progress shown as n/total */}
+              {isCrochet && sub.id === activeId && editingId !== sub.id && (
+                <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-[10px] text-[#a08060] tracking-wide">{t('crochet.motifTarget')}</span>
+                  <TotalRowsInput narrow min={0} value={sub.motif_target ?? 0} onChange={(v) => onUpdate(sub.id, { motif_target: v })} />
+                  {(sub.motif_target ?? 0) > 0 && (
+                    <span className="text-[10px] font-bold text-[#b5541e]">{t('crochet.motifProgress', { n: sub.motif_count ?? 0, total: sub.motif_target ?? 0 })}</span>
+                  )}
+                </div>
+              )}
+
               {/* Repeat section: rows [start, start + rows*count) */}
               {sub.id === activeId && editingId !== sub.id && (
                 <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>

@@ -1,23 +1,39 @@
 import { useState, useEffect, useLayoutEffect, useRef, useImperativeHandle, forwardRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useGestures } from '@/hooks/useGestures';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { configurePdfWorker, PDF_CMAP_OPTIONS } from '@/lib/pdfWorker';
 
-let pdfVersion = '';
-const pdfVersionListeners: Array<(v: string) => void> = [];
-
+// Self-hosted worker: configured as soon as react-pdf is imported, i.e. before
+// any <Document> can mount and start loading a PDF.
 const PdfDocument = lazy(() =>
   import('react-pdf').then((mod) => {
-    pdfVersion = mod.pdfjs.version;
-    mod.pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
-    pdfVersionListeners.forEach((fn) => fn(pdfVersion));
-    pdfVersionListeners.length = 0;
+    configurePdfWorker(mod.pdfjs.GlobalWorkerOptions);
     return { default: mod.Document };
   })
 );
 
 const PdfPage = lazy(() =>
-  import('react-pdf').then((mod) => ({ default: mod.Page }))
+  import('react-pdf').then((mod) => {
+    configurePdfWorker(mod.pdfjs.GlobalWorkerOptions);
+    return { default: mod.Page };
+  })
 );
+
+// Stable options object (react-pdf reloads the document if this identity changes).
+const PDF_DOCUMENT_OPTIONS = { ...PDF_CMAP_OPTIONS };
+
+/** Append/replace a cache-busting `r=<key>` query param. Returns the url unchanged for key 0. */
+const withReloadKey = (url: string, key: number) => {
+  if (!key) return url;
+  const [base, hash] = url.split('#');
+  const [path, query = ''] = base.split('?');
+  const params = query.split('&').filter((p) => p && !/^r=/.test(p));
+  params.push(`r=${key}`);
+  return `${path}?${params.join('&')}${hash ? `#${hash}` : ''}`;
+};
+
+/** Number of pages whose metadata is fetched in parallel during pre-parse. */
+const PRE_PARSE_CHUNK = 8;
 
 export interface PatternViewerHandle {
   screenToContent: (screenYPercent: number, screenHeightPercent: number) => { y: number; height: number };
@@ -45,6 +61,14 @@ interface PatternViewerProps {
   isDrawingMode?: boolean;
   /** View lock: ignore pan/pinch/wheel/double-tap (buttons still work). */
   locked?: boolean;
+  /** Increment to force a fresh load (image: cache-busting query, PDF: Document remount). */
+  reloadKey?: number;
+  /** Called when the image or PDF fails to load. Parent owns the error UI. */
+  onLoadError?: () => void;
+  /** Previously parsed h/w ratio per PDF page; skips the pre-parse when its length matches numPages. */
+  cachedPageRatios?: number[];
+  /** Called once after a real PDF pre-parse with the h/w ratio of every page. */
+  onPageRatios?: (ratios: number[]) => void;
 }
 
 /** Gap between PDF pages, proportional to page width.
@@ -57,7 +81,7 @@ const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
-  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, onGoToRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false, locked = false }, ref) {
+  function PatternViewer({ fileUrl, fileType, rulerYPercent = 50, rulerXPercent, onTransformChange, onImageSize, onResetRuler, onGoToRuler, highlightBringRuler = false, contentOverlay, children, isDrawingMode = false, locked = false, reloadKey = 0, onLoadError, cachedPageRatios, onPageRatios }, ref) {
     // Content size ref: kept up-to-date so useGestures can clamp pan bounds
     // DURING gestures, preventing the end-of-gesture snap that shifts the ruler.
     const contentSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -66,20 +90,16 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const { transform, containerRef, handlers, zoomIn, zoomOut, panBy, setXY, resetTransform, resetInteraction, setFullTransform, isPanning } = useGestures(0.5, 20, contentSizeRef, gesturesEnabledRef);
     const { t } = useLanguage();
     const [pdfPages, setPdfPages] = useState(1);
-    const [pdfVer, setPdfVer] = useState(pdfVersion);
-    useEffect(() => {
-      if (pdfVersion) { setPdfVer(pdfVersion); return; }
-      const fn = (v: string) => setPdfVer(v);
-      pdfVersionListeners.push(fn);
-      return () => {
-        const idx = pdfVersionListeners.indexOf(fn);
-        if (idx !== -1) pdfVersionListeners.splice(idx, 1);
-      };
-    }, []);
-    const pdfOptions = useMemo(() => ({
-      cMapUrl: pdfVer ? `//unpkg.com/pdfjs-dist@${pdfVer}/cmaps/` : undefined,
-      cMapPacked: true,
-    }), [pdfVer]);
+    // Latest-value refs for callbacks read inside async onLoadSuccess.
+    const onLoadErrorRef = useRef(onLoadError);
+    onLoadErrorRef.current = onLoadError;
+    const cachedPageRatiosRef = useRef(cachedPageRatios);
+    cachedPageRatiosRef.current = cachedPageRatios;
+    const onPageRatiosRef = useRef(onPageRatios);
+    onPageRatiosRef.current = onPageRatios;
+    const handleLoadError = useCallback(() => { onLoadErrorRef.current?.(); }, []);
+    // Image src: only a reloadKey > 0 changes the URL so cached URLs stay cache hits.
+    const imageSrc = useMemo(() => withReloadKey(fileUrl, reloadKey), [fileUrl, reloadKey]);
     const sizeRef = useRef<HTMLDivElement>(null);
     const contentItemRef = useRef<HTMLElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(600);
@@ -175,7 +195,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     const overlayRenderTaskRef = useRef<any>(null);
     const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Reset all page measurements when the PDF file changes.
+    // Reset all page measurements when the PDF file changes (or a forced reload remounts it).
     useEffect(() => {
       pdfFirstPageHeightRef.current = 0;
       pageAspectRatiosRef.current = [];
@@ -183,7 +203,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       preParseDoneRef.current = false;
       setPreParseDone(false);
       pdfDocRef.current = null;
-    }, [fileUrl]);
+    }, [fileUrl, reloadKey]);
 
     // Keep a ref to the latest transform so ResizeObserver can read it without
     // being recreated on every pan/zoom frame.
@@ -343,6 +363,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
 
     useEffect(() => {
       if (!sizeRef.current) return;
+      let rafId = 0;
       const observer = new ResizeObserver((entries) => {
         // Use clientWidth/clientHeight (always integers) instead of contentRect
         // (which can be fractional on high-DPR devices). This keeps containerH/W
@@ -363,7 +384,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         // Synchronously update imgH so latestRef.containerH and latestRef.imgH
         // are always consistent — prevents ruler drift if user drags during resize.
         reportImageSizeRef.current();
-        requestAnimationFrame(() => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
           reportImageSizeRef.current();
           const { w: iW, h: iH } = getStableContentDimsRef.current();
           if (iW === 0 || iH === 0) return;
@@ -378,7 +401,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         });
       });
       observer.observe(sizeRef.current);
-      return () => observer.disconnect();
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        observer.disconnect();
+      };
     }, []);
 
     // iOS high-quality overlay effect.
@@ -387,6 +413,9 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
     // is otherwise blocked by iOS Safari's 16MP canvas area limit.
     useEffect(() => {
       const canvas = overlayCanvasRef.current;
+      // Flipped in cleanup so async work after an `await` never touches a stale
+      // transform / unmounted component.
+      let cancelled = false;
 
       // Helper: restore all react-pdf page canvases to visible.
       const showPdfCanvases = () => {
@@ -480,6 +509,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         // PDF.js render scale: maps visible page CSS width → canvas pixel width.
         let pdfPage: any;
         try { pdfPage = await pdfDocRef.current.getPage(pageIdx + 1); } catch (_) { return; }
+        if (cancelled) return;
         const naturalViewport = pdfPage.getViewport({ scale: 1 });
         const renderScale = canvasW * pw / (visPageWidth * naturalViewport.width);
 
@@ -497,9 +527,10 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
         if (overlayRenderTaskRef.current) {
           try { overlayRenderTaskRef.current.cancel(); } catch (_) {}
         }
-        overlayRenderTaskRef.current = pdfPage.render({ canvasContext: ctx, viewport });
+        const renderTask = pdfPage.render({ canvasContext: ctx, viewport });
+        overlayRenderTaskRef.current = renderTask;
         try {
-          await overlayRenderTaskRef.current.promise;
+          await renderTask.promise;
         } catch (e: any) {
           if (e?.name !== 'RenderingCancelledException') console.warn('overlay render error', e);
           ctx.restore();
@@ -507,6 +538,8 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
           return;
         }
         ctx.restore();
+        // Effect re-ran (or unmounted) while rendering: a newer run owns the overlay now.
+        if (cancelled) return;
 
         // Render succeeded: show overlay and hide the underlying PDF canvas so they
         // don't overlap. PDF canvases are restored the next time the overlay hides.
@@ -522,6 +555,7 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
       }, 350);
 
       return () => {
+        cancelled = true;
         if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       };
     }, [transform, fileType, pdfPages, containerWidth, getPageCssHeight]);
@@ -831,57 +865,87 @@ const PatternViewer = forwardRef<PatternViewerHandle, PatternViewerProps>(
             {fileType === 'image' ? (
               <img
                 ref={(el) => { contentItemRef.current = el; }}
-                src={fileUrl}
+                src={imageSrc}
                 alt={t('viewer.patternAlt')}
                 className="max-w-full max-h-full object-contain select-none pointer-events-none"
                 draggable={false}
                 decoding="async"
                 fetchPriority="high"
                 onLoad={reportImageSize}
+                onError={handleLoadError}
               />
             ) : (
               <Suspense fallback={<div className="w-8 h-8 border-2 border-[#b5541e] border-t-transparent rounded-full animate-spin" />}>
                 <div ref={(el) => { contentItemRef.current = el; }} className="flex flex-col items-center">
                   <PdfDocument
+                    // reloadKey in the key remounts the Document → a genuinely fresh load.
+                    key={`${fileUrl}::${reloadKey}`}
                     file={fileUrl}
+                    onLoadError={handleLoadError}
+                    onSourceError={handleLoadError}
                     onLoadSuccess={async (pdfDoc: any) => {
                       pdfDocRef.current = pdfDoc;
                       const numPages: number = pdfDoc.numPages;
                       setPdfPages(numPages);
                       setVisibleRange({ start: 0, end: Math.min(2, numPages - 1) });
 
-                      // ── 1순위 개선: PDF 메타데이터에서 모든 페이지 종횡비를 미리 파싱 ──
-                      // 이를 통해 렌더링 전부터 정확한 전체 높이를 알 수 있어,
-                      // 세로/가로 혼합 PDF에서도 진행선이 튀지 않음.
-                      const ratios: number[] = [];
-                      try {
-                        for (let i = 1; i <= numPages; i++) {
-                          const page = await pdfDoc.getPage(i);
-                          const vp = page.getViewport({ scale: 1 });
-                          ratios[i - 1] = vp.height / vp.width;
-                        }
-                        pageAspectRatiosRef.current = ratios;
-
-                        // page-0 기준으로 pdfFirstPageHeightRef와 aspect ratio 초기화
+                      // page-0 기준으로 pdfFirstPageHeightRef와 aspect ratio 초기화
+                      const seedFirstPage = (ratios: number[]) => {
                         const currentPw = containerWidthRef.current * 0.9 || 540;
                         if (ratios[0] > 0 && pdfFirstPageHeightRef.current === 0) {
                           pdfFirstPageHeightRef.current = ratios[0] * currentPw;
                           setPdfPageAspectRatio(ratios[0]);
                         }
-                        // 파싱 완료 표시 후 setPreParseDone(true) → React 재렌더링 후
-                        // preParseDone effect가 reportImageSize()를 호출한다.
-                        // (직접 reportImageSize() 호출하면 setPdfPages가 아직 커밋 안 돼서
-                        //  getStableContentDims()가 구버전 pdfPages를 사용하는 버그 발생)
+                      };
+                      // 파싱 완료 표시 후 setPreParseDone(true) → React 재렌더링 후
+                      // preParseDone effect가 reportImageSize()를 호출한다.
+                      // (직접 reportImageSize() 호출하면 setPdfPages가 아직 커밋 안 돼서
+                      //  getStableContentDims()가 구버전 pdfPages를 사용하는 버그 발생)
+                      const finishPreParse = () => {
                         preParseDoneRef.current = true;
                         setPreParseDone(true);
+                      };
+
+                      // 캐시된 페이지 비율이 있으면 파싱을 건너뛰고 즉시 시드 (첫 렌더 가속).
+                      const cached = cachedPageRatiosRef.current;
+                      if (cached && cached.length === numPages && cached.every((v) => v > 0)) {
+                        pageAspectRatiosRef.current = cached.slice();
+                        seedFirstPage(cached);
+                        finishPreParse();
+                        return;
+                      }
+
+                      // ── 1순위 개선: PDF 메타데이터에서 모든 페이지 종횡비를 미리 파싱 ──
+                      // 이를 통해 렌더링 전부터 정확한 전체 높이를 알 수 있어,
+                      // 세로/가로 혼합 PDF에서도 진행선이 튀지 않음.
+                      // PRE_PARSE_CHUNK 페이지씩 병렬로 getPage() — 긴 PDF의 첫 렌더가 훨씬 빨라짐.
+                      // await 이후마다 문서가 바뀌었는지 확인: stale 문서의 결과는 절대 기록하지 않는다.
+                      const ratios: number[] = [];
+                      try {
+                        for (let start = 1; start <= numPages; start += PRE_PARSE_CHUNK) {
+                          const end = Math.min(numPages, start + PRE_PARSE_CHUNK - 1);
+                          const pages = await Promise.all(
+                            Array.from({ length: end - start + 1 }, (_, k) => pdfDoc.getPage(start + k))
+                          );
+                          if (pdfDocRef.current !== pdfDoc) return;
+                          pages.forEach((page: any, k: number) => {
+                            const vp = page.getViewport({ scale: 1 });
+                            ratios[start - 1 + k] = vp.height / vp.width;
+                          });
+                          // 첫 청크 직후 page-0 비율을 시드해 초기 높이 추정 정확도를 높인다.
+                          if (start === 1) seedFirstPage(ratios);
+                        }
+                        pageAspectRatiosRef.current = ratios;
+                        finishPreParse();
+                        onPageRatiosRef.current?.(ratios.slice());
                       } catch {
+                        if (pdfDocRef.current !== pdfDoc) return;
                         // 파싱 실패: 부분적으로 파싱된 데이터라도 저장해 나머지 페이지 높이 추정에 활용
                         if (ratios.length > 0) pageAspectRatiosRef.current = ratios;
-                        preParseDoneRef.current = true;
-                        setPreParseDone(true);
+                        finishPreParse();
                       }
                     }}
-                    options={pdfOptions}
+                    options={PDF_DOCUMENT_OPTIONS}
                     className="flex flex-col items-center"
                   >
                     {Array.from({ length: pdfPages }, (_, i) => {
