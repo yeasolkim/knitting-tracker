@@ -22,13 +22,9 @@ export interface Pattern {
   needle: string;
   file_size?: number | null;
   image_names?: string[];
-  /** Library status. Column added by migration 20261104000000; absent = 'active'. */
-  status?: PatternStatus | null;
   created_at: string;
   updated_at: string;
 }
-
-export type PatternStatus = 'active' | 'done' | 'archived';
 
 export interface CompletedMark {
   y: number;      // position % along the primary axis (top for vertical, left for horizontal)

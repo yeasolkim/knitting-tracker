@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { PatternStatus, PatternWithProgress, SubPattern } from '@/lib/types';
+import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function fmtSize(bytes: number | null | undefined) {
@@ -21,22 +21,17 @@ export function getRowCounts(pattern: PatternWithProgress): { current: number; t
   return { current, total };
 }
 
-export function effectiveStatus(pattern: { status?: PatternStatus | null }): PatternStatus {
-  return pattern.status ?? 'active';
-}
-
 interface PatternCardProps {
   pattern: PatternWithProgress;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
-  onStatusChange?: (id: string, status: PatternStatus) => void;
   duplicating?: boolean;
 }
 
 const menuItemClass =
   'w-full text-left text-xs text-[#3d2b1f] px-3 py-2.5 min-h-[40px] hover:bg-[#f5edd6] transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed';
 
-const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, onStatusChange, duplicating = false }: PatternCardProps) {
+const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, duplicating = false }: PatternCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -45,10 +40,8 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
   const { t } = useLanguage();
 
   const typeLabel = pattern.type === 'crochet' ? t('card.type.crochet') : t('card.type.knitting');
-  const status = effectiveStatus(pattern);
   const { current, total } = getRowCounts(pattern);
   const pct = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
-  const suggestDone = status === 'active' && total > 0 && pct >= 100 && !!onStatusChange;
 
   // Close the action menu on outside click / Escape
   useEffect(() => {
@@ -65,16 +58,11 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
     };
   }, [menuOpen]);
 
-  const setStatus = (next: PatternStatus) => {
-    setMenuOpen(false);
-    onStatusChange?.(pattern.id, next);
-  };
-
   return (
     <div
       className={`bg-[#fdf6e8] rounded-xl border-2 border-[#b07840] hover:shadow-[4px_4px_0_#b07840] transition-all group relative flex flex-col ${
         menuOpen ? 'z-20' : ''
-      } ${status === 'archived' ? 'opacity-80 hover:opacity-100' : ''}`}
+      }`}
     >
       {/* Thumbnail */}
       <Link to={`/patterns/${pattern.id}`} className="block rounded-t-[10px] overflow-hidden">
@@ -110,27 +98,11 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
               )}
             </div>
           )}
-          {/* Type + status badges */}
+          {/* Type badge */}
           <div className="absolute top-2 left-2 flex items-center gap-1 max-w-[calc(100%-16px)]">
             <span className="text-[9px] font-bold tracking-widest uppercase bg-[#3d2b1f] text-[#fdf6e8] px-2 py-0.5 rounded">
               {typeLabel}
             </span>
-            {status === 'done' && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-[#b5541e] text-[#fdf6e8] px-1.5 py-0.5 rounded">
-                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                {t('dashboard.status.done')}
-              </span>
-            )}
-            {status === 'archived' && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-[#a08060] text-[#fdf6e8] px-1.5 py-0.5 rounded">
-                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-                {t('dashboard.status.archived')}
-              </span>
-            )}
           </div>
           {/* Extra image count badge */}
           {(pattern.extra_image_urls?.length ?? 0) > 0 && (
@@ -184,7 +156,7 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
             </div>
           ) : (
             <div className="flex items-center gap-0.5 shrink-0 -mr-1.5 -mt-1">
-              {(onDuplicate || onStatusChange) && (
+              {onDuplicate && (
                 <div className="relative" ref={menuRef}>
                   <button
                     type="button"
@@ -207,44 +179,12 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
                       role="menu"
                       className="absolute right-0 top-full mt-1 w-44 bg-[#fdf6e8] border-2 border-[#b07840] rounded-lg shadow-[3px_3px_0_#b07840] py-1 z-30 overflow-hidden"
                     >
-                      {onStatusChange && status !== 'done' && (
-                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('done')}>
-                          <svg className="w-3.5 h-3.5 text-[#b5541e] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          {t('dashboard.markDone')}
-                        </button>
-                      )}
-                      {onStatusChange && status !== 'active' && (
-                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('active')}>
-                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 9A8 8 0 0119 7.3M18.4 15A8 8 0 015 16.7" />
-                          </svg>
-                          {t('dashboard.markActive')}
-                        </button>
-                      )}
-                      {onStatusChange && status !== 'archived' && (
-                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('archived')}>
-                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                          </svg>
-                          {t('dashboard.archive')}
-                        </button>
-                      )}
-                      {onStatusChange && status === 'archived' && (
-                        <button type="button" role="menuitem" className={menuItemClass} onClick={() => setStatus('active')}>
-                          <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-7 8V10m-3 3l3-3 3 3" />
-                          </svg>
-                          {t('dashboard.unarchive')}
-                        </button>
-                      )}
                       {onDuplicate && (
                         <button
                           type="button"
                           role="menuitem"
                           disabled={duplicating}
-                          className={`${menuItemClass} border-t border-[#e8dcc8]`}
+                          className={menuItemClass}
                           onClick={() => { setMenuOpen(false); if (!duplicating) onDuplicate(pattern.id); }}
                         >
                           <svg className="w-3.5 h-3.5 text-[#b07840] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -306,19 +246,6 @@ const PatternCard = memo(function PatternCard({ pattern, onDelete, onDuplicate, 
           </div>
         )}
 
-        {/* Done suggestion */}
-        {suggestDone && (
-          <button
-            type="button"
-            onClick={() => setStatus('done')}
-            className="mt-2 w-full text-left text-[10px] leading-snug font-semibold text-[#b5541e] bg-[#fff9ee] border border-[#e0b98a] rounded-lg px-2 py-1.5 hover:bg-[#f5edd6] transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="min-w-0">{t('dashboard.doneSuggest')}</span>
-          </button>
-        )}
       </div>
     </div>
   );

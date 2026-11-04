@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
-import type { PatternStatus, PatternWithProgress, SubPattern } from '@/lib/types';
+import type { PatternWithProgress, SubPattern } from '@/lib/types';
 import AuthGuard from '@/components/AuthGuard';
-import PatternCard, { effectiveStatus } from '@/components/PatternCard';
+import PatternCard from '@/components/PatternCard';
 import YarnLoader from '@/components/YarnLoader';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
 import { cachePatterns, getCachedPatterns } from '@/lib/offlineQueue';
@@ -15,7 +15,6 @@ import { getPref, setPref } from '@/lib/prefs';
 type TypeFilter = 'all' | 'knitting' | 'crochet';
 type SortKey = 'updated' | 'created' | 'title' | 'progress';
 
-const STATUS_TABS: PatternStatus[] = ['active', 'done', 'archived'];
 
 const chipClass = (active: boolean) =>
   `text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors min-h-[44px] ${
@@ -72,7 +71,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
   const isOnline = useOnlineStatus();
 
   // Filter & sort state
-  const [statusFilter, setStatusFilter] = useState<PatternStatus>('active');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [sortBy, setSortBy] = useState<SortKey>('updated');
   const [search, setSearch] = useState('');
@@ -133,21 +131,9 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     }
   }, [isOnline, isFromCache, fetchPatterns]);
 
-  // Patterns in the selected status tab (before type/search filtering)
-  const statusPatterns = useMemo(
-    () => patterns.filter((p) => effectiveStatus(p) === statusFilter),
-    [patterns, statusFilter],
-  );
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<PatternStatus, number> = { active: 0, done: 0, archived: 0 };
-    for (const p of patterns) counts[effectiveStatus(p)]++;
-    return counts;
-  }, [patterns]);
-
   // Derived: filtered + sorted patterns
   const filteredPatterns = useMemo(() => {
-    let result = [...statusPatterns];
+    let result = [...patterns];
 
     if (typeFilter !== 'all') result = result.filter(p => p.type === typeFilter);
 
@@ -167,7 +153,7 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
     });
 
     return result;
-  }, [statusPatterns, typeFilter, sortBy, debouncedSearch]);
+  }, [patterns, typeFilter, sortBy, debouncedSearch]);
 
   const isFiltered = typeFilter !== 'all' || sortBy !== 'updated' || search.trim() !== '';
 
@@ -243,24 +229,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
       setDuplicatingId(null);
     }
   }, [supabase, patterns, t, navigate, fetchPatterns, showToast, duplicatingId]);
-
-  const handleStatusChange = useCallback(async (id: string, status: PatternStatus) => {
-    if (!navigator.onLine) {
-      showToast(t('offline.actionBlocked'));
-      return;
-    }
-    const previous = patterns.find((p) => p.id === id)?.status ?? null;
-    // Optimistic update
-    setPatterns((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-
-    const { error } = await supabase.from('patterns').update({ status }).eq('id', id);
-    if (error) {
-      setPatterns((prev) => prev.map((p) => (p.id === id ? { ...p, status: previous } : p)));
-      showToast(t('dashboard.statusError'), 5000);
-      return;
-    }
-    cachePatterns(patterns.map((p) => (p.id === id ? { ...p, status } : p)));
-  }, [supabase, patterns, showToast, t]);
 
   const handleCreateSample = useCallback(async () => {
     if (creatingSample) return;
@@ -474,9 +442,9 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-[#3d2b1f] tracking-tight">{t('dashboard.title')}</h1>
                 <p className="text-xs text-[#a08060] mt-1 tracking-wide">
-                  {filteredPatterns.length === statusPatterns.length
-                    ? t('dashboard.count', { n: statusPatterns.length })
-                    : t('dashboard.count.filtered', { shown: filteredPatterns.length, total: statusPatterns.length })}
+                  {filteredPatterns.length === patterns.length
+                    ? t('dashboard.count', { n: patterns.length })
+                    : t('dashboard.count.filtered', { shown: filteredPatterns.length, total: patterns.length })}
                 </p>
               </div>
               <button
@@ -508,26 +476,8 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
               </div>
             )}
 
-            {/* 상태 탭 & 검색 */}
+            {/* 검색 */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
-              <div className="flex items-center gap-1" role="tablist">
-                {STATUS_TABS.map((s) => (
-                  <button
-                    key={s}
-                    role="tab"
-                    aria-selected={statusFilter === s}
-                    onClick={() => setStatusFilter(s)}
-                    className={chipClass(statusFilter === s)}
-                  >
-                    {t(`dashboard.status.${s}`)}
-                    {statusCounts[s] > 0 && (
-                      <span className={`ml-1 tabular-nums ${statusFilter === s ? 'text-[#fdf6e8]/80' : 'text-[#b07840]'}`}>
-                        {statusCounts[s]}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
               <div className="relative flex-1 min-w-[150px] sm:max-w-xs sm:ml-auto">
                 <svg
                   className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b07840]"
@@ -618,7 +568,6 @@ function DashboardPage({ userEmail, isAnonymous, authLoading }: { userEmail?: st
                     pattern={pattern}
                     onDelete={handleDelete}
                     onDuplicate={handleDuplicate}
-                    onStatusChange={handleStatusChange}
                     duplicating={duplicatingId === pattern.id}
                   />
                 ))}
