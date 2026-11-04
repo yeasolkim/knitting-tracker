@@ -275,6 +275,8 @@ export default function AdminDashboard() {
   const [filterAnonymous, setFilterAnonymous] = useState(false);
   const [patternSearchInput, setPatternSearchInput] = useState('');
   const [patternSearch, setPatternSearch] = useState('');
+  // Patterns tab: show only one owner's patterns (set by tapping the owner on a row)
+  const [ownerFilterId, setOwnerFilterId] = useState<string | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [thumbnailTotalBytes, setThumbnailTotalBytes] = useState<number | null>(null);
@@ -656,7 +658,12 @@ export default function AdminDashboard() {
 
         {/* ── Patterns tab ─────────────────────────────────────────────── */}
         {tab === 'patterns' && (() => {
+          const ownerFilter = ownerFilterId ? users.find(u => u.id === ownerFilterId) : null;
+          const ownerCount = ownerFilterId ? patterns.filter(p => p.user_id === ownerFilterId).length : 0;
+          const patternCountByUser = new Map<string, number>();
+          for (const p of patterns) patternCountByUser.set(p.user_id, (patternCountByUser.get(p.user_id) ?? 0) + 1);
           const filtered = patterns
+            .filter(p => !ownerFilterId || p.user_id === ownerFilterId)
             .filter(p => !filterAnonymous || users.find(u => u.id === p.user_id)?.is_anonymous)
             .filter(p => {
               if (!patternSearch) return true;
@@ -692,6 +699,19 @@ export default function AdminDashboard() {
                   }}
                   className="border-2 border-[#b07840] bg-[#fdf6e8] rounded-lg px-3 py-1 text-xs text-[#3d2b1f] focus:outline-none focus:border-[#b5541e] placeholder:text-[#c4a882] w-44"
                 />
+                {ownerFilterId && (
+                  <button
+                    onClick={() => setOwnerFilterId(null)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2 bg-[#3d2b1f] text-[#fdf6e8] border-[#3d2b1f] hover:bg-[#5a4030]"
+                    title="사용자 필터 해제"
+                  >
+                    <span className="max-w-[180px] truncate">
+                      {ownerFilter ? (ownerFilter.is_anonymous ? `비회원 ${ownerFilterId.slice(0, 8)}…` : (ownerFilter.email || ownerFilterId.slice(0, 8) + '…')) : ownerFilterId.slice(0, 8) + '…'}
+                    </span>
+                    <span className="text-[#fdf6e8]/70">{ownerCount}개</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
                 <span className="text-[11px] text-[#a08060]">{filtered.length}개</span>
               </div>
 
@@ -735,9 +755,18 @@ export default function AdminDashboard() {
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-[#a08060] mt-0.5">
-                            {owner?.email ?? p.user_id.slice(0, 8) + '…'}
-                            <span className="mx-1.5">·</span>
+                          <p className="text-[11px] text-[#a08060] mt-0.5 flex items-center flex-wrap gap-x-1.5">
+                            {/* Tap the owner to see every pattern this user uploaded */}
+                            <button
+                              type="button"
+                              onClick={() => setOwnerFilterId(prev => (prev === p.user_id ? null : p.user_id))}
+                              className={`inline-flex items-center gap-1 rounded px-1 -mx-1 hover:bg-[#ede5cc] hover:text-[#3d2b1f] transition-colors ${ownerFilterId === p.user_id ? 'bg-[#ede5cc] text-[#3d2b1f]' : ''}`}
+                              title={ownerFilterId === p.user_id ? '사용자 필터 해제' : '이 사용자의 도안만 보기'}
+                            >
+                              <span className="truncate max-w-[200px]">{owner?.email ?? p.user_id.slice(0, 8) + '…'}</span>
+                              <span className="text-[10px] font-bold text-[#b5541e]">{patternCountByUser.get(p.user_id) ?? 1}개</span>
+                            </button>
+                            <span>·</span>
                             {formatDate(p.created_at)}
                             {p.file_size && (
                               <span className="ml-2">{formatSize(p.file_size)}</span>
