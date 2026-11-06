@@ -11,7 +11,6 @@ import HelpSheet from '@/components/HelpSheet';
 import StitchCounter from '@/components/StitchCounter';
 import { getPref, setPref, getViewLocked, setViewLocked, applyTextSize, getSession, addSession, type TextSize } from '@/lib/prefs';
 import { useMediaQuery, LANDSCAPE_PHONE_QUERY } from '@/hooks/useMediaQuery';
-import { buildProgressImage, shareOrDownload, downloadJson } from '@/lib/exportProgress';
 import { repeatInfoForRow } from '@/lib/repeat';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import PatternViewer, { type PatternViewerHandle } from '@/components/PatternViewer';
@@ -503,7 +502,6 @@ function PatternViewerPage({ pattern, isFromCache }: Props) {
   const changeTextSize = useCallback((v: TextSize) => { setPref('textSize', v); applyTextSize(v); setTextSizeState(v); }, []);
   const [splitIdx, setSplitIdx] = useState<number | null>(null);
   const isLandscapePhone = useMediaQuery(LANDSCAPE_PHONE_QUERY);
-  const [exporting, setExporting] = useState(false);
   const [sessionStats, setSessionStats] = useState(() => getSession(pattern.id));
   // Knitting time: count a minute whenever the tab stays visible for one.
   useEffect(() => {
@@ -1842,33 +1840,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
     setShowRulerSettings(false);
     setShowSubPatternGuide(true);
   }, []);
-  const handleShareImage = useCallback(async () => {
-    const file = allFiles[activeFileIdx];
-    if (!file || (file.file_type ?? pattern.file_type) === 'pdf') { alert(t('export.fail')); return; }
-    setExporting(true);
-    try {
-      const { rulers: rs, activeRulerId: aid, subPatterns: subs, activeSubId: asid } = latestRef.current;
-      const sub = subs.find((x) => x.id === asid);
-      const blob = await buildProgressImage({
-        imageUrl: file.url, marks: completedMarks, rulers: (!isCrochet || crochetShape === 'line') ? rs : [], activeRulerId: aid, title: pattern.title,
-        caption: sub ? `${sub.name} · ${sub.current_row}/${sub.total_rows}` : undefined,
-      });
-      const how = await shareOrDownload(blob, `${pattern.title}-progress.jpg`, pattern.title);
-      if (how === 'downloaded') alert(t('export.shareFail'));
-    } catch {
-      alert(t('export.fail'));
-    } finally {
-      setExporting(false);
-    }
-  }, [allFiles, activeFileIdx, pattern.file_type, pattern.title, completedMarks, isCrochet, crochetShape, t]);
-  const handleBackup = useCallback(() => {
-    imageStatesRef.current[activeFileIdx] = structuredClone(perImageStateLatest.current);
-    downloadJson({
-      exported_at: new Date().toISOString(),
-      pattern: { id: pattern.id, title: pattern.title, type: pattern.type, file_url: pattern.file_url, file_type: pattern.file_type, extra_image_urls: pattern.extra_image_urls ?? [], image_names: pattern.image_names ?? [], total_rows: pattern.total_rows, yarn: pattern.yarn, needle: pattern.needle },
-      progress: { sub_patterns: subPatterns, active_sub_pattern_id: activeSubId, image_states: imageStatesRef.current },
-    }, `${pattern.title}-backup.json`);
-  }, [activeFileIdx, pattern, subPatterns, activeSubId]);
 
   // Completed marks are tinted with their ruler's color; the default accent keeps the classic green.
   const markColors = useMemo(
@@ -3504,9 +3475,6 @@ const [isAdjustingCrochetRadius, setIsAdjustingCrochetRadius] = useState(false);
         onTextSize={changeTextSize}
         session={sessionStats}
         onReplayGuide={handleReplayGuide}
-        onShareImage={handleShareImage}
-        onBackup={handleBackup}
-        exporting={exporting}
       />
     </div>
   );

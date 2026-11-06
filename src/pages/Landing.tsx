@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage, LanguageToggle } from '@/contexts/LanguageContext';
-import monkeyImg from '@/assets/monkey-knitting.png';
+import monkeyImg from '@/assets/monkey-knitting.webp';
 
 function KnittingInTheSaunaIcon({ size = 24, color = '#b5541e', opacity2 = 0.45 }: { size?: number; color?: string; opacity2?: number }) {
   const w = size;
@@ -296,7 +296,7 @@ export default function Landing() {
           tabIndex={-1}
           aria-label="Knitting monkey illustration"
         >
-          <img src={monkeyImg} alt="monkey knitting in bath" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
+          <img src={monkeyImg} alt="monkey knitting in bath" width={720} height={392} decoding="async" className="w-56 h-auto sm:w-72 drop-shadow-sm" />
         </div>
 
         {/* Badge */}

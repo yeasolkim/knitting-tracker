@@ -14,7 +14,7 @@ export default defineConfig({
       // Workbox config
       workbox: {
         // Precache all generated JS/CSS/HTML assets (mjs = self-hosted pdf.js worker)
-        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,webp,woff2}'],
         // The pdf.js worker is ~1MB+; raise the default 2MB ceiling so it is never skipped.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [

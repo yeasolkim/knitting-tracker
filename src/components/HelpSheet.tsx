@@ -16,9 +16,6 @@ interface HelpSheetProps {
   onTextSize: (s: TextSize) => void;
   session: { rows: number; seconds: number };
   onReplayGuide: () => void;
-  onShareImage: () => void;
-  onBackup: () => void;
-  exporting?: boolean;
 }
 
 function Row({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
@@ -87,10 +84,8 @@ export default function HelpSheet(p: HelpSheetProps) {
           <li className="text-[#7a5c46]">{t('help.keys')}</li>
         </ul>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
-          <button onClick={p.onReplayGuide} className="h-11 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-sm font-bold text-[#7a5c46] hover:bg-[#ede5cc]">{t('help.replayGuide')}</button>
-          <button onClick={p.onShareImage} disabled={p.exporting} className="h-11 rounded-lg border-2 border-[#9a4318] bg-[#b5541e] text-sm font-bold text-[#fdf6e8] hover:bg-[#9a4318] disabled:opacity-50">{t('export.share')}</button>
-          <button onClick={p.onBackup} className="h-11 rounded-lg border-2 border-[#b07840] bg-[#fdf6e8] text-sm font-bold text-[#7a5c46] hover:bg-[#f5edd6]">{t('export.backup')}</button>
+        <div className="mt-4">
+          <button onClick={p.onReplayGuide} className="w-full h-11 rounded-lg border-2 border-[#b07840] bg-[#f5edd6] text-sm font-bold text-[#7a5c46] hover:bg-[#ede5cc]">{t('help.replayGuide')}</button>
         </div>
       </div>
     </div>
