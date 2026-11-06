@@ -1,0 +1,9 @@
+# 함수 안에서 supabase.auth.getUser()로 직접 로그인 확인함.
+# 게이트웨이의 옛 JWT 검사(verify_jwt)는 새 ES256 토큰을 거부하므로 꺼야 한다.
+project_id = "lyuwvvfpwspjmjktslxt"
+
+[functions.r2-presign]
+verify_jwt = false
+
+[functions.r2-delete]
+verify_jwt = false

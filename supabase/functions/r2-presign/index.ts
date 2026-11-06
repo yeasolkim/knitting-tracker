@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// 경로 우회 차단: 빈 세그먼트, '.', '..', 역슬래시, 제어문자, '?', '#' 거부
+function isSafeKey(key: string): boolean {
+  if (/[\\\x00-\x1f?#]/.test(key)) return false;
+  return key.split('/').every((seg) => seg !== '' && seg !== '.' && seg !== '..');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -33,7 +39,7 @@ Deno.serve(async (req) => {
       return new Response('Missing path or contentType', { status: 400, headers: corsHeaders });
     }
 
-    if (!path.startsWith(`${user.id}/`)) {
+    if (!path.startsWith(`${user.id}/`) || !isSafeKey(path)) {
       return new Response('Forbidden', { status: 403, headers: corsHeaders });
     }
 
