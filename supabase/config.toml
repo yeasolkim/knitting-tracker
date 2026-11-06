@@ -7,3 +7,6 @@ verify_jwt = false
 
 [functions.r2-delete]
 verify_jwt = false
+
+[functions.r2-orphans]
+verify_jwt = false
